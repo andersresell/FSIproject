@@ -21,7 +21,9 @@ template <typename T> int sgn(T val) {
 struct vec4 {
     double u1, u2, u3, u4;
     vec4 operator+(const vec4 &rhs) { return {u1 + rhs.u1, u2 + rhs.u2, u3 + rhs.u3, u4 + rhs.u4}; }
-    vec4 operator*(double rhs) { return {u1 * rhs, u2 * rhs, u3 * rhs, u4 * rhs}; }
+    vec4 operator-(const vec4& rhs) { return {u1 - rhs.u1, u2 - rhs.u2, u3 - rhs.u3, u4 - rhs.u4}; }
+    vec4 operator*(const double& rhs) { return {u1 * rhs, u2 * rhs, u3 * rhs, u4 * rhs}; }
+
 };
 /*
 class FieldVec4 {
