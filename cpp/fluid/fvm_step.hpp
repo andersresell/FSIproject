@@ -20,8 +20,9 @@ class FVM_Step{
 
 public:
     FVM_Step(int ni, int nj, double L_x, double L_y, OdeScheme ode_scheme, FluxScheme flux_scheme, BoundaryConditions boundary_conditions);
+    void ode_step();
     void eval_RHS(vec4* U_in);
-    void MUSCL_exstrapolate(vec4* U_in);
+    void MUSCL_extrapolate(vec4* U_in);
     void conserved2primitive(vec4* U_in);
     inline vec4 primitive2conserved(const vec4& V_in);
     inline vec4 minmod(const vec4& a, const vec4& b) const;
@@ -30,10 +31,11 @@ public:
     inline vec4 calc_F(const vec4& U_in) const;
     inline vec4 calc_G(const vec4& U_in) const;
     void rusanov();
-    inline double calc_sprad(const vec4& U_in) const;
+    inline double calc_sprad_x(const vec4& U_in) const;
+    inline double calc_sprad_y(const vec4& U_in) const;
     inline double calc_sound_speed(const vec4& U_in) const;
-    void ode_step(double dt);
     void set_ghost_points();
+    double calc_timestep(double CFL) const;
 
     ~FVM_Step();
 };

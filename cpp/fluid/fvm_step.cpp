@@ -9,6 +9,17 @@ FVM_Step::FVM_Step(int ni, int nj, double L_x, double L_y, OdeScheme ode_scheme,
 {
 
 }
+void FVM_Step::ode_step(){
+
+    switch (ode_scheme){
+        case OdeScheme::ExplicitEuler: {
+            eval_RHS(U);
+            for (int i{0}; i < ni * nj; i++) {
+                U[i] = U[i] + dt * Res[i];
+            }
+        }
+    }
+}
 
 void FVM_Step::eval_RHS(vec4* U_in){
     //eval U_left, U_right etc
@@ -28,7 +39,7 @@ void FVM_Step::eval_RHS(vec4* U_in){
     }
 }
 
-void FVM_Step::MUSCL_exstrapolate(vec4* U_in) {
+void FVM_Step::MUSCL_extrapolate(vec4* U_in) {
     vec4 tmpV;
     conserved2primitive(U_in);
     for (int i{1}; i < ni + 2; i++) {
@@ -131,27 +142,40 @@ void FVM_Step::rusanov() {
         for (int j{0}; j < ni; j++) {
             int ind = IXH(i, j);
             F_f[ind] = 0.5 * (calc_F(U_left[ind]) + calc_F(U_right[ind])
-                              - max(calc_sprad(U_left[ind]), calc_sprad(U_right[ind])) * (U_right[ind] - U_left[ind]));
+                              - max(calc_sprad_x(U_left[ind]), calc_sprad_x(U_right[ind])) * (U_right[ind] - U_left[ind]));
         }
     }
     for (int i{0}; i < ni; i++) {
         for (int j{0}; j < nj + 1; j++) {
             int ind = IXV(i, j);
             F_f[ind] = 0.5 * (calc_G(U_down[ind]) + calc_G(U_up[ind])
-                              - max(calc_sprad(U_down[ind]), calc_sprad(U_up[ind])) * (U_down[ind] - U_up[ind]));
+                              - max(calc_sprad_y(U_down[ind]), calc_sprad_y(U_up[ind])) * (U_down[ind] - U_up[ind]));
         }
     }
 }
 
-inline double FVM_Step::calc_sprad(const vec4& U_in) const{
+inline double FVM_Step::calc_sprad_x(const vec4& U_in) const{
     return abs(U_in.u2/U_in.u1) + calc_sound_speed(U_in);
 }
 
-inline double calc_sound_speed(const vec4& U_in) const{
+inline double FVM_Step::calc_sprad_y(const vec4& U_in) const{
+    return abs(U_in.u3/U_in.u1) + calc_sound_speed(U_in);
+}
+
+
+inline double FVM_Step::calc_sound_speed(const vec4& U_in) const{
     return sqrt(Gamma/U_in.u1* calc_P(U_in));
 }
 
-FVM_Step::~FVM_Step(){
+
+double FVM_Step::calc_timestep(double CFL) const{
+    double maxval{0};
+    for (int i{0};i<(ni+4)*(nj+4);i++){
+        maxval = max(maxval, calc_sprad(U[i])/dx + calc_spra)
+    }
+}
+
+FVM_Step::~FVM_Step(){inline double calc_sprad_x(const vec4& U_in) const;
     delete[] U, U_temporary, V, Res, U_left, U_right, U_down, U_up, F_f, G_f;
     delete[] P, sprad;
 }
