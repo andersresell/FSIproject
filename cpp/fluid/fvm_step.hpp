@@ -12,14 +12,14 @@ class FVM_Step{
     //Computes one timestep of the fluid domain with the explicit euler method
     const int ni, nj;
     double dx, dy;
+    double CFL;
     OdeScheme ode_scheme;
     FluxScheme flux_scheme;
-    BoundaryConditions boundary_conitions;
-    vec4 *U, *U_temporary, *V, *Res, *U_left, *U_right, *U_down, *U_up, *F_f, *G_f;
-    double *P, *sprad;
+    BoundaryConditions boundary_conditions;
+    vec4 *U, *U_tmp, *V, *Res, *U_left, *U_right, *U_down, *U_up, *F_f, *G_f;
 
 public:
-    FVM_Step(int ni, int nj, double L_x, double L_y, OdeScheme ode_scheme, FluxScheme flux_scheme, BoundaryConditions boundary_conditions);
+    FVM_Step(int ni, int nj, double L_x, double L_y, double CFL, OdeScheme ode_scheme, FluxScheme flux_scheme, BoundaryConditions boundary_conditions);
     void ode_step();
     void eval_RHS(vec4* U_in);
     void MUSCL_extrapolate(vec4* U_in);

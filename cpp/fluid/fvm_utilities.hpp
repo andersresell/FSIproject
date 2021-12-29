@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <iostream>
-#include <math.h>
+#include <cmath>
 
 #define IX(i,j) (i*(nj+4) + j) //for cell centers including ghost points
 

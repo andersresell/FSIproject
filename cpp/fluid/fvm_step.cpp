@@ -4,26 +4,45 @@
 
 #include "fvm_step.hpp"
 
-FVM_Step::FVM_Step(int ni, int nj, double L_x, double L_y, OdeScheme ode_scheme, FluxScheme flux_scheme, BoundaryConditions boundary_conditions)
-: ni{ni}, nj{nj}, dx{L_x/ni}, dy{L_y/ni},ode_scheme{ode_scheme}, flux_scheme{flux_scheme}
+FVM_Step::FVM_Step(int ni, int nj, double L_x, double L_y, double CFL, OdeScheme ode_scheme, FluxScheme flux_scheme, BoundaryConditions boundary_conditions)
+: ni{ni}, nj{nj}, dx{L_x/ni}, dy{L_y/ni}, CFL{CFL}, ode_scheme{ode_scheme}, flux_scheme{flux_scheme}
 {
-
+    U = new vec4[(ni+4)*(nj+4)];
+    V = new vec4[(ni+4)*(nj+4)];
+    U_left = new vec4[(ni+1)*nj];
+    U_right = new vec4[(ni+1)*nj];
+    U_down = new vec4[ni*(nj+1)];
+    U_up = new vec4[ni*(nj+1)];
+    Res = new vec4[ni*nj];
+    if (ode_scheme == OdeScheme::TVD_RK3){
+        U_tmp = new vec4[(ni+4)*(nj+4)];
+    }
+    else{
+        U_tmp = nullptr;
+    }
 }
 void FVM_Step::ode_step(){
-
+    dt = calc_timestep(CFL);
     switch (ode_scheme){
         case OdeScheme::ExplicitEuler: {
             eval_RHS(U);
-            for (int i{0}; i < ni * nj; i++) {
-                U[i] = U[i] + dt * Res[i];
+            for (int i{2}; i < ni+2; i++) {
+                for (int j{2}; j < nj + 2; j++) {
+                    U[IX(i, j)] = U[IX(i, j)] + dt * Res[IXR(i, j)];
+                }
             }
+            break;
+        }
+        case OdeScheme::TVD_RK3:{
+            //IMPLEMENT
+            break;
         }
     }
 }
 
 void FVM_Step::eval_RHS(vec4* U_in){
     //eval U_left, U_right etc
-    MUSCL_exstrapolate(U_in);
+    MUSCL_extrapolate(U_in);
     switch (flux_scheme) {
         case FluxScheme::Rusanov: {
             rusanov();
@@ -32,7 +51,6 @@ void FVM_Step::eval_RHS(vec4* U_in){
     }
     for (int i{0};i<ni;i++) {
         for (int j{0}; j < nj; j++) {
-            double dx;
             Res[IXR(i, j)] =
                     -1 / dx * (F_f[IXH(i + 1, j)] - F_f[IXH(i, j)]) - 1 / dy * (G_f[IXV(i, j + 1)] - G_f[IXV(i, j)]);
         }
@@ -155,11 +173,11 @@ void FVM_Step::rusanov() {
 }
 
 inline double FVM_Step::calc_sprad_x(const vec4& U_in) const{
-    return abs(U_in.u2/U_in.u1) + calc_sound_speed(U_in);
+    return std::abs(U_in.u2/U_in.u1) + calc_sound_speed(U_in);
 }
 
 inline double FVM_Step::calc_sprad_y(const vec4& U_in) const{
-    return abs(U_in.u3/U_in.u1) + calc_sound_speed(U_in);
+    return std::abs(U_in.u3/U_in.u1) + calc_sound_speed(U_in);
 }
 
 
@@ -168,14 +186,25 @@ inline double FVM_Step::calc_sound_speed(const vec4& U_in) const{
 }
 
 
-double FVM_Step::calc_timestep(double CFL) const{
+double FVM_Step::calc_timestep(double CFL) const {
     double maxval{0};
-    for (int i{0};i<(ni+4)*(nj+4);i++){
-        maxval = max(maxval, calc_sprad(U[i])/dx + calc_spra)
+    for (int i{0}; i < (ni + 4) * (nj + 4); i++) {
+        maxval = max(maxval, calc_sprad_x(U[i]) / dx + calc_sprad_y(U[i]) / dy);
     }
+    return CFL / maxval;
 }
 
-FVM_Step::~FVM_Step(){inline double calc_sprad_x(const vec4& U_in) const;
-    delete[] U, U_temporary, V, Res, U_left, U_right, U_down, U_up, F_f, G_f;
-    delete[] P, sprad;
+FVM_Step::~FVM_Step(){
+    delete[] U;
+    delete[] V;
+    delete[] Res;
+    delete[] U_left;
+    delete[] U_right;
+    delete[] U_down;
+    delete[] U_up;
+    delete[] F_f;
+    delete[] G_f;
+    if (ode_scheme == OdeScheme::TVD_RK3){
+        delete[] U_tmp;
+    }
 }
