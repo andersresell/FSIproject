@@ -9,21 +9,28 @@
 #include <iostream>
 #include <math.h>
 
-#define IX(i,j) (i*(nj+4) + j) //for whole grid including ghost points
+#define IX(i,j) (i*(nj+4) + j) //for cell centers including ghost points
 
 #define IXH(i,j) (i*nj + j) //horizontal access of face variables
-#define IXV(i,j) (i*(nj+1) + j)
+#define IXV(i,j) (i*(nj+1) + j) //vertical access of face variables
+
+#define IXR(i,j) (i*nj + j) //for cell centers, omitting ghost points
 
 template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
 struct vec4 {
+        //data structure to hold field variables using an AoS structure
     double u1, u2, u3, u4;
-    vec4 operator+(const vec4 &rhs) { return {u1 + rhs.u1, u2 + rhs.u2, u3 + rhs.u3, u4 + rhs.u4}; }
-    vec4 operator-(const vec4& rhs) { return {u1 - rhs.u1, u2 - rhs.u2, u3 - rhs.u3, u4 - rhs.u4}; }
-    vec4 operator*(const double& rhs) { return {u1 * rhs, u2 * rhs, u3 * rhs, u4 * rhs}; }
 
+    vec4 operator+(const vec4 &rhs) const;
+    vec4 operator-(const vec4 &rhs) const;
+    //vec4 operator*(const double &rhs) const;
+    friend inline vec4 operator*(const double &lhs, const vec4 &rhs);
+    //friend inline vec4 operator-(const vec4& lhs, const vec4 &rhs);
+    //friend inline void operator-(vec4& lhs, const vec4& rhs);
+    //void operator-(const vec4 &rhs);
 };
 /*
 class FieldVec4 {

@@ -2,22 +2,27 @@
 // Created by anders on 12/25/21.
 //
 #include "fvm_utilities.hpp"
-FieldVec4::FieldVec4()
-{
-    U = new vec4[size];
+
+
+vec4 vec4::operator+(const vec4 &rhs) const { return {u1 + rhs.u1, u2 + rhs.u2, u3 + rhs.u3, u4 + rhs.u4}; }
+
+vec4 vec4::operator-(const vec4 &rhs) const { return {u1 - rhs.u1, u2 - rhs.u2, u3 - rhs.u3, u4 - rhs.u4}; }
+
+vec4 vec4::operator*(const double &rhs) const { return {u1 * rhs, u2 * rhs, u3 * rhs, u4 * rhs}; }
+
+inline vec4 operator*(const double &lhs, const vec4 &rhs) {
+    return {lhs * rhs.u1, lhs * rhs.u2, lhs * rhs.u3, lhs * rhs.u4};
+}
+inline void operator-(vec4& lhs, const vec4& rhs){
+    lhs.u1 = - rhs.u1;
+    lhs.u2 = - rhs.u2;
+    lhs.u3 = - rhs.u3;
+    lhs.u4 = - rhs.u4;
 }
 
-FieldVec4::FieldVec4(const FieldVec4& rhs) : FieldVec4(){ //Copy constructor
-    for (int i{0}; i<size;i++){
-        U[i] = rhs.U[i];
-    }
-}
-
-void FieldVec4::operator*(double rhs){ //Scalar multiplication
-    for (int i{0}; i < size; i++) {
-        U[i].u0 *= rhs;
-        U[i].u1 *= rhs;
-        U[i].u2 *= rhs;
-        U[i].u3 *= rhs;
-    }
+void vec4::operator-(const vec4 &rhs) {
+    u1 = - rhs.u1;
+    u2 = - rhs.u2;
+    u3 = - rhs.u3;
+    u4 = - rhs.u4;
 }
