@@ -21,39 +21,31 @@ template <typename T> int sgn(T val) {
 }
 
 struct vec4 {
-        //data structure to hold field variables using an AoS structure
+    //data structure to hold field variables using an AoS structure
     double u1, u2, u3, u4;
 
-    vec4 operator+(const vec4 &rhs) const;
-    vec4 operator-(const vec4 &rhs) const;
-    //vec4 operator*(const double &rhs) const;
-    friend inline vec4 operator*(const double &lhs, const vec4 &rhs);
-    //friend inline vec4 operator-(const vec4& lhs, const vec4 &rhs);
-    //friend inline void operator-(vec4& lhs, const vec4& rhs);
-    //void operator-(const vec4 &rhs);
-};
-/*
-class FieldVec4 {
-    vec4 *U;
-}
-public:
-    FieldVec4();
-    FieldVec4(const FieldVec4& rhs);
-    void operator*(double rhs);
-    void operator*(FieldVec4& rhs);
+    vec4 operator+(const vec4 &rhs) const { return {u1 + rhs.u1, u2 + rhs.u2, u3 + rhs.u3, u4 + rhs.u4}; }
 
-    ~FieldVec4(){delete[] U;}
+    vec4 operator-(const vec4 &rhs) const { return {u1 - rhs.u1, u2 - rhs.u2, u3 - rhs.u3, u4 - rhs.u4}; }
+
+    friend vec4 operator*(const double &lhs, const vec4 &rhs){
+        return {lhs * rhs.u1, lhs * rhs.u2, lhs * rhs.u3, lhs * rhs.u4};
+    }
 };
 
-class FieldScalar{
-    double* u;
-};
-*/
+
+
 enum class OdeScheme{ExplicitEuler, TVD_RK3};
 enum class FluxScheme{Rusanov, HLLC};
 enum class BC{Wall};
-struct BoundaryConditions{
+struct ExternalBCs {
     BC west, east, south, north;
+
+    ExternalBCs() {
+        all_walls(); //Default is walls only;
+    }
+    void all_walls();
+
 };
 
 
