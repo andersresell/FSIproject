@@ -5,7 +5,7 @@
 #include "fsi_solver.hpp"
 
 
-FSI_Solver::FSI_Solver(FVM_Solver fvm)
+FSI_Solver::FSI_Solver(FVM_Solver& fvm)
     : fvm{fvm}
 {
 }

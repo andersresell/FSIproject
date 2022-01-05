@@ -5,20 +5,21 @@
 #ifndef FSIPROJECT_FVM_UTILITIES_HPP
 #define FSIPROJECT_FVM_UTILITIES_HPP
 
-#include <vector>
-#include <iostream>
-#include <cmath>
+#include "../../includes.hpp"
+//#include "fvm_solver.hpp"
 
-#define IX(i,j) (i*(nj+4) + j) //for cell centers including ghost points
+#define IX(i,j) ((i)*(nj+4) + (j)) //for cell centers including ghost points
 
-#define IXH(i,j) (i*nj + j) //horizontal access of face variables
-#define IXV(i,j) (i*(nj+1) + j) //vertical access of face variables
+#define IXH(i,j) ((i)*nj + (j)) //horizontal access of face variables
+#define IXV(i,j) ((i)*(nj+1) + (j)) //vertical access of face variables
 
-#define IXR(i,j) (i*nj + j) //for cell centers, omitting ghost points
+#define IXR(i,j) ((i)*nj + (j)) //for cell centers, omitting ghost points
 
 template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
+
+
 
 struct vec4 {
     //data structure to hold field variables using an AoS structure
@@ -34,19 +35,57 @@ struct vec4 {
 };
 
 
-
 enum class OdeScheme{ExplicitEuler, TVD_RK3};
 enum class FluxScheme{Rusanov, HLLC};
-enum class BC{Wall};
-struct ExternalBCs {
-    BC west, east, south, north;
 
-    ExternalBCs() {
-        all_walls(); //Default is walls only;
-    }
-    void all_walls();
 
+
+
+class ExternalBC{
+public:
+    virtual vec4 select_bc_type(const vec4& U_in) = 0;
 };
 
+class ExternalBCs {
+    ExternalBC &west, &east, &south, &north;
+    const int ni, nj;
+
+public:
+    ExternalBCs(int ni, int nj, ExternalBC& west, ExternalBC& east, ExternalBC& south, ExternalBC& north);
+    void set_BCs(vec4* U_in);
+};
+
+class VerticalWall : public ExternalBC{
+    vec4 select_bc_type(const vec4& U_in) override final{
+        //Enforced by setting x velocity component at ghost cell to the nagative value of internal cell. This can be done
+        //by switching the sign of the x momentum.
+        return {U_in.u1,
+                -U_in.u2,
+                U_in.u3,
+                U_in.u4};
+    }
+};
+
+class HorizontalWall : public ExternalBC{
+    vec4 select_bc_type(const vec4& U_in) {
+        //Enforced by setting y velocity component at ghost cell to the nagative value of internal cell. This can be done
+        //by switching the sign of the y momentum.
+        return {U_in.u1,
+                U_in.u2,
+                -U_in.u3,
+                U_in.u4};
+    }
+};
+
+class AllWalls : public ExternalBCs{
+    //creates an ExternalBCs object consisting of only walls
+    VerticalWall west, east;
+    HorizontalWall south, north;
+public:
+    AllWalls(int ni, int nj) : west{VerticalWall{}}, east{VerticalWall{}}, south{HorizontalWall{}}, north{HorizontalWall{}},
+                 ExternalBCs(ni,ni,west,east,south,north)
+    {
+    }
+};
 
 #endif //FSIPROJECT_FVM_UTILITIES_HPP

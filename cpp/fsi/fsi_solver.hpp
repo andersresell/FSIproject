@@ -9,10 +9,10 @@
 #include "../../includes.hpp"
 
 class FSI_Solver{
-    FVM_Solver fvm;
+    FVM_Solver& fvm;
 
 public:
-    FSI_Solver(FVM_Solver fvm);
+    FSI_Solver(FVM_Solver& fvm);
 
     void solve(double t_end);
 

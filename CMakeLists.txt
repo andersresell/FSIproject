@@ -7,4 +7,4 @@ add_executable(FSIproject
         main.cpp
         cpp/fluid/fvm_utilities.hpp cpp/fluid/fvm_utilities.cpp
         cpp/fluid/fvm_solver.cpp cpp/fluid/fvm_solver.hpp
-        cpp/fsi/fsi_solver.cpp cpp/fsi/fsi_solver.hpp includes.hpp)
+        cpp/fsi/fsi_solver.cpp cpp/fsi/fsi_solver.hpp includes.hpp cpp/fluid/fvm_test.cpp cpp/fluid/fvm_test.hpp)

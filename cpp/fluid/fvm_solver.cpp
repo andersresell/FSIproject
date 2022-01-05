@@ -6,7 +6,7 @@
 
 FVM_Solver::FVM_Solver(int ni, int nj, double L_x, double L_y, double CFL, OdeScheme ode_scheme,
                        FluxScheme flux_scheme, ExternalBCs external_bcs)
-: ni{ni}, nj{nj}, dx{L_x/ni}, dy{L_y/ni}, CFL{CFL}, ode_scheme{ode_scheme}, flux_scheme{flux_scheme}
+: ni{ni}, nj{nj}, dx{L_x/ni}, dy{L_y/ni}, CFL{CFL}, ode_scheme{ode_scheme}, flux_scheme{flux_scheme}, external_bcs{external_bcs}
 {
     U = new vec4[(ni+4)*(nj+4)];
     V = new vec4[(ni+4)*(nj+4)];
@@ -26,6 +26,8 @@ FVM_Solver::FVM_Solver(int ni, int nj, double L_x, double L_y, double CFL, OdeSc
 }
 double FVM_Solver::ode_step(){
     double dt = calc_timestep(CFL);
+    std::cout << "dt = " << dt << std::endl;
+    external_bcs.set_BCs(U); //External bc's are only applied once per timestep regardless of ode scheme for now
     switch (ode_scheme){
         case OdeScheme::ExplicitEuler: {
             eval_RHS(U);
@@ -64,22 +66,23 @@ void FVM_Solver::eval_RHS(vec4* U_in){
 void FVM_Solver::MUSCL_extrapolate(vec4* U_in) {
     vec4 tmpV;
     conserved2primitive(U_in);
+
     for (int i{1}; i < ni + 2; i++) {
         for (int j{2}; j < nj + 2; j++) {
             tmpV = V[IX(i, j)] + 0.5 * minmod(V[IX(i, j)] - V[IX(i - 1, j)], V[IX(i + 1, j)] - V[IX(i, j)]);
-            U_left[IXH(i, j)] = primitive2conserved(tmpV);
+            U_left[IXH(i-1, j-2)] = primitive2conserved(tmpV);
 
             tmpV = V[IX(i + 1, j)] - 0.5 * minmod(V[IX(i + 2, j)] - V[IX(i + 1, j)], V[IX(i + 1, j)] - V[IX(i, j)]);
-            U_right[IXH(i, j)] = primitive2conserved(tmpV);
+            U_right[IXH(i-1, j-2)] = primitive2conserved(tmpV);
         }
     }
     for (int i{2}; i < ni + 2; i++) {
         for (int j{1}; j < nj + 2; j++) {
             tmpV = V[IX(i, j)] + 0.5 * minmod(V[IX(i, j)] - V[IX(i, j - 1)], V[IX(i, j + 1)] - V[IX(i, j)]);
-            U_down[IXV(i, j)] = primitive2conserved(tmpV);
+            U_down[IXV(i-2, j-1)] = primitive2conserved(tmpV);
 
             tmpV = V[IX(i, j)] - 0.5 * minmod(V[IX(i, j + 2)] - V[IX(i, j + 1)], V[IX(i, j + 1)] - V[IX(i, j)]);
-            U_up[IXV(i, j)] = primitive2conserved(tmpV);
+            U_up[IXV(i-2, j-1)] = primitive2conserved(tmpV);
         }
     }
 }
@@ -108,6 +111,13 @@ void FVM_Solver::conserved2primitive(vec4* U_in){
         V[i].u3 = U_in[i].u3/U_in[i].u1;
         V[i].u4 = calc_P(U_in[i]);
     }
+}
+
+vec4 FVM_Solver::conserved2primitive(const vec4& U_in){
+    return {U_in.u1,
+            U_in.u2/U_in.u1,
+            U_in.u3/U_in.u1,
+            calc_P(U_in)};
 }
 /*
 void FVM_Solver::calc_P(vec4* U_in){
@@ -205,20 +215,68 @@ double FVM_Solver::calc_timestep(double CFL) const {
     }
     return CFL / maxval;
 }
+/*
+void FVM_Solver::set_external_boundary_conditions(){
+
+}
+
+bc_func_ptr FVM_Solver::select_bc_type(const BC& bc){
+    switch (bc){
+        case BC::VerticalWall: {
+            return set_vertical_wall;
+            break;
+        }
+        case BC::HorizontalWall: {
+            return set_horizontal_wall;
+            break;
+        }
+    }
+}
+
+void FVM_Solver::set_western_boundary_conditions(bc_func_ptr fptr){
+    for (int j{2};j<nj+2;j++){
+        U[IX(0,j)] = fptr(U[IX(3,j)]);
+        U[IX(1,j)] = fptr(U[IX(2,j)]);
+    }
+}
+
+void set_eastern_boundary_conditions(){
+    (for)
+}
+
+vec4 FVM_Solver::set_vertical_wall(const vec4& U_in) {
+    //Enforced by setting x velocity component at ghost cell to the nagative value of internal cell. This can be done
+    //by switching the sign of the x momentum.
+    return {U_in.u1,
+            -U_in.u2,
+            U_in.u3,
+            U_in.u4};
+}
+
+vec4 FVM_Solver::set_horizontal_wall(const vec4& U_in) {
+    //Enforced by setting y velocity component at ghost cell to the nagative value of internal cell. This can be done
+    //by switching the sign of the y momentum.
+    return {U_in.u1,
+            U_in.u2,
+            -U_in.u3,
+            U_in.u4};
+}
+*/
 
 FVM_Solver::~FVM_Solver(){
-
+    //std::cout << "FVM destructor called\n";
     delete[] U;
     delete[] V;
-    delete[] Res;
     delete[] U_left;
     delete[] U_right;
     delete[] U_down;
     delete[] U_up;
     delete[] F_f;
     delete[] G_f;
+    delete[] Res;
 
     if (ode_scheme == OdeScheme::TVD_RK3){
         delete[] U_tmp;
-    }*/
+    }
+
 }
