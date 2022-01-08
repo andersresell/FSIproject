@@ -3,6 +3,8 @@ project(FSIproject)
 
 set(CMAKE_CXX_STANDARD 14)
 
+include_directories(pybind11)
+
 add_executable(FSIproject
         main.cpp
         cpp/fluid/fvm_utilities.hpp cpp/fluid/fvm_utilities.cpp

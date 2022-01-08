@@ -11,11 +11,15 @@ FSI_Solver::FSI_Solver(FVM_Solver& fvm)
 }
 
 void FSI_Solver::solve(double t_end){
+    int n{0};
     double t{0};
     double dt;
-    while (t < t_end){
+    while (t < t_end) {
+        std::cout << "FSI solve: n = " + std::to_string(n) + "\n";
+        write_simple_fvm_csv_file("fvm_out_t" + std::to_string(n) + ".csv", fvm.U, fvm.ni, fvm.nj);
+        n++;
         dt = fvm.ode_step();
         t += dt;
-        std::cout << "FSI_Solver::solve() t = " << t << "\n";
+        if (n > MAX_TIMESTEPS) break;
     }
 }

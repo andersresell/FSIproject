@@ -24,3 +24,14 @@ void ExternalBCs::set_BCs(vec4* U_in) {
         U_in[IX(i, nj + 2)] = north.select_bc_type(U_in[IX(i, nj + 1)]);
     }
 }
+
+void write_simple_fvm_csv_file(std::string filename,vec4* U_in, int ni, int nj){
+    std::ofstream ost{"../python/fvm_output/" + filename};
+    //ost << ni << "," << nj << std::endl;
+    ost << "u1,u2,u3,u4\n";
+    for (int i{2}; i< ni+2;i++){
+        for (int j{2};j<nj+2;j++){
+            ost << U_in[IX(i,j)].u1 << "," << U_in[IX(i,j)].u2 << "," << U_in[IX(i,j)].u3 << "," << U_in[IX(i,j)].u4 << "\n";
+        }
+    }
+}

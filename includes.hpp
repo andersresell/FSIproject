@@ -9,6 +9,7 @@
 #include <cmath>
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <map>
 
 #endif //FSIPROJECT_INCLUDES_HPP

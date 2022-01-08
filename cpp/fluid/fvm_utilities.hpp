@@ -55,7 +55,7 @@ public:
     void set_BCs(vec4* U_in);
 };
 
-class VerticalWall : public ExternalBC{
+class VerticalInvicidWall : public ExternalBC{
     vec4 select_bc_type(const vec4& U_in) override final{
         //Enforced by setting x velocity component at ghost cell to the nagative value of internal cell. This can be done
         //by switching the sign of the x momentum.
@@ -66,7 +66,7 @@ class VerticalWall : public ExternalBC{
     }
 };
 
-class HorizontalWall : public ExternalBC{
+class HorizontalInvicidWall : public ExternalBC{
     vec4 select_bc_type(const vec4& U_in) {
         //Enforced by setting y velocity component at ghost cell to the nagative value of internal cell. This can be done
         //by switching the sign of the y momentum.
@@ -79,13 +79,16 @@ class HorizontalWall : public ExternalBC{
 
 class AllWalls : public ExternalBCs{
     //creates an ExternalBCs object consisting of only walls
-    VerticalWall west, east;
-    HorizontalWall south, north;
+    VerticalInvicidWall west, east;
+    HorizontalInvicidWall south, north;
 public:
-    AllWalls(int ni, int nj) : west{VerticalWall{}}, east{VerticalWall{}}, south{HorizontalWall{}}, north{HorizontalWall{}},
+    AllWalls(int ni, int nj) : west{VerticalInvicidWall{}}, east{VerticalInvicidWall{}},
+    south{HorizontalInvicidWall{}}, north{HorizontalInvicidWall{}},
                  ExternalBCs(ni,ni,west,east,south,north)
     {
     }
 };
+
+void write_simple_fvm_csv_file(std::string filename,vec4* U_in, int ni, int nj);
 
 #endif //FSIPROJECT_FVM_UTILITIES_HPP
