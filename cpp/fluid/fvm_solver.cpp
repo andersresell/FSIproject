@@ -3,10 +3,12 @@
 //
 
 #include "fvm_solver.hpp"
+using namespace std;
 
 FVM_Solver::FVM_Solver(int ni, int nj, double L_x, double L_y, double CFL, OdeScheme ode_scheme,
                        FluxScheme flux_scheme, ExternalBCs external_bcs)
-: ni{ni}, nj{nj}, dx{L_x/ni}, dy{L_y/ni}, CFL{CFL}, ode_scheme{ode_scheme}, flux_scheme{flux_scheme}, external_bcs{external_bcs}
+: ni{ni}, nj{nj}, dx{L_x/ni}, dy{L_y/ni}, CFL{CFL}, ode_scheme{ode_scheme}, flux_scheme{flux_scheme},
+external_bcs{external_bcs}
 {
     U = new vec4[(ni+4)*(nj+4)];
     V = new vec4[(ni+4)*(nj+4)];
@@ -31,10 +33,10 @@ double FVM_Solver::ode_step(){
     switch (ode_scheme){
         case OdeScheme::ExplicitEuler: {
             eval_RHS(U);
-            //field2console(Res,ni,nj,3,false);
             for (int i{2}; i < ni+2; i++) {
                 for (int j{2}; j < nj + 2; j++) {
-                    U[IX(i, j)] = U[IX(i, j)] + dt * Res[IXR(i, j)];
+                    U[IX(i, j)] = U[IX(i, j)] + dt * Res[IXR(i-2, j-2)];
+                    //cout << U[IX(i,j)]<<endl;
                 }
             }
             break;
@@ -57,12 +59,21 @@ void FVM_Solver::eval_RHS(vec4* U_in){
             break;
         }
     }
-    field2console(F_f,ni+1,nj,2);
+
+    /*for (int i{0}; i < ni + 1; i++) {
+        for (int j{0}; j < nj; j++) {
+            int ind = IXH(i, j);
+            std::cout <<F_f[ind]<<std::endl;
+        }
+    }
+    */
+
 
     for (int i{0};i<ni;i++) {
         for (int j{0}; j < nj; j++) {
             Res[IXR(i, j)] =
                     -1 / dx * (F_f[IXH(i + 1, j)] - F_f[IXH(i, j)]) - 1 / dy * (G_f[IXV(i, j + 1)] - G_f[IXV(i, j)]);
+            //cout << Res[IXR(i,j)]<<endl;
         }
     }
 }
@@ -74,19 +85,19 @@ void FVM_Solver::MUSCL_extrapolate(vec4* U_in) {
     for (int i{1}; i < ni + 2; i++) {
         for (int j{2}; j < nj + 2; j++) {
             tmpV = V[IX(i, j)] + 0.5 * minmod(V[IX(i, j)] - V[IX(i - 1, j)], V[IX(i + 1, j)] - V[IX(i, j)]);
-            U_left[IXH(i-1, j-2)] = primitive2conserved(tmpV);
+            U_left[IXH(i - 1, j - 2)] = primitive2conserved(tmpV);
 
             tmpV = V[IX(i + 1, j)] - 0.5 * minmod(V[IX(i + 2, j)] - V[IX(i + 1, j)], V[IX(i + 1, j)] - V[IX(i, j)]);
-            U_right[IXH(i-1, j-2)] = primitive2conserved(tmpV);
+            U_right[IXH(i - 1, j - 2)] = primitive2conserved(tmpV);
         }
     }
     for (int i{2}; i < ni + 2; i++) {
         for (int j{1}; j < nj + 2; j++) {
             tmpV = V[IX(i, j)] + 0.5 * minmod(V[IX(i, j)] - V[IX(i, j - 1)], V[IX(i, j + 1)] - V[IX(i, j)]);
-            U_down[IXV(i-2, j-1)] = primitive2conserved(tmpV);
+            U_down[IXV(i - 2, j - 1)] = primitive2conserved(tmpV);
 
-            tmpV = V[IX(i, j)] - 0.5 * minmod(V[IX(i, j + 2)] - V[IX(i, j + 1)], V[IX(i, j + 1)] - V[IX(i, j)]);
-            U_up[IXV(i-2, j-1)] = primitive2conserved(tmpV);
+            tmpV = V[IX(i, j + 1)] - 0.5 * minmod(V[IX(i, j + 2)] - V[IX(i, j + 1)], V[IX(i, j + 1)] - V[IX(i, j)]);
+            U_up[IXV(i - 2, j - 1)] = primitive2conserved(tmpV);
         }
     }
 }
@@ -183,17 +194,22 @@ inline vec4 FVM_Solver::calc_G(const vec4& U_in) const{
 
 void FVM_Solver::rusanov() {
     for (int i{0}; i < ni + 1; i++) {
-        for (int j{0}; j < ni; j++) {
+        for (int j{0}; j < nj; j++) {
             int ind = IXH(i, j);
             F_f[ind] = 0.5 * (calc_F(U_left[ind]) + calc_F(U_right[ind])
                               - std::max(calc_sprad_x(U_left[ind]), calc_sprad_x(U_right[ind])) * (U_right[ind] - U_left[ind]));
+            //std::cout << U_right[ind]<<std::endl;
+            //std::cout <<F_f[ind]<<std::endl;
         }
     }
     for (int i{0}; i < ni; i++) {
         for (int j{0}; j < nj + 1; j++) {
             int ind = IXV(i, j);
-            F_f[ind] = 0.5 * (calc_G(U_down[ind]) + calc_G(U_up[ind])
-                              - std::max(calc_sprad_y(U_down[ind]), calc_sprad_y(U_up[ind])) * (U_down[ind] - U_up[ind]));
+            G_f[ind] = 0.5 * (calc_G(U_down[ind]) + calc_G(U_up[ind])
+                              - std::max(calc_sprad_y(U_down[ind]), calc_sprad_y(U_up[ind])) * (U_up[ind] - U_down[ind]));
+            //std::cout << G_f[ind]<<std::endl;
+            //std::cout << calc_G(U_down[ind])<<std::endl;
+            //std::cout << U_up[ind]<<std::endl;
         }
     }
 }
@@ -216,6 +232,9 @@ double FVM_Solver::calc_timestep(double CFL) const {
     double maxval{0};
     for (int i{0}; i < (ni + 4) * (nj + 4); i++) {
         maxval = std::max(maxval, calc_sprad_x(U[i]) / dx + calc_sprad_y(U[i]) / dy);
+        //cout << calc_P(U[i])<<endl;
+        //cout << U[i]<<endl;
+        //cout << calc_sprad_x(U[i])<<endl;
     }
     return CFL / maxval;
 }

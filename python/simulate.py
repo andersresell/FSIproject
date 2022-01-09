@@ -5,11 +5,11 @@ from numpy import genfromtxt
 
 Lx = 1
 Ly = 1
-ni = 10
-nj = 10
+ni = 100
+nj = 100
 dx = Lx/ni
 dy = Ly/nj
-n_timesteps = 10
+n_timesteps = 100
 x = np.linspace(dx/2,Lx-dx/2,ni)
 y = np.linspace(dy/2,Ly-dy/2,nj)
 
@@ -20,6 +20,6 @@ for n in range(0,n_timesteps+1):
     E = E.reshape((ni,nj))
     plt.clf()
     cs = plt.contourf(x,y,E)
-    plt.pause(0.3)
+    plt.pause(0.000001)
     print(n)
 plt.show()

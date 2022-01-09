@@ -46,3 +46,6 @@ MakeFile
 !libs/imgui/
 !libs/implot/
 !libs/glfw/
+
+#text files
+*.csv

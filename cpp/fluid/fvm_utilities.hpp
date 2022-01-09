@@ -29,9 +29,20 @@ struct vec4 {
 
     vec4 operator-(const vec4 &rhs) const { return {u1 - rhs.u1, u2 - rhs.u2, u3 - rhs.u3, u4 - rhs.u4}; }
 
-    friend vec4 operator*(const double &lhs, const vec4 &rhs){
+    friend vec4 operator*(const double &lhs, const vec4 &rhs) {
         return {lhs * rhs.u1, lhs * rhs.u2, lhs * rhs.u3, lhs * rhs.u4};
     }
+
+    friend std::ostream &operator<<(std::ostream &os, const vec4 &rhs) {
+        return os << rhs.u1 << "," << rhs.u2 << "," << rhs.u3 << "," << rhs.u4;
+    }
+
+/*    void set_zero() {
+        u1 = 0;
+        u2 = 0;
+        u3 = 0;
+        u4 = 0;
+    }*/
 };
 
 

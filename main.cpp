@@ -9,8 +9,8 @@
 int main() {
     std::cout << "Hello, World!" << std::endl;
 
-    int ni{2};
-    int nj{2};
+    int ni{100};
+    int nj{100};
     double Lx{1};
     double Ly{1};
     double CFL{0.5};
@@ -24,7 +24,7 @@ int main() {
 
 
     FSI_Solver fsi{fvm};
-    fsi.solve(1);
+    fsi.solve(0.01);
     //fsi.solve(1);
 
 }

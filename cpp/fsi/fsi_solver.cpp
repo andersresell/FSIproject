@@ -20,6 +20,6 @@ void FSI_Solver::solve(double t_end){
         n++;
         dt = fvm.ode_step();
         t += dt;
-        if (n >= MAX_TIMESTEPS) break;
+        if (n > MAX_TIMESTEPS) break;
     }
 }
