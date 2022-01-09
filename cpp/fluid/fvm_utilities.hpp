@@ -88,6 +88,7 @@ public:
     {
     }
 };
+void field2console(vec4* U_in,int ni, int nj,int fieldvar);
 
 void write_simple_fvm_csv_file(std::string filename,vec4* U_in, int ni, int nj);
 

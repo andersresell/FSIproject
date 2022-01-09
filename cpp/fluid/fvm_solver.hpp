@@ -38,7 +38,7 @@ private:
     vec4 primitive2conserved(const vec4& V_in);
     vec4 minmod(const vec4& a, const vec4& b) const;
     //void calc_P(vec4* U_in);
-    double calc_P(const vec4& U_in) const;
+    static double calc_P(const vec4& U_in);
     vec4 calc_F(const vec4& U_in) const;
     vec4 calc_G(const vec4& U_in) const;
     void rusanov();

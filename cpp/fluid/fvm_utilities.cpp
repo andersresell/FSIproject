@@ -25,6 +25,20 @@ void ExternalBCs::set_BCs(vec4* U_in) {
     }
 }
 
+void field2console(vec4* U_in,int ni, int nj,int fieldvar) {
+    //for debugging purposes. prints the field of field variable i in a carthesian manner
+    assert(fieldvar >= 0 && fieldvar <= 3);
+
+    for (int i{0}; i < nj; i++) {
+        for (int j{0}; j < ni; j++) {
+            auto Uptr = (double *) &U_in[IX(i, j)];
+            std::cout << Uptr[fieldvar] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+}
+
 void write_simple_fvm_csv_file(std::string filename,vec4* U_in, int ni, int nj){
     std::ofstream ost{"../python/fvm_output/" + filename};
     //ost << ni << "," << nj << std::endl;

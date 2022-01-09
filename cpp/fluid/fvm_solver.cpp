@@ -25,12 +25,13 @@ FVM_Solver::FVM_Solver(int ni, int nj, double L_x, double L_y, double CFL, OdeSc
     }
 }
 double FVM_Solver::ode_step(){
+    external_bcs.set_BCs(U); //External bc's are only applied once per timestep regardless of ode scheme for now
     double dt = calc_timestep(CFL);
     std::cout << "dt = " << dt << std::endl;
-    external_bcs.set_BCs(U); //External bc's are only applied once per timestep regardless of ode scheme for now
     switch (ode_scheme){
         case OdeScheme::ExplicitEuler: {
             eval_RHS(U);
+            //field2console(Res,ni,nj,3,false);
             for (int i{2}; i < ni+2; i++) {
                 for (int j{2}; j < nj + 2; j++) {
                     U[IX(i, j)] = U[IX(i, j)] + dt * Res[IXR(i, j)];
@@ -43,6 +44,7 @@ double FVM_Solver::ode_step(){
             break;
         }
     }
+    //field2console(U,ni,nj,3);
     return dt;
 }
 
@@ -55,6 +57,8 @@ void FVM_Solver::eval_RHS(vec4* U_in){
             break;
         }
     }
+    field2console(F_f,ni+1,nj,2);
+
     for (int i{0};i<ni;i++) {
         for (int j{0}; j < nj; j++) {
             Res[IXR(i, j)] =
@@ -131,8 +135,8 @@ void FVM_Solver::calc_P(vec4* U_in){
     }
 }*/
 
-inline double FVM_Solver::calc_P(const vec4& U_in) const{
-    return (Gamma - 1) * (U_in.u4 - 0.5 * (U_in.u2 * U_in.u2 + U_in.u3 * U_in.u3)) /U_in.u1;
+double FVM_Solver::calc_P(const vec4& U_in){
+    return (Gamma - 1) * (U_in.u4 - 0.5 * (U_in.u2 * U_in.u2 + U_in.u3 * U_in.u3) /U_in.u1);
 }
 
 vec4 FVM_Solver::primitive2conserved(const vec4& V_in) {
@@ -194,11 +198,11 @@ void FVM_Solver::rusanov() {
     }
 }
 
-inline double FVM_Solver::calc_sprad_x(const vec4& U_in) const{
+double FVM_Solver::calc_sprad_x(const vec4& U_in) const{
     return std::abs(U_in.u2/U_in.u1) + calc_sound_speed(U_in);
 }
 
-inline double FVM_Solver::calc_sprad_y(const vec4& U_in) const{
+double FVM_Solver::calc_sprad_y(const vec4& U_in) const{
     return std::abs(U_in.u3/U_in.u1) + calc_sound_speed(U_in);
 }
 

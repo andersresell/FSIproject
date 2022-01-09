@@ -9,7 +9,7 @@
 #include "../fluid/fvm_utilities.hpp"
 #include "../../includes.hpp"
 
-constexpr unsigned int MAX_TIMESTEPS{10};
+constexpr unsigned int MAX_TIMESTEPS{1};
 
 class FSI_Solver{
     FVM_Solver& fvm;

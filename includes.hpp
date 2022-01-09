@@ -11,5 +11,6 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <cassert>
 
 #endif //FSIPROJECT_INCLUDES_HPP
