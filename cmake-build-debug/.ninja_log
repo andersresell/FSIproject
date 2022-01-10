@@ -1,14 +1,10 @@
 # ninja log v5
-0	391	1641703704019553858	CMakeFiles/FSIproject.dir/cpp/fsi/fsi_solver.cpp.o	b734c0ceb3248c71
+1	440	1641775639474256066	CMakeFiles/FSIproject.dir/cpp/fsi/fsi_solver.cpp.o	b734c0ceb3248c71
 1	462	1641775340274907003	CMakeFiles/FSIproject.dir/cpp/fluid/fvm_solver.cpp.o	fcd510e812ce69c2
-0	23	1641775466594632088	build.ninja	baa8160201de934
-1	398	1641704224409387048	CMakeFiles/FSIproject.dir/main.cpp.o	f9ed526e616bfc8f
+0	30	1641858609372596845	build.ninja	baa8160201de934
+0	457	1641775639490256032	CMakeFiles/FSIproject.dir/main.cpp.o	f9ed526e616bfc8f
 1	26	1640816540214628638	CMakeFiles/FSIproject.dir/cpp/fsi/fsi.cpp.o	f67089dedf3ac65d
-462	547	1641775340358906820	FSIproject	2161fd51ef6c2be1
+457	544	1641775639574255848	FSIproject	2161fd51ef6c2be1
 1	756	1641702372920119130	CMakeFiles/FSIproject.dir/cpp/fluid/fvm_utilities.cpp.o	3cd45dbf45a17ed3
 1	381	1640818668082622632	CMakeFiles/FSIproject.dir/cpp/fluid/fvm_step.cpp.o	cc2eb9a1cf1f00b7
 2	711	1641702372876119099	CMakeFiles/FSIproject.dir/cpp/fluid/fvm_test.cpp.o	4a4b2d5fe6746236
-0	30	1641775466594632088	build.ninja	baa8160201de934
-1	440	1641775639474256066	CMakeFiles/FSIproject.dir/cpp/fsi/fsi_solver.cpp.o	b734c0ceb3248c71
-0	457	1641775639490256032	CMakeFiles/FSIproject.dir/main.cpp.o	f9ed526e616bfc8f
-457	544	1641775639574255848	FSIproject	2161fd51ef6c2be1

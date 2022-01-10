@@ -20,11 +20,13 @@ int main() {
 
     //write_simple_fvm_csv_file("testfile.csv",fvm.U,fvm.ni,fvm.nj);
     //fvm.ode_step();
-    //std::cout << "hello\n";
+    //std::cout << "hello\n"j;
 
 
     FSI_Solver fsi{fvm};
     fsi.solve(0.01);
     //fsi.solve(1);
+
+
 
 }
