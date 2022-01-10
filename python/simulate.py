@@ -9,7 +9,7 @@ ni = 100
 nj = 100
 dx = Lx/ni
 dy = Ly/nj
-n_timesteps = 100
+n_timesteps = 2000
 x = np.linspace(dx/2,Lx-dx/2,ni)
 y = np.linspace(dy/2,Ly-dy/2,nj)
 
