@@ -97,7 +97,7 @@ namespace fluid {
     public:
         AllWalls(int ni, int nj) : west{VerticalInvicidWall{}}, east{VerticalInvicidWall{}},
                                    south{HorizontalInvicidWall{}}, north{HorizontalInvicidWall{}},
-                                   ExternalBCs(ni, ni, west, east, south, north) {
+                                   ExternalBCs(ni, nj, west, east, south, north) {
         }
     };
 
