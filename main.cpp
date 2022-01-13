@@ -10,7 +10,7 @@
 
 int main() {
     std::cout << "Hello, World!" << std::endl;
-    int ni{200};
+    int ni{500};
     int nj{100};
     double L_x{10};
     double L_y{2};
