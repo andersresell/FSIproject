@@ -8,7 +8,7 @@
 #include "fvm_solver.hpp"
 #include "../../includes.hpp"
 
-namespace FVM_Test{
+namespace fluid{
 
     void set_inital_cond1(vec4* U, int ni, int nj);
 

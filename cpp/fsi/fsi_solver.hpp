@@ -7,18 +7,32 @@
 
 #include "../fluid/fvm_solver.hpp"
 #include "../fluid/fvm_utilities.hpp"
+#include "../fluid/fvm_test.hpp"
 #include "../../includes.hpp"
 
-constexpr unsigned int MAX_TIMESTEPS{2000};
+enum class StoppingCrit{Time=0, Timesteps};
 
 class FSI_Solver{
-    FVM_Solver& fvm;
-
+    fluid::FVM_Solver& fvm;
+    std::pair<StoppingCrit,double> stopping_crit;
 public:
-    FSI_Solver(FVM_Solver& fvm);
+    FSI_Solver(fluid::FVM_Solver& fvm);
 
-    void solve(double t_end);
+    int solve();
 
+    //use any either of the two functions to define the stopping criterion of the simulation
+    void set_timesteps(int n_timesteps) {stopping_crit = {StoppingCrit::Timesteps, n_timesteps};}
+    void set_time(double t_end) {stopping_crit = {StoppingCrit::Time, t_end};}
+
+
+    static void fluid_solve(int ni,
+                     int nj,
+                     double L_x,
+                     double L_y,
+                     double CFL,
+                     int n_timesteps);
 };
+
+
 
 #endif //FSIPROJECT_FSI_SOLVER_HPP
