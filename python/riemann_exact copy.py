@@ -22,6 +22,12 @@ p_r = 1
 # rho_r = 3
 # u_r = 0
 # p_r = 3
+# rho_l = 1
+# u_l = -1
+# p_l = 1
+# rho_r = 1
+# u_r = 1
+# p_r = 1
 
 
 gamma = 1.4
@@ -44,6 +50,22 @@ def phi_r(p):
 
 def phi(p):
     return phi_l(p) - phi_r(p)
+
+
+# p = np.linspace(0,4)
+# u_left = np.zeros(p.shape)
+# u_right = np.zeros(p.shape)
+# for i in range(0,p.shape[0]):
+#     u_left[i] = phi_l(p[i])
+#     u_right[i] = phi_r(p[i])
+# plt.plot(p_l,u_l,'*')
+# plt.plot(p_r,u_r,'*')
+# plt.plot(p,u_left)
+# plt.plot(p,u_right)
+# p_star = op.fsolve(phi,1) #Finding the pressure at the intermediate state
+# p_star = p_star[0] #jalla fix. Burde velge en root finder som returnerer en skalar
+# u_star = phi_l(p_star) #Finding velocity at intermediate state
+# plt.plot(p_star,u_star,'*')
 
 #Rarefaction structure
 #rarefactions in field 1:
@@ -70,25 +92,9 @@ u_star = phi_l(p_star) #Finding velocity at intermediate state
 rho_l_star = rho_l*(1 + beta*p_star/p_l)/(p_star/p_l + beta) #Density at the left side of contact discontinuity
 rho_r_star = rho_r*(1 + beta*p_star/p_r)/(p_star/p_r + beta) #Density at the right side of contact discontinuity
 
-# p_plt = np.linspace(0,4)
-# u_left = np.zeros(p_plt.shape)
-# u_right = u_left.copy()
-
-# for i in range(0,p_plt.shape[0]):
-#     u_left[i] = phi_l(p_plt[i])
-#     u_right[i] = phi_r(p_plt[i])
-
-# plt.plot(p_plt,u_left)
-# plt.plot(p_plt,u_right)
-# plt.plot(p_star,phi_r(p_star),'*')
-# plt.plot(p_l,u_l,'*')
-# plt.plot(p_r,u_l,'*')
-
-# plt.show()
 
 #Determine the wave speeds of the problem. In the case of a rarefaction, the speeds to the left and right of 
 # the rarefaction is found
-
 if p_star <= p_l:
     #1-rarefaction. Note that this case is also able to handle the case when p_star == p_l, where the characteristic speed 
     # becomes the same at both sides of the wave
@@ -112,12 +118,19 @@ elif p_star > p_r:
     #3-shock
     s3 = (rho_r*u_r - rho_r_star*u_star)/(rho_r - rho_r_star)
 
+print(rho_l_star)
+print(rho_r_star)
+
 #Determine the solution as a function of x(t)
 x = np.linspace(-2,2,500)
 t = 1
+# = np.linspace(-10,10,500)
+#t = 4
 rho = np.ones(x.shape)*rho_r
 u = np.ones(x.shape)*u_r
 p = np.ones(x.shape)*p_r
+
+
 
 if p_star <= p_l: #1-rarefaction
     #left of 1-rarefaction
@@ -164,60 +177,11 @@ if p_star <= p_r: #3-rarefaction
     p[ind] = p_tmp
 elif p_star > p_r: #3-shock
     #left of 3-shock
-    ind = np.where(np.logical_and(x > s2, x <= s3))
+    ind = np.where(np.logical_and(x > s2*t, x <= s3*t))
     rho[ind] = rho_r_star
     u[ind] = u_star
     p[ind] = p_star
     #right of shock is allready set
-
-
-#Determine the wave speeds. Assuming p_l > p_r for now
-
-# s1_l = u_l - c_l
-# c_star = math.sqrt(gamma*p_star/rho_l_star)
-# s1_r = u_star - c_star
-
-
-# s2 = u_star
-# s3 = (rho_r*u_r - rho_r_star*u_star)/(rho_r - rho_r_star)
-
-
-# x = np.linspace(-2,2,500)
-# t = 1
-# rho = np.ones(x.shape)*rho_r
-# u = np.ones(x.shape)*u_r
-# p = np.ones(x.shape)*p_r
-
-# #left of 1-rarefaction
-# ind = np.where(x <= s1_l*t)
-# rho[ind] = rho_l
-# u[ind] = u_l
-# p[ind] = p_l
-
-# #inside 1-rarefaction
-# ind = np.where(np.logical_and(x > s1_l*t, x <= s1_r*t))
-# xi = x[ind]/t
-# rho_tmp,u_tmp,p_tmp = rarefaction1(xi)
-# rho[ind] = rho_tmp
-# u[ind] = u_tmp
-# p[ind] = p_tmp
-
-# #middle state
-# ind = np.where(np.logical_and(x > s1_r*t, x <= s3))
-# rho[ind] = rho_r_star
-# u[ind] = u_star
-# p[ind] = p_star
-# #setting correct density left of the contact discontinuity
-# ind = np.where(np.logical_and(x > s1_r*t, x <= s2))
-# rho[ind] = rho_l_star
-
-
-# y = x**2
-# fig, axs = plt.subplots(2)
-# fig.suptitle('Vertically stacked subplots')
-# axs[0].plot(x, y)
-# axs[1].plot(x, -y)
-# plt.show()
 
 figure, axis = plt.subplots(3)
 axis[0].plot(x,rho)

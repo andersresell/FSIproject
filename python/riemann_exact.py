@@ -129,7 +129,6 @@ figure, axis = plt.subplots(3)
 axis[0].plot(x,rho)
 axis[0].set_xlabel("x")
 axis[0].set_ylabel("Density")
-#axis[0].axis('equal')
 
 axis[1].plot(x,u)
 axis[1].set_xlabel("x")
