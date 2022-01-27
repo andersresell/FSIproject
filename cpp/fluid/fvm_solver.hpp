@@ -1,6 +1,9 @@
 //
 // Created by anders on 12/26/21.
 //
+//A carthesian FVM solver employing a semi discrete approach, using an ODE solver. It uses MUSCL extrapolation
+// with minmod limiter to get second order accuracy and an approximate Riemann solver to compute the fluxes.
+// The boundaries are handled by ghost points
 
 #ifndef FSIPROJECT_FVM_SOLVER_HPP
 #define FSIPROJECT_FVM_SOLVER_HPP
@@ -31,59 +34,95 @@ namespace fluid {
         FVM_Solver(int ni, int nj, double L_x, double L_y, double CFL, OdeScheme ode_scheme, FluxScheme flux_scheme,
                    ExternalBCs external_bcs);
 
-        void write_simple_fvm_csv_file(std::string filename);
+        void write_simple_fvm_csv_file(std::string filename) const;
 
         double ode_step();
 
 
     private:
+        double calc_timestep(double CFL) const;
+
         void eval_RHS(vec4 *U_in);
 
         void MUSCL_extrapolate(vec4 *U_in);
 
         void conserved2primitive(vec4 *U_in);
 
-        vec4 conserved2primitive(const vec4 &U_in);
+        //vec4 conserved2primitive(const vec4 &U_in);
 
-        vec4 primitive2conserved(const vec4 &V_in);
-
-        vec4 minmod(const vec4 &a, const vec4 &b) const;
-
-        //void calc_P(vec4* U_in);
-        static double calc_P(const vec4 &U_in);
-
-        vec4 calc_F(const vec4 &U_in) const;
-
-        vec4 calc_G(const vec4 &U_in) const;
+        static vec4 primitive2conserved(const vec4 &V_in);
 
         void rusanov();
 
-        double calc_sprad_x(const vec4 &U_in) const;
+        static vec4 HLLC(const vec4& U_L,const vec4& U_R);
 
-        double calc_sprad_y(const vec4 &U_in) const;
+        static double calc_P(const vec4 &U_in);
 
-        double calc_sound_speed(const vec4 &U_in) const;
+        static vec4 calc_F(const vec4 &U_in);
 
-        double calc_timestep(double CFL) const;
+        static vec4 calc_G(const vec4 &U_in);
 
-        //External boundary conditions
-        /*
-        void set_external_BCs();
-        bc_func_ptr select_bc_type(const BC& bc);
-        void set_western_BCs(bc_func_ptr fptr);
-        void set_eastern_BCs(bc_func_ptr fptr);
-        void set_southern_BCs(bc_func_ptr fptr);
-        void set_northern_BCs(bc_func_ptr fptr);
-    */
+        static double calc_sound_speed(const vec4 &U_in);
 
-        // static vec4 set_vertical_wall(const vec4& U_in);
-        //static vec4 set_horizontal_wall(const vec4& U_in);
+        static vec4 minmod(const vec4 &a, const vec4 &b);
+
+        static double calc_sprad_x(const vec4 &U_in);
+
+        static double calc_sprad_y(const vec4 &U_in);
 
     public:
         ~FVM_Solver();
     };
+
+
+    /*
+    inline vec4 FVM_Solver::conserved2primitive(const vec4 &U_in) {
+        return {U_in.u1,
+                U_in.u2 / U_in.u1,
+                U_in.u3 / U_in.u1,
+                calc_P(U_in)};
+    }*/
+
+    inline double FVM_Solver::calc_P(const vec4 &U_in) {
+        return (Gamma - 1) * (U_in.u4 - 0.5 * (U_in.u2 * U_in.u2 + U_in.u3 * U_in.u3) / U_in.u1);
+    }
+
+    inline vec4 FVM_Solver::primitive2conserved(const vec4 &V_in) {
+        return {V_in.u1,
+                V_in.u2 * V_in.u1,
+                V_in.u3 * V_in.u1,
+                V_in.u4 / (Gamma - 1) + 0.5 * V_in.u1 * (V_in.u2 * V_in.u2 + V_in.u3 * V_in.u3)};
+    }
+
+    inline vec4 FVM_Solver::calc_F(const vec4 &U_in){
+        double P = calc_P(U_in);
+        return {U_in.u2,
+                U_in.u2 * U_in.u2 / U_in.u1 + P,
+                U_in.u2 * U_in.u3 / U_in.u1,
+                (U_in.u4 + P) * U_in.u2 / U_in.u1};
+    }
+
+    inline vec4 FVM_Solver::calc_G(const vec4 &U_in) {
+        double P = calc_P(U_in);
+        return {U_in.u3,
+                U_in.u2 * U_in.u3 / U_in.u1,
+                U_in.u3 * U_in.u3 / U_in.u1 + P,
+                (U_in.u4 + P) * U_in.u3 / U_in.u1};
+    }
+
+    inline double FVM_Solver::calc_sound_speed(const vec4 &U_in) {
+        return sqrt(Gamma / U_in.u1 * calc_P(U_in));
+    }
+
+    inline double FVM_Solver::calc_sprad_x(const vec4 &U_in) {
+        return std::abs(U_in.u2 / U_in.u1) + calc_sound_speed(U_in);
+    }
+
+    inline double FVM_Solver::calc_sprad_y(const vec4 &U_in) {
+        return std::abs(U_in.u3 / U_in.u1) + calc_sound_speed(U_in);
+    }
+
+
+
 }
-
-
-
 #endif //FSIPROJECT_FVM_SOLVER_HPP

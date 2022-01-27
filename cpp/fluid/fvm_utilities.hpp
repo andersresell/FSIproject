@@ -37,20 +37,13 @@ namespace fluid {
             return os << rhs.u1 << "," << rhs.u2 << "," << rhs.u3 << "," << rhs.u4;
         }
 
-/*    void set_zero() {
-        u1 = 0;
-        u2 = 0;
-        u3 = 0;
-        u4 = 0;
-    }*/
     };
-
 
     enum class OdeScheme {
-        ExplicitEuler=0, TVD_RK3
+        ExplicitEuler, TVD_RK3
     };
     enum class FluxScheme {
-        Rusanov=0, HLLC
+        Rusanov, HLLC
     };
 
 

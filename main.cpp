@@ -12,8 +12,8 @@ int main() {
     std::cout << "Hello, World!" << std::endl;
     int ni{500};
     int nj{100};
-    double L_x{10};
-    double L_y{2};
+    double L_x{100};
+    double L_y{10};
     double CFL{0.8};
     int n_timesteps{1500};
     int write_stride{10};

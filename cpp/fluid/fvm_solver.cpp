@@ -28,7 +28,7 @@ namespace fluid {
         }
     }
 
-    void FVM_Solver::write_simple_fvm_csv_file(std::string filename) {
+    void FVM_Solver::write_simple_fvm_csv_file(std::string filename) const{
         std::ofstream ost{"../python/fvm_output/" + filename};
         if (!ost) {
             std::cerr << "Error: couldn't open file\n";
@@ -79,7 +79,7 @@ namespace fluid {
         }
 
         for (int i{2}; i < ni + 2; i++) {
-            for (int j{2}; j < nj+2; j++) {
+            for (int j{2}; j < nj + 2; j++) {
                 Res[IXR(i, j)] =
                         -1 / dx * (F_f[IXF(i, j)] - F_f[IXF(i - 1, j)]) -
                         1 / dy * (G_f[IXG(i, j)] - G_f[IXG(i, j - 1)]);
@@ -107,7 +107,7 @@ namespace fluid {
         }
     }
 
-    inline vec4 FVM_Solver::minmod(const vec4 &a, const vec4 &b) const {
+    vec4 FVM_Solver::minmod(const vec4 &a, const vec4 &b) {
         return {sgn(a.u1) * std::max(0.0, std::min(std::abs(a.u1), sgn(a.u1) * b.u1)),
                 sgn(a.u2) * std::max(0.0, std::min(std::abs(a.u2), sgn(a.u2) * b.u2)),
                 sgn(a.u3) * std::max(0.0, std::min(std::abs(a.u3), sgn(a.u3) * b.u3)),
@@ -121,40 +121,6 @@ namespace fluid {
             V[i].u3 = U_in[i].u3 / U_in[i].u1;
             V[i].u4 = calc_P(U_in[i]);
         }
-    }
-
-    vec4 FVM_Solver::conserved2primitive(const vec4 &U_in) {
-        return {U_in.u1,
-                U_in.u2 / U_in.u1,
-                U_in.u3 / U_in.u1,
-                calc_P(U_in)};
-    }
-
-    double FVM_Solver::calc_P(const vec4 &U_in) {
-        return (Gamma - 1) * (U_in.u4 - 0.5 * (U_in.u2 * U_in.u2 + U_in.u3 * U_in.u3) / U_in.u1);
-    }
-
-    vec4 FVM_Solver::primitive2conserved(const vec4 &V_in) {
-        return {V_in.u1,
-                V_in.u2 * V_in.u1,
-                V_in.u3 * V_in.u1,
-                V_in.u4 / (Gamma - 1) + 0.5 * V_in.u1 * (V_in.u2 * V_in.u2 + V_in.u3 * V_in.u3)};
-    }
-
-    inline vec4 FVM_Solver::calc_F(const vec4 &U_in) const {
-        double P = calc_P(U_in);
-        return {U_in.u2,
-                U_in.u2 * U_in.u2 / U_in.u1 + P,
-                U_in.u2 * U_in.u3 / U_in.u1,
-                (U_in.u4 + P) * U_in.u2 / U_in.u1};
-    }
-
-    inline vec4 FVM_Solver::calc_G(const vec4 &U_in) const {
-        double P = calc_P(U_in);
-        return {U_in.u3,
-                U_in.u2 * U_in.u3 / U_in.u1,
-                U_in.u3 * U_in.u3 / U_in.u1 + P,
-                (U_in.u4 + P) * U_in.u3 / U_in.u1};
     }
 
     void FVM_Solver::rusanov() {
@@ -178,19 +144,24 @@ namespace fluid {
             }
         }
     }
-    double FVM_Solver::calc_sprad_x(const vec4 &U_in) const {
-        return std::abs(U_in.u2 / U_in.u1) + calc_sound_speed(U_in);
+
+    vec4 FVM_Solver::HLLC(const vec4& U_L,const vec4& U_R){
+        double S_L, S_star, S_R;
+        vec4 U_bar, U_star_L, U_star_R;
+        if S_L >= 0{
+            U_bar = U_L;
+        }
+        else if (S_star >= 0){
+            U_bar = U_star_L;
+        }
+        else if (S_R >= 0){
+            U_bar = U_star_R;
+        }
+        else{ //S_R <= 0
+            U_bar = U_R;
+        }
+
     }
-
-    double FVM_Solver::calc_sprad_y(const vec4 &U_in) const {
-        return std::abs(U_in.u3 / U_in.u1) + calc_sound_speed(U_in);
-    }
-
-
-    inline double FVM_Solver::calc_sound_speed(const vec4 &U_in) const {
-        return sqrt(Gamma / U_in.u1 * calc_P(U_in));
-    }
-
 
     double FVM_Solver::calc_timestep(double CFL) const {
         double maxval{0};
