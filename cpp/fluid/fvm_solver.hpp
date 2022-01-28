@@ -34,10 +34,9 @@ namespace fluid {
         FVM_Solver(int ni, int nj, double L_x, double L_y, double CFL, OdeScheme ode_scheme, FluxScheme flux_scheme,
                    ExternalBCs external_bcs);
 
-        void write_simple_fvm_csv_file(std::string filename) const;
+        void write_simple_fvm_csv_file(const std::string& filename);
 
         double ode_step();
-
 
     private:
         double calc_timestep(double CFL) const;

@@ -23,14 +23,14 @@ for n in range(0,n_timesteps+1):
             #y_stride = np.arange(0,nj,int(nj/100))
             x = np.linspace(dx/2,L_x-dx/2,ni)
             y = np.linspace(dy/2,L_y-dy/2,nj)
-            levels = np.linspace(1e5,2e6,100)
+            levels = np.linspace(0,0.5e6,100)
         my_data = my_data[1::,:]
-        E = my_data[:,3]
-        E = np.transpose(E.reshape((ni,nj)))
+        p = my_data[:,3]
+        p = np.transpose(p.reshape((ni,nj)))
 
         plt.clf()
-        cs = plt.contourf(x,y,E, levels=levels, cmap=plt.get_cmap('hot'))
+        cs = plt.contourf(x,y,p, levels=levels, cmap=plt.get_cmap('hot'))
         plt.axis('equal')
-        plt.pause(0.000001)
+        plt.pause(0.00001)
     print(n)
 plt.show()

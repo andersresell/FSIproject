@@ -28,7 +28,8 @@ namespace fluid {
         }
     }
 
-    void FVM_Solver::write_simple_fvm_csv_file(std::string filename) const{
+    void FVM_Solver::write_simple_fvm_csv_file(const std::string& filename) {
+        conserved2primitive(U);
         std::ofstream ost{"../python/fvm_output/" + filename};
         if (!ost) {
             std::cerr << "Error: couldn't open file\n";
@@ -40,8 +41,8 @@ namespace fluid {
         ost << "#u1,u2,u3,u4\n";
         for (int i{2}; i < ni + 2; i++) {
             for (int j{2}; j < nj + 2; j++) {
-                ost << U[IX(i, j)].u1 << "," << U[IX(i, j)].u2 << "," << U[IX(i, j)].u3 << ","
-                    << U[IX(i, j)].u4 << "\n";
+                ost << V[IX(i, j)].u1 << "," << V[IX(i, j)].u2 << "," << V[IX(i, j)].u3 << ","
+                    << V[IX(i, j)].u4 << "\n";
             }
         }
     }
@@ -50,7 +51,6 @@ namespace fluid {
     double FVM_Solver::ode_step() {
         external_bcs.set_BCs(U); //External bc's are only applied once per timestep regardless of ode scheme for now
         double dt = calc_timestep(CFL);
-        std::cout << "dt = " << dt << std::endl;
         switch (ode_scheme) {
             case OdeScheme::ExplicitEuler: {
                 eval_RHS(U);
@@ -62,7 +62,26 @@ namespace fluid {
                 break;
             }
             case OdeScheme::TVD_RK3: {
-                //IMPLEMENT
+                eval_RHS(U);
+                for (int i{2}; i < ni + 2; i++) {
+                    for (int j{2}; j < nj + 2; j++) {
+                        U_tmp[IX(i, j)] = U[IX(i, j)] + dt * Res[IXR(i, j)];
+                    }
+                }
+                external_bcs.set_BCs(U_tmp);
+                eval_RHS(U_tmp);
+                for (int i{2}; i < ni + 2; i++) {
+                    for (int j{2}; j < nj + 2; j++) {
+                        U_tmp[IX(i, j)] = 3.0 / 4 * U[IX(i, j)] + 1.0 / 4 * U_tmp[IX(i, j)] + dt / 4 * Res[IXR(i, j)];
+                    }
+                }
+                external_bcs.set_BCs(U_tmp);
+                eval_RHS(U_tmp);
+                for (int i{2}; i < ni + 2; i++) {
+                    for (int j{2}; j < nj + 2; j++) {
+                        U[IX(i, j)] = 1.0 / 3 * U[IX(i, j)] + 2.0 / 3 * U_tmp[IX(i, j)] + 2 * dt / 3 * Res[IXR(i, j)];
+                    }
+                }
                 break;
             }
         }
@@ -71,6 +90,7 @@ namespace fluid {
 
     void FVM_Solver::eval_RHS(vec4 *U_in) {
         MUSCL_extrapolate(U_in); //eval U_left, U_right etc
+
         switch (flux_scheme) {
             case FluxScheme::Rusanov: {
                 rusanov();

@@ -33,6 +33,7 @@ public:
                      double CFL,
                      int n_timesteps,
                      int write_stride,
+                     fluid::OdeScheme ode_scheme,
                      fluid::FluxScheme flux_scheme);
 };
 
