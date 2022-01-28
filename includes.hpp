@@ -13,5 +13,6 @@
 #include <map>
 #include <cassert>
 #include <filesystem>
+#include <chrono>
 
 #endif //FSIPROJECT_INCLUDES_HPP

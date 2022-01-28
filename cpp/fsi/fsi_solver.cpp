@@ -10,7 +10,8 @@ FSI_Solver::FSI_Solver(fluid::FVM_Solver& fvm, int write_stride)
 {
 }
 
-int FSI_Solver::solve(){
+int FSI_Solver::solve() {
+    auto start_time{std::chrono::high_resolution_clock::now()}; //Start timing
     int n{0};
     double t{0};
     double dt;
@@ -24,19 +25,20 @@ int FSI_Solver::solve(){
         dt = fvm.ode_step();
         std::cout << "dt = " << dt << '\n';
 
-        if (stopping_crit.first == StoppingCrit::Time){
+        if (stopping_crit.first == StoppingCrit::Time) {
             if (stopping_crit.second >= t) break;
-        }
-        else if (stopping_crit.first == StoppingCrit::Timesteps){
-            if (n >= (int)stopping_crit.second) break;
-        }
-        else {
+        } else if (stopping_crit.first == StoppingCrit::Timesteps) {
+            if (n >= (int) stopping_crit.second) break;
+        } else {
             std::cerr << "Invalid stopping criterion\n";
             exit(1);
         }
         t += dt;
         n++;
     }
+    auto stop_time{std::chrono::high_resolution_clock::now()};
+    auto simulation_time{std::chrono::duration_cast<std::chrono::milliseconds>(stop_time - start_time)};
+    std::cout << "Simulation time = " << 1.0e-3 * static_cast<double>(simulation_time.count()) << " seconds\n";
     return n;
 }
 
