@@ -28,23 +28,32 @@ namespace fluid {
         }
     }
 
-    void FVM_Solver::write_simple_fvm_csv_file(const std::string& filename) {
+    void FVM_Solver::write_fvm_csv_out_file(const std::string& output_folder, int n) {
+        //Writing one output data file for every timestep
         conserved2primitive(U);
-        std::ofstream ost{"../python/fvm_output/" + filename};
+        std::ofstream ost{"../python/" + output_folder +  "/fvm_out_t" + std::to_string(n) + ".csv"};
         if (!ost) {
             std::cerr << "Error: couldn't open file\n";
             exit(1);
         }
-        //Header
-        ost << "#ni,nj,L_x,L_y\n";
-        ost << ni << "," << nj << "," << L_x << "," << L_y << std::endl;
-        ost << "#u1,u2,u3,u4\n";
+        ost << "#rho,u,v,p\n";
         for (int i{2}; i < ni + 2; i++) {
             for (int j{2}; j < nj + 2; j++) {
                 ost << V[IX(i, j)].u1 << "," << V[IX(i, j)].u2 << "," << V[IX(i, j)].u3 << ","
                     << V[IX(i, j)].u4 << "\n";
             }
         }
+    }
+    void FVM_Solver::write_fvm_csv_header_file(const std::string& output_folder, int n_last, int write_stride) const{
+        //Writing header file containg information about the simulation. This info is used by the python plotter
+        std::ofstream ost{"../python/" + output_folder + "/header.csv"};
+        if (!ost) {
+            std::cerr << "Error: couldn't open file\n";
+            exit(1);
+        }
+        ost << "#ni,nj,L_x,L_y,n_last,write_stride\n";
+        ost << ni << ',' << nj << ',' << L_x << ',' << L_y << ',' << n_last << ',' << write_stride << std::endl;
+
     }
 
 

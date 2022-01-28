@@ -16,8 +16,9 @@ int main() {
     double L_y{2};
     double CFL{0.8};
     int n_timesteps{500};
+    std::string fvm_output_folder{"fvm_output"};
     int write_stride{10};
-    FSI_Solver::fluid_solve(ni,nj,L_x,L_y,CFL,n_timesteps, write_stride,fluid::OdeScheme::TVD_RK3, fluid::FluxScheme::Rusanov);
+    FSI_Solver::fluid_solve(ni,nj,L_x,L_y,CFL,n_timesteps, write_stride, fvm_output_folder,fluid::OdeScheme::TVD_RK3, fluid::FluxScheme::Rusanov);
 
 
 }

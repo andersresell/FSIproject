@@ -7,7 +7,7 @@ PYBIND11_EMBEDDED_MODULE(test_cmake_build, m) {
 
 int main(int argc, char *argv[]) {
     if (argc != 2)
-        throw std::runtime_error("Expected test.py file as the first argument");
+        throw std::runtime_error("Expected plot.py file as the first argument");
     auto test_py_file = argv[1];
 
     py::scoped_interpreter guard{};
@@ -16,6 +16,6 @@ int main(int argc, char *argv[]) {
     if (m.attr("add")(1, 2).cast<int>() != 3)
         throw std::runtime_error("embed.cpp failed");
 
-    py::module_::import("sys").attr("argv") = py::make_tuple("test.py", "embed.cpp");
+    py::module_::import("sys").attr("argv") = py::make_tuple("plot.py", "embed.cpp");
     py::eval_file(test_py_file, py::globals());
 }

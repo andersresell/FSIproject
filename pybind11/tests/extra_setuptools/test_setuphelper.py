@@ -94,7 +94,7 @@ def test_simple_setup_py(monkeypatch, tmpdir, parallel, std):
     )
     assert len(list(tmpdir.listdir())) == 4  # two files + output + build_dir
 
-    (tmpdir / "test.py").write_text(
+    (tmpdir / "plot.py").write_text(
         dedent(
             u"""\
             import simple_setup
@@ -105,7 +105,7 @@ def test_simple_setup_py(monkeypatch, tmpdir, parallel, std):
     )
 
     subprocess.check_call(
-        [sys.executable, "test.py"], stdout=sys.stdout, stderr=sys.stderr
+        [sys.executable, "plot.py"], stdout=sys.stdout, stderr=sys.stderr
     )
 
 

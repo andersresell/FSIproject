@@ -15,9 +15,10 @@ enum class StoppingCrit{Time=0, Timesteps};
 class FSI_Solver{
     fluid::FVM_Solver& fvm;
     std::pair<StoppingCrit,double> stopping_crit;
-    int write_stride;
+    const int fvm_write_stride;
+    const std::string fvm_output_folder;
 public:
-    FSI_Solver(fluid::FVM_Solver& fvm, int write_stride);
+    FSI_Solver(fluid::FVM_Solver& fvm, int write_stride, std::string fvm_output_folder);
 
     int solve();
 
@@ -33,6 +34,7 @@ public:
                      double CFL,
                      int n_timesteps,
                      int write_stride,
+                     std::string fvm_output_folder,
                      fluid::OdeScheme ode_scheme,
                      fluid::FluxScheme flux_scheme);
 };

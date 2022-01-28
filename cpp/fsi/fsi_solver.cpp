@@ -5,8 +5,8 @@
 #include "fsi_solver.hpp"
 
 
-FSI_Solver::FSI_Solver(fluid::FVM_Solver& fvm, int write_stride)
-    : fvm{fvm}, write_stride{write_stride}
+FSI_Solver::FSI_Solver(fluid::FVM_Solver& fvm, int fvm_write_stride, std::string fvm_output_folder)
+    : fvm{fvm}, fvm_write_stride{fvm_write_stride}, fvm_output_folder{std::move(fvm_output_folder)}
 {
 }
 
@@ -15,23 +15,30 @@ int FSI_Solver::solve() {
     int n{0};
     double t{0};
     double dt;
+    bool breaker{false};
     while (true) {
         std::cout << "FSI solve: n = " + std::to_string(n) + "\n";
-        if (n % write_stride == 0) {
+        if (n % fvm_write_stride == 0) {
             std::cout << "Writing FVM output\n";
-            fvm.write_simple_fvm_csv_file("fvm_out_t" + std::to_string(n) + ".csv");
+            fvm.write_fvm_csv_out_file(fvm_output_folder, n);
         }
 
-        dt = fvm.ode_step();
+        dt = fvm.ode_step(); //Time stepping the fvm simulation
         std::cout << "dt = " << dt << '\n';
 
         if (stopping_crit.first == StoppingCrit::Time) {
-            if (stopping_crit.second >= t) break;
+            if (stopping_crit.second >= t) breaker = true;
         } else if (stopping_crit.first == StoppingCrit::Timesteps) {
-            if (n >= (int) stopping_crit.second) break;
+            if (n >= (int) stopping_crit.second) breaker = true;
         } else {
             std::cerr << "Invalid stopping criterion\n";
             exit(1);
+        }
+        //Writing fvm header at last timestep, since the number of steps can't be known a priori if endtime is
+        //used as stopping criterion
+        if (breaker) {
+            fvm.write_fvm_csv_header_file(fvm_output_folder, n, fvm_write_stride);
+            break;
         }
         t += dt;
         n++;
@@ -48,15 +55,15 @@ void FSI_Solver::fluid_solve(int ni,
                  double L_y,
                  double CFL,
                  int n_timesteps,
-                 int write_stride,
+                 int fvm_write_stride,
+                 std::string fvm_output_folder,
                  fluid::OdeScheme ode_scheme,
                  fluid::FluxScheme flux_scheme) {
     //Should also add functionality for choosing the time scheme, flux scheme, boundaries and initital cond
-    fluid::FVM_Solver fvm{ni, nj, L_x, L_y, CFL, ode_scheme, flux_scheme,
-                          fluid::AllWalls{ni, nj}};
+    fluid::FVM_Solver fvm{ni, nj, L_x, L_y, CFL, ode_scheme, flux_scheme, fluid::AllWalls{ni, nj}};
 
     fluid::set_inital_cond1(fvm.U, fvm.ni, fvm.nj);
-    FSI_Solver fsi{fvm, write_stride};
+    FSI_Solver fsi{fvm, fvm_write_stride, fvm_output_folder};
     fsi.set_timesteps(n_timesteps);
     fsi.solve();
 }
