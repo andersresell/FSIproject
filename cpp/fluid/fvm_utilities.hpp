@@ -29,6 +29,13 @@ namespace fluid {
 
         vec4 operator-(const vec4 &rhs) const { return {u1 - rhs.u1, u2 - rhs.u2, u3 - rhs.u3, u4 - rhs.u4}; }
 
+        void operator*=(double rhs) {
+            u1 *= rhs;
+            u2 *= rhs;
+            u3 *= rhs;
+            u4 *= rhs;
+        }
+
         friend vec4 operator*(const double &lhs, const vec4 &rhs) {
             return {lhs * rhs.u1, lhs * rhs.u2, lhs * rhs.u3, lhs * rhs.u4};
         }

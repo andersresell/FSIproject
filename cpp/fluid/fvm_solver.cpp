@@ -76,6 +76,10 @@ namespace fluid {
                 rusanov();
                 break;
             }
+            case FluxScheme::HLLC: {
+                HLLC();
+                break;
+            }
         }
 
         for (int i{2}; i < ni + 2; i++) {
@@ -145,23 +149,6 @@ namespace fluid {
         }
     }
 
-    vec4 FVM_Solver::HLLC(const vec4& U_L,const vec4& U_R){
-        double S_L, S_star, S_R;
-        vec4 U_bar, U_star_L, U_star_R;
-        if S_L >= 0{
-            U_bar = U_L;
-        }
-        else if (S_star >= 0){
-            U_bar = U_star_L;
-        }
-        else if (S_R >= 0){
-            U_bar = U_star_R;
-        }
-        else{ //S_R <= 0
-            U_bar = U_R;
-        }
-
-    }
 
     double FVM_Solver::calc_timestep(double CFL) const {
         double maxval{0};
@@ -186,5 +173,4 @@ namespace fluid {
             delete[] U_tmp;
         }
     }
-
 }

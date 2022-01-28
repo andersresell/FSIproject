@@ -46,9 +46,10 @@ void FSI_Solver::fluid_solve(int ni,
                  double L_y,
                  double CFL,
                  int n_timesteps,
-                 int write_stride) {
+                 int write_stride,
+                 fluid::FluxScheme flux_scheme) {
     //Should also add functionality for choosing the time scheme, flux scheme, boundaries and initital cond
-    fluid::FVM_Solver fvm{ni, nj, L_x, L_y, CFL, fluid::OdeScheme::ExplicitEuler, fluid::FluxScheme::Rusanov,
+    fluid::FVM_Solver fvm{ni, nj, L_x, L_y, CFL, fluid::OdeScheme::ExplicitEuler, flux_scheme,
                           fluid::AllWalls{ni, nj}};
 
     fluid::set_inital_cond1(fvm.U, fvm.ni, fvm.nj);

@@ -32,7 +32,8 @@ public:
                      double L_y,
                      double CFL,
                      int n_timesteps,
-                     int write_stride);
+                     int write_stride,
+                     fluid::FluxScheme flux_scheme);
 };
 
 

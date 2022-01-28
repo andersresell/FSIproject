@@ -54,7 +54,11 @@ namespace fluid {
 
         void rusanov();
 
-        static vec4 HLLC(const vec4& U_L,const vec4& U_R);
+        void HLLC();
+
+        static vec4 F_f_HLLC(const vec4& U_L,const vec4& U_R); //Computes the HLLC flux F_{i+1/2,j}
+
+        static vec4 G_f_HLLC(const vec4& U_D,const vec4& U_U); //Computes the HLLC flux G_{i,j+1/2}
 
         static double calc_P(const vec4 &U_in);
 

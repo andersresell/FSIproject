@@ -8,7 +8,7 @@ add_executable(FSIproject
         main.cpp
         cpp/fluid/fvm_utilities.hpp cpp/fluid/fvm_utilities.cpp
         cpp/fluid/fvm_solver.cpp cpp/fluid/fvm_solver.hpp
-        cpp/fsi/fsi_solver.cpp cpp/fsi/fsi_solver.hpp includes.hpp cpp/fluid/fvm_test.cpp cpp/fluid/fvm_test.hpp)
+        cpp/fsi/fsi_solver.cpp cpp/fsi/fsi_solver.hpp includes.hpp cpp/fluid/fvm_test.cpp cpp/fluid/fvm_test.hpp cpp/fluid/HLLC.cpp)
 
 
 find_package(PythonLibs REQUIRED)
