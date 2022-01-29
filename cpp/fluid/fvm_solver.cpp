@@ -33,7 +33,7 @@ namespace fluid {
         conserved2primitive(U);
         std::ofstream ost{"../python/" + output_folder +  "/fvm_out_t" + std::to_string(n) + ".csv"};
         if (!ost) {
-            std::cerr << "Error: couldn't open file\n";
+            std::cerr << "Error: couldn't open fvm csv output file\n";
             exit(1);
         }
         ost << "#rho,u,v,p\n";
@@ -48,7 +48,7 @@ namespace fluid {
         //Writing header file containg information about the simulation. This info is used by the python plotter
         std::ofstream ost{"../python/" + output_folder + "/header.csv"};
         if (!ost) {
-            std::cerr << "Error: couldn't open file\n";
+            std::cerr << "Error: couldn't open fvm csv header file\n";
             exit(1);
         }
         ost << "#ni,nj,L_x,L_y,n_last,write_stride\n";
@@ -59,7 +59,7 @@ namespace fluid {
 
     double FVM_Solver::ode_step() {
         external_bcs.set_BCs(U); //External bc's are only applied once per timestep regardless of ode scheme for now
-        double dt = calc_timestep(CFL);
+        double dt = calc_timestep();
         switch (ode_scheme) {
             case OdeScheme::ExplicitEuler: {
                 eval_RHS(U);
@@ -179,7 +179,7 @@ namespace fluid {
     }
 
 
-    double FVM_Solver::calc_timestep(double CFL) const {
+    double FVM_Solver::calc_timestep() const {
         double maxval{0};
         for (int i{0}; i < (ni + 4) * (nj + 4); i++) {
             maxval = std::max(maxval, calc_sprad_x(U[i]) / dx + calc_sprad_y(U[i]) / dy);

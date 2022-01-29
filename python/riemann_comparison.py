@@ -1,4 +1,5 @@
 
+
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import genfromtxt
@@ -29,9 +30,9 @@ for n in range(0,n_timesteps+1):
         p = np.transpose(p.reshape((ni,nj)))
 
         plt.clf()
-        cs = plt.contourf(x,y,p, levels=levels, cmap=plt.get_cmap('hot'))
-        plt.axis('equal')
-        plt.pause(0.00001)
+        #cs = plt.contourf(x,y,p, levels=levels, cmap=plt.get_cmap('hot'))
+        plt.plot(x,p[int(nj/2),:],'.') #plotting the pressure along y = L_y/2
+        plt.pause(0.0001)
 
 
     print(n)

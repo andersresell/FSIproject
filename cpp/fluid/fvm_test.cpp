@@ -26,9 +26,28 @@ namespace fluid {
                 }
             }
         }
-
-
         std::cout << "Initial condition 1 set\n";
     }
+
+    void set_initial_cond_riemann(vec4* U, int ni, int nj, const vec4& V_l, const vec4& V_r){
+        if (ni%2 != 0) {
+            std::cerr << "ni must be even for the riemann test\n";
+            exit(1);
+        }
+        vec4 U_l = FVM_Solver::primitive2conserved(V_l);
+        vec4 U_r = FVM_Solver::primitive2conserved(V_r);
+        for (int i{0}; i < ni + 4; i++) {
+            for (int j{0}; j < nj + 4; j++) {
+                if (i < ni/2+2){
+                    U[IX(i,j)] = U_l;
+                }
+                else{
+                    U[IX(i,j)] = U_r;
+                }
+            }
+        }
+        std::cout << "Initial condition Riemann set\n";
+    }
+
 
 }

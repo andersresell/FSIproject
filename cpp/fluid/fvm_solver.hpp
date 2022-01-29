@@ -39,18 +39,18 @@ namespace fluid {
 
         double ode_step();
 
+        static vec4 conserved2primitive(const vec4 &U_in);
+
+        static vec4 primitive2conserved(const vec4 &V_in);
+
     private:
-        double calc_timestep(double CFL) const;
+        double calc_timestep() const;
 
         void eval_RHS(vec4 *U_in);
 
         void MUSCL_extrapolate(vec4 *U_in);
 
         void conserved2primitive(vec4 *U_in);
-
-        //vec4 conserved2primitive(const vec4 &U_in);
-
-        static vec4 primitive2conserved(const vec4 &V_in);
 
         void rusanov();
 
@@ -79,13 +79,13 @@ namespace fluid {
     };
 
 
-    /*
+
     inline vec4 FVM_Solver::conserved2primitive(const vec4 &U_in) {
         return {U_in.u1,
                 U_in.u2 / U_in.u1,
                 U_in.u3 / U_in.u1,
                 calc_P(U_in)};
-    }*/
+    }
 
     inline double FVM_Solver::calc_P(const vec4 &U_in) {
         return (Gamma - 1) * (U_in.u4 - 0.5 * (U_in.u2 * U_in.u2 + U_in.u3 * U_in.u3) / U_in.u1);

@@ -27,7 +27,7 @@ int FSI_Solver::solve() {
         std::cout << "dt = " << dt << '\n';
 
         if (stopping_crit.first == StoppingCrit::Time) {
-            if (stopping_crit.second >= t) breaker = true;
+            if (t >= stopping_crit.second) breaker = true;
         } else if (stopping_crit.first == StoppingCrit::Timesteps) {
             if (n >= (int) stopping_crit.second) breaker = true;
         } else {
@@ -45,11 +45,12 @@ int FSI_Solver::solve() {
     }
     auto stop_time{std::chrono::high_resolution_clock::now()};
     auto simulation_time{std::chrono::duration_cast<std::chrono::milliseconds>(stop_time - start_time)};
-    std::cout << "Simulation time = " << 1.0e-3 * static_cast<double>(simulation_time.count()) << " seconds\n";
+    std::cout << "End time = " << t << '\n';
+    std::cout << "Computation time = " << 1.0e-3 * static_cast<double>(simulation_time.count()) << " seconds\n";
     return n;
 }
 
-void FSI_Solver::fluid_solve(int ni,
+void FSI_Solver::fluid_solve_test(int ni,
                  int nj,
                  double L_x,
                  double L_y,
@@ -61,9 +62,29 @@ void FSI_Solver::fluid_solve(int ni,
                  fluid::FluxScheme flux_scheme) {
     //Should also add functionality for choosing the time scheme, flux scheme, boundaries and initital cond
     fluid::FVM_Solver fvm{ni, nj, L_x, L_y, CFL, ode_scheme, flux_scheme, fluid::AllWalls{ni, nj}};
-
     fluid::set_inital_cond1(fvm.U, fvm.ni, fvm.nj);
     FSI_Solver fsi{fvm, fvm_write_stride, fvm_output_folder};
     fsi.set_timesteps(n_timesteps);
+    fsi.solve();
+}
+
+void FSI_Solver::fluid_solve_riemann(int ni,
+                                int nj,
+                                double L_x,
+                                double L_y,
+                                double CFL,
+                                const fluid::vec4& V_l,
+                                const fluid::vec4& V_r,
+                                double endtime,
+                                int fvm_write_stride,
+                                std::string fvm_output_folder,
+                                fluid::OdeScheme ode_scheme,
+                                fluid::FluxScheme flux_scheme){
+
+    fluid::FVM_Solver fvm{ni, nj, L_x, L_y, CFL, ode_scheme, flux_scheme, fluid::AllWalls{ni, nj}};
+    fluid::set_initial_cond_riemann(fvm.U,fvm.ni,fvm.nj, V_l, V_r);
+    FSI_Solver fsi{fvm, fvm_write_stride, fvm_output_folder};
+    //fsi.set_timesteps(n_timesteps);
+    fsi.set_endtime(endtime);
     fsi.solve();
 }
