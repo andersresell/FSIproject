@@ -24,10 +24,10 @@ int main() {
     double rho_l = 3;
     double u_l = 0;
     double v_l = 0;
-    double v_r = 0;
     double p_l = 3;
     double rho_r = 1;
     double u_r = 0;
+    double v_r = 0;
     double p_r = 1;
 
 
@@ -37,7 +37,7 @@ int main() {
     double length_y = 4;
     double CFL = 0.5;
     //int n_timesteps{100};
-    int fvm_write_stride{10};
+    int fvm_write_stride{1};
     std::string output_folder{"output_riemann_sod"};
     fluid::OdeScheme ode_scheme{fluid::OdeScheme::TVD_RK3};
     fluid::FluxScheme flux_scheme{fluid::FluxScheme::HLLC};

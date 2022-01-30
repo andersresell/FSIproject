@@ -44,15 +44,15 @@ namespace fluid {
             }
         }
     }
-    void FVM_Solver::write_fvm_csv_header_file(const std::string& output_folder, int n_last, int write_stride) const{
+    void FVM_Solver::write_fvm_csv_header_file(const std::string& output_folder, int write_stride, int n_last, double t_end) const{
         //Writing header file containg information about the simulation. This info is used by the python plotter
         std::ofstream ost{"../python/" + output_folder + "/header.csv"};
         if (!ost) {
             std::cerr << "Error: couldn't open fvm csv header file\n";
             exit(1);
         }
-        ost << "#ni,nj,L_x,L_y,n_last,write_stride\n";
-        ost << ni << ',' << nj << ',' << L_x << ',' << L_y << ',' << n_last << ',' << write_stride << std::endl;
+        ost << "#ni,nj,L_x,L_y,write_stride,n_last,t_end\n";
+        ost << ni << ',' << nj << ',' << L_x << ',' << L_y << ',' << write_stride << ',' << n_last  << ',' << t_end << std::endl;
 
     }
 

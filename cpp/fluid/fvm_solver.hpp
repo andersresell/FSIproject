@@ -35,7 +35,7 @@ namespace fluid {
                    ExternalBCs external_bcs);
 
         void write_fvm_csv_out_file(const std::string& output_folder, int n);
-        void write_fvm_csv_header_file(const std::string& output_folder, int n_last, int write_stride) const;
+        void write_fvm_csv_header_file(const std::string& output_folder, int write_stride, int n_last, double t_end) const;
 
         double ode_step();
 

@@ -37,7 +37,7 @@ int FSI_Solver::solve() {
         //Writing fvm header at last timestep, since the number of steps can't be known a priori if endtime is
         //used as stopping criterion
         if (breaker) {
-            fvm.write_fvm_csv_header_file(fvm_output_folder, n, fvm_write_stride);
+            fvm.write_fvm_csv_header_file(fvm_output_folder, fvm_write_stride, n, t);
             break;
         }
         t += dt;

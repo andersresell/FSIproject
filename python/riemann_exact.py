@@ -4,30 +4,21 @@ import math
 import matplotlib.pyplot as plt
 from scipy import optimize as op
 
-#This code solves an exact riemann problem of the euler equations. Subsonic conditions are assumed. 
+#This code solves an exact riemann problem of the euler equations. Subsonic conditions are assumed.
 # It implements the procedure described in chapter 14.11 in "Finite Volume Methods for Hyperbolic Problems"
 
 #Sod's problem
-rho_l = 3
-u_l = 0
-p_l = 3
-rho_r = 1
-u_r = 0
-p_r = 1
-def riemann_exact(V_l, V_r, ni, Lx, t):
-    rho_l = V_l[0]
-    u_l = V_l[1]
-    p_l = V_l[2]
-    rho_r = V_r[0]
-    u_r = V_r[1]
-    p_r = V_r[2]
-
+#rho_l = 3
+#u_l = 0
+#p_l = 3
+#rho_r = 1
+#u_r = 0
+#p_r = 1
+def riemann_exact(rho_l,u_l,p_l,rho_r,u_r,p_r, ni, L_x, t):
     gamma = 1.4
     beta = (gamma+1)/(gamma-1)
     c_l = math.sqrt(gamma*p_l/rho_l)
     c_r = math.sqrt(gamma*p_r/rho_r)
-
-
     def phi_l(p):
         if p <= p_l:
             return u_l + 2*c_l/(gamma-1)*(1 - (p/p_l)**((gamma-1)/(2*gamma)))
@@ -98,10 +89,9 @@ def riemann_exact(V_l, V_r, ni, Lx, t):
     print(rho_r_star)
 
     #Determine the solution as a function of x(t)
-    x = np.linspace(-2,2,500)
-    t = 1
-    # = np.linspace(-10,10,500)
-    #t = 4
+    dx = L_x/ni
+    x = np.linspace(-(L_x/2 - dx/2),L_x/2-dx/2,ni) #centering the domain so that the shock happens at x = 0
+
     rho = np.ones(x.shape)*rho_r
     u = np.ones(x.shape)*u_r
     p = np.ones(x.shape)*p_r
@@ -158,21 +148,21 @@ def riemann_exact(V_l, V_r, ni, Lx, t):
         u[ind] = u_star
         p[ind] = p_star
         #right of shock is allready set
+    return rho,u,p
+#figure, axis = plt.subplots(3)
+#axis[0].plot(x,rho)
+##axis[0].set_xlabel("x")
+#axis[0].set_ylabel("Density")
 
-figure, axis = plt.subplots(3)
-axis[0].plot(x,rho)
-axis[0].set_xlabel("x")
-axis[0].set_ylabel("Density")
+#axis[1].plot(x,u)
+#axis[1].set_xlabel("x")
+#axis[1].set_ylabel("Velocity")
 
-axis[1].plot(x,u)
-axis[1].set_xlabel("x")
-axis[1].set_ylabel("Velocity")
+#axis[2].plot(x,p)
+#axis[2].set_xlabel("x")
+#axis[2].set_ylabel("Pressure")
 
-axis[2].plot(x,p)
-axis[2].set_xlabel("x")
-axis[2].set_ylabel("Pressure")
+#fig = plt.gcf()
+#fig.set_size_inches(5, 6)
 
-fig = plt.gcf()
-fig.set_size_inches(5, 6)
-
-plt.show()
+#plt.show()
