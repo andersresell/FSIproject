@@ -171,7 +171,7 @@ namespace solid {
         Point bottom_left_point;
         fluid::CellStatus S1, S2, S3, S4;
         fluid::vec4 V_IP, V_GP, V1, V2, V3, V4;
-        double u_n, u_t; //normal and tangential velocity components
+        double u_n, u_t, u_n_GP, u_t_GP; //normal and tangential velocity components
         Point BI;
         Point n;
         VM_dirichlet = VM;
@@ -203,15 +203,13 @@ namespace solid {
                 alpha = VM_inv_T * VM_IP;
                 V_IP = alpha(0)*V1 + alpha(1)*V2 + alpha(2)*V3 + alpha(3)*V4;
                 n = e.second.second;
-                u_n = V_IP.u2*n.x + V_IP.u3*n.y;
-                u_t = V_IP.u2*n.y - V_IP.u3*n.x;
                 //Dirichlet: u_n_BI = 0 -> u_n_GP = -u_n_IP
-                V_GP.u2 = - (n.y*u_t + n.x*u_n);
-                V_GP.u3 = - (-n.x*u_t + n.y*u_n);
-                //Neumann: d_rho/dn = 0 and dp/dn = 0 rho_GP = rho_IP, p_GP = p_IP
+                u_n_GP = -(V_IP.u2*n.x + V_IP.u3*n.y);
+                //Neumann: du_t/dn = 0, d_rho/dn = 0 and dp/dn = 0: u_t_GP = u_t_IP, rho_GP = rho_IP, p_GP = p_IP
+                u_t_GP = V_IP.u2*n.y - V_IP.u3*n.x;
                 V_GP.u1 = V_IP.u1;
                 V_GP.u4 = V_IP.u4;
-                U_in[IX(e.first.i,e.first.j)] = fluid::FVM_Solver::primitive2conserved(V_GP);
+
             }
             else{
                 if (S1 ==CS::Solid || S2 == CS::Solid || S3 == CS::Solid || S4 == CS::Solid) {
@@ -261,29 +259,40 @@ namespace solid {
                 alpha_dirichlet = VM_dirichlet.partialPivLu().solve(VM_IP);
                 alpha_neumann = VM_neumann.partialPivLu().solve(VM_IP);
 
-                //Dirichlet on the normal velocity: u_n_BI = 0
-                double u_n_IP = 0;
+                //Dirichlet on the normal velocity: u_n_BI = 0. Neumann on u_t, rho, p
+                u_n_GP = 0;
+                u_t_GP = 0;
+                V_GP *= 0;
                 n = e.second.second;
                 if (S1 == CS::Fluid){
-                    u_n = V1.u2*n.x + V1.u3*n.y;
-                    u_n_IP += alpha_dirichlet(0)*u_n;
+                    u_n_GP -= alpha_dirichlet(0)*(V1.u2*n.x + V1.u3*n.y);
+                    u_t_GP += alpha_neumann(0)*(V1.u2*n.y - V1.u3*n.x);
+                    V_GP.u1 += alpha_neumann(0)*V1.u1;
+                    V_GP.u4 += alpha_neumann(0)*V1.u4;
                 }
                 if (S2 == CS::Fluid){
-                    u_n = V2.u2*n.x + V2.u3*n.y;
-                    u_n_IP += alpha_dirichlet(1)*u_n;
+                    u_n_GP -= alpha_dirichlet(1)*(V2.u2*n.x + V2.u3*n.y);
+                    u_t_GP += alpha_neumann(1)*(V2.u2*n.y - V2.u3*n.x);
+                    V_GP.u1 += alpha_neumann(1)*V2.u1;
+                    V_GP.u4 += alpha_neumann(1)*V2.u4;
                 }
                 if (S3 == CS::Fluid){
-                    u_n = V3.u2*n.x + V3.u3*n.y;
-                    u_n_IP += alpha_dirichlet(2)*u_n;
+                    u_n_GP -= alpha_dirichlet(2)*(V3.u2*n.x + V3.u3*n.y);
+                    u_t_GP += alpha_neumann(2)*(V3.u2*n.y - V3.u3*n.x);
+                    V_GP.u1 += alpha_neumann(2)*V3.u1;
+                    V_GP.u4 += alpha_neumann(2)*V3.u4;
                 }
                 if (S4 == CS::Fluid){
-                    u_n = V4.u2*n.x + V4.u3*n.y;
-                    u_n_IP += alpha_dirichlet(3)*u_n;
+                    u_n_GP -= alpha_dirichlet(3)*(V4.u2*n.x + V4.u3*n.y);
+                    u_t_GP += alpha_neumann(3)*(V4.u2*n.y - V4.u3*n.x);
+                    V_GP.u1 += alpha_neumann(3)*V4.u1;
+                    V_GP.u4 += alpha_neumann(3)*V4.u4;
                 }
-                //
-
-
             }
+            //transform back
+            V_GP.u2 = n.y*u_t_GP + n.x*u_n_GP;
+            V_GP.u3 = -n.x*u_t_GP + n.y*u_n_GP;
+            U_in[IX(e.first.i,e.first.j)] = fluid::FVM_Solver::primitive2conserved(V_GP);
 
 
 
