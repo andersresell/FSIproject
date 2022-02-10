@@ -10,8 +10,7 @@ namespace fluid {
     FVM_Solver::FVM_Solver(int ni, int nj, double L_x, double L_y, double CFL, OdeScheme ode_scheme,
                            FluxScheme flux_scheme, ExternalBCs external_bcs)
             : ni{ni}, nj{nj}, L_x{L_x}, L_y{L_y}, dx{L_x / ni}, dy{L_y / nj}, CFL{CFL}, ode_scheme{ode_scheme},
-            flux_scheme{flux_scheme}, external_bcs{external_bcs}
-            {
+              flux_scheme{flux_scheme}, external_bcs{external_bcs} {
         U = new vec4[(ni + 4) * (nj + 4)];
         V = new vec4[(ni + 4) * (nj + 4)];
         U_left = new vec4[(ni + 2) * nj];
@@ -26,12 +25,18 @@ namespace fluid {
         } else {
             U_tmp = nullptr;
         }
+        cell_status = new CellStatus[(ni + 4) * (nj + 4)];
+        for (int i{0}; i < (ni + 4) * (nj + 4); i++) {
+            cell_status[i] = CellStatus::Fluid; //setting all values to fluid, including the ones at the exterior
+        }
+
     }
+
 
     void FVM_Solver::write_fvm_csv_out_file(const std::string& output_folder, int n) {
         //Writing one output data file for every timestep
         conserved2primitive(U);
-        std::ofstream ost{"../python/" + output_folder +  "/fvm_out_t" + std::to_string(n) + ".csv"};
+        std::ofstream ost{"../python/output_folders" + output_folder +  "/fvm_out_t" + std::to_string(n) + ".csv"};
         if (!ost) {
             std::cerr << "Error: couldn't open fvm csv output file\n";
             exit(1);
@@ -46,7 +51,7 @@ namespace fluid {
     }
     void FVM_Solver::write_fvm_csv_header_file(const std::string& output_folder, int write_stride, int n_last, double t_end) const{
         //Writing header file containg information about the simulation. This info is used by the python plotter
-        std::ofstream ost{"../python/" + output_folder + "/header.csv"};
+        std::ofstream ost{"../python/output_folders" + output_folder + "/header.csv"};
         if (!ost) {
             std::cerr << "Error: couldn't open fvm csv header file\n";
             exit(1);
@@ -197,6 +202,7 @@ namespace fluid {
         delete[] F_f;
         delete[] G_f;
         delete[] Res;
+        delete[] cell_status;
 
         if (ode_scheme == OdeScheme::TVD_RK3) {
             delete[] U_tmp;

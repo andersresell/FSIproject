@@ -11,8 +11,11 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <unordered_map>
 #include <cassert>
 #include <filesystem>
 #include <chrono>
+#include "Eigen/Dense"
+
 
 #endif //FSIPROJECT_INCLUDES_HPP

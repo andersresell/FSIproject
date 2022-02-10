@@ -13,7 +13,7 @@ ni,nj,L_x,L_y,write_stride,n_timesteps, t_end, dx,dy, x,y = read_header(fvm_outp
 
 #Plotting the last step
 levels = np.linspace(0,3,100)
-my_data = genfromtxt(fvm_output_folder+"/fvm_out_t"+str(n_timesteps)+".csv",comments = "#", delimiter=',')
+my_data = genfromtxt("output_folders/"+fvm_output_folder+"/fvm_out_t"+str(n_timesteps)+".csv",comments = "#", delimiter=',')
 rho = my_data[:,0]
 rho = np.transpose(rho.reshape((ni,nj)))
 u = my_data[:,1]
@@ -35,6 +35,15 @@ p_l = 3
 rho_r = 1
 u_r = 0
 p_r = 1
+
+#Stationary contact discontinuity problem
+#rho_l = 3
+#u_l = 1
+#p_l = 1
+#rho_r = 1
+#u_r = 1
+#p_r = 1
+
 rho,u,p = riemann_exact(rho_l,u_l,p_l,rho_r,u_r,p_r,ni,L_x,t_end)
 #plt.plot(x,p)
 

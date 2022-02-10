@@ -16,6 +16,8 @@ namespace fluid {
 
     constexpr double Gamma = 1.4;
 
+    enum class CellStatus{Fluid=0, Ghost, Solid};
+
     class FVM_Solver {
         //Computes one timestep of the fluid domain with the explicit euler method
     public:
@@ -26,6 +28,7 @@ namespace fluid {
         OdeScheme ode_scheme;
         FluxScheme flux_scheme;
         ExternalBCs external_bcs;
+        CellStatus* cell_status;
         vec4 *U;
     private:
         vec4 *U_tmp, *V, *Res, *U_left, *U_right, *U_down, *U_up, *F_f, *G_f;

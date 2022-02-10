@@ -13,7 +13,7 @@
 #define IXV(i,j) ((i)*(nj+2) + (j) - 2*nj - 5) //Vertical access of extrapolated variables.
 #define IXF(i,j) ((i)*nj + (j) - nj - 2) //Access of horizontal fluxes. The fluxes are defined at the right cell face
 #define IXG(i,j) ((i)*(nj+1) + (j) -2*nj -3) //Access of vertical fluxes. The fluxes are defined at the north cell face
-#define IXR(i,j) ((i)*nj + (j) - 2*(nj+1)) //for structures only defined in the solution domain (omitting ghost points)
+#define IXR(i,j) ((i)*nj + (j) - 2*(nj+1)) //for fields only defined in the solution domain (omitting ghost points)
 
 template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));

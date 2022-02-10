@@ -2,7 +2,8 @@ import numpy as np
 from numpy import genfromtxt
 
 def read_header(fvm_output_folder):
-    my_data = genfromtxt(fvm_output_folder+"/header.csv",comments = "#", delimiter=',')
+    my_data = genfromtxt("output_folders/"+fvm_output_folder+"/header.csv",comments = "#", delimiter=',')
+    #my_data = genfromtxt("fvm_output_folder"/header.csv",comments = "#", delimiter=',')
     ni = int(my_data[0])
     nj = int(my_data[1])
     L_x = my_data[2]
