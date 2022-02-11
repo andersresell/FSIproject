@@ -35,7 +35,7 @@ namespace fluid {
 
     public:
         FVM_Solver(int ni, int nj, double L_x, double L_y, double CFL, OdeScheme ode_scheme, FluxScheme flux_scheme,
-                   ExternalBCs external_bcs);
+                   const ExternalBCs& external_bcs);
 
         void write_fvm_csv_out_file(const std::string& output_folder, int n);
         void write_fvm_csv_header_file(const std::string& output_folder, int write_stride, int n_last, double t_end) const;

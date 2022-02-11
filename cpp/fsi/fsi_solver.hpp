@@ -5,19 +5,25 @@
 #ifndef FSIPROJECT_FSI_SOLVER_HPP
 #define FSIPROJECT_FSI_SOLVER_HPP
 
+#include "../../includes.hpp"
 #include "../fluid/fvm_solver.hpp"
 #include "../fluid/fvm_utilities.hpp"
 #include "../fluid/fvm_test.hpp"
-#include "../../includes.hpp"
+#include "../solid/solid_body.hpp"
 
 enum class StoppingCrit{Time=0, Timesteps};
 
 class FSI_Solver{
+public: //remove later
     fluid::FVM_Solver& fvm;
+    std::vector<std::unique_ptr<solid::SolidBody>> solid_bodies;
     std::pair<StoppingCrit,double> stopping_crit;
     const int fvm_write_stride;
     const std::string fvm_output_folder;
 public:
+
+    void add_solid(std::unique_ptr<solid::SolidBody> solid_body);
+
     FSI_Solver(fluid::FVM_Solver& fvm, int write_stride, std::string fvm_output_folder);
 
     int solve();
@@ -26,6 +32,7 @@ public:
     void set_timesteps(int n_timesteps) {stopping_crit = {StoppingCrit::Timesteps, n_timesteps};}
     void set_endtime(double t_end) {stopping_crit = {StoppingCrit::Time, t_end};}
 
+    static void solid_test();
 
     static void fluid_solve_test(int ni,
                      int nj,

@@ -6,17 +6,17 @@ from riemann_exact import riemann_exact
 from plotting_utilities import read_header
 
 #Read header
-fvm_output_folder = "output_riemann_sod"
+fvm_output_folder = "output0"
 ni,nj,L_x,L_y,write_stride,n_timesteps, t_end, dx,dy, x,y = read_header(fvm_output_folder)
 
 
 
-levels = np.linspace(0,3,100)
+levels = np.linspace(0.8e5,10e5,100)
 
 #animate
 for n in range(0,n_timesteps+1):
     if n % write_stride == 0:
-        my_data = genfromtxt(fvm_output_folder+"/fvm_out_t"+str(n)+".csv",comments = "#", delimiter=',')
+        my_data = genfromtxt("output_folders/"+fvm_output_folder+"/fvm_out_t"+str(n)+".csv",comments = "#", delimiter=',')
         p = my_data[:,3]
         p = np.transpose(p.reshape((ni,nj)))
 
@@ -27,5 +27,4 @@ for n in range(0,n_timesteps+1):
 
 
     print(n)
-
 plt.show()

@@ -10,7 +10,9 @@
 
 namespace fluid{
 
-    void set_inital_cond1(vec4* U, int ni, int nj);
+    void set_initial_cond1(vec4* U, int ni, int nj);
+
+    void set_initial_cond2(vec4* U, int ni, int nj);
 
     void set_initial_cond_riemann(vec4* U, int ni, int nj,const vec4& V_l, const vec4& V_r);
 }

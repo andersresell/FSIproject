@@ -8,7 +8,7 @@ namespace fluid {
     using namespace std;
 
     FVM_Solver::FVM_Solver(int ni, int nj, double L_x, double L_y, double CFL, OdeScheme ode_scheme,
-                           FluxScheme flux_scheme, ExternalBCs external_bcs)
+                           FluxScheme flux_scheme, const ExternalBCs& external_bcs)
             : ni{ni}, nj{nj}, L_x{L_x}, L_y{L_y}, dx{L_x / ni}, dy{L_y / nj}, CFL{CFL}, ode_scheme{ode_scheme},
               flux_scheme{flux_scheme}, external_bcs{external_bcs} {
         U = new vec4[(ni + 4) * (nj + 4)];
@@ -36,22 +36,29 @@ namespace fluid {
     void FVM_Solver::write_fvm_csv_out_file(const std::string& output_folder, int n) {
         //Writing one output data file for every timestep
         conserved2primitive(U);
-        std::ofstream ost{"../python/output_folders" + output_folder +  "/fvm_out_t" + std::to_string(n) + ".csv"};
+        std::ofstream ost{"../python/output_folders/" + output_folder +  "/fvm_out_t" + std::to_string(n) + ".csv"};
         if (!ost) {
             std::cerr << "Error: couldn't open fvm csv output file\n";
             exit(1);
         }
         ost << "#rho,u,v,p\n";
+        int ind;
         for (int i{2}; i < ni + 2; i++) {
             for (int j{2}; j < nj + 2; j++) {
-                ost << V[IX(i, j)].u1 << "," << V[IX(i, j)].u2 << "," << V[IX(i, j)].u3 << ","
-                    << V[IX(i, j)].u4 << "\n";
+                ind = IX(i,j);
+                if (cell_status[ind] == CellStatus::Fluid){
+                    ost << V[ind].u1 << "," << V[ind].u2 << "," << V[ind].u3 << ","
+                        << V[ind].u4 << "\n";
+                }
+                else{
+                    ost << "nan,nan,nan,1e5\n";
+                }
             }
         }
     }
     void FVM_Solver::write_fvm_csv_header_file(const std::string& output_folder, int write_stride, int n_last, double t_end) const{
         //Writing header file containg information about the simulation. This info is used by the python plotter
-        std::ofstream ost{"../python/output_folders" + output_folder + "/header.csv"};
+        std::ofstream ost{"../python/output_folders/" + output_folder + "/header.csv"};
         if (!ost) {
             std::cerr << "Error: couldn't open fvm csv header file\n";
             exit(1);
@@ -70,7 +77,7 @@ namespace fluid {
                 eval_RHS(U);
                 for (int i{2}; i < ni + 2; i++) {
                     for (int j{2}; j < nj + 2; j++) {
-                        U[IX(i, j)] = U[IX(i, j)] + dt * Res[IXR(i, j)];
+                        if (cell_status[IX(i,j)] == CellStatus::Fluid) U[IX(i, j)] = U[IX(i, j)] + dt * Res[IXR(i, j)];
                     }
                 }
                 break;

@@ -16,6 +16,12 @@ namespace solid {
         Cell::nj = nj;
     }
 
+    void SolidBody::set_bc(){
+        find_solid_cells();
+        find_ghost_cells();
+        find_intercepts();
+        interpolate_invicid_wall(fvm.U);
+    }
 
     void SolidBody::find_solid_cells() {
         //Sets
@@ -106,51 +112,11 @@ namespace solid {
                 }
             }
         }
-
-/*
-        Point r1;
-        Point r2;
-        Point n;
-        Point GP;
-        Point q;
-        Point p;
-        Point d;
-        unsigned int lp;
-        double curr_dist;
-        double prev_dist;
-        intercepts.resize(ghost_cells.size()); //Every ghost cell has a corresponding intersect
-        for (int k{0}; k < ghost_cells.size(); k++) {
-            GP = ind2point(ghost_cells[k].i, ghost_cells[k].j);
-            prev_dist = INF;
-            for (unsigned int l{0}; l < n_bound; l++) {
-                lp = (l + 1) % n_bound;
-                p = boundary[l];
-                q = boundary[lp];
-                r1 = q - GP;
-                r2 = p - GP;
-                n = {q.y - p.y, -(q.x - p.x)};
-                n.normalize();
-               // cout << "c1 "<<n.cross(r1)<<", c2 "<< r2.cross(n) <<endl;
-                if (n.cross(r1) >= 0 && r2.cross(n) >= 0) { //intersection is on the line segment
-                    d = n * r1.dot(n);
-                    curr_dist = d.norm();
-                    //cout << "curr_dist = "<<curr_dist<<endl;
-                    if (curr_dist < prev_dist) {
-                        intercepts[k] = GP + d;
-                        prev_dist = curr_dist;
-                    }
-
-                }
-            }
-
-        }
-        for (Point& p : intercepts){
-            cout << "i_x = "<<p.x<<",i_y = "<<p.y<<endl;
-        }*/
     }
 
     void SolidBody::interpolate_invicid_wall(fluid::vec4* U_in) {
         using namespace Eigen;
+        using namespace std;
         using CS = fluid::CellStatus;
         //Constructing Vandermonde matrix VM for the case where all interpolation points are fluid points
         Matrix4d VM;
@@ -172,12 +138,11 @@ namespace solid {
         fluid::CellStatus S1, S2, S3, S4;
         fluid::vec4 V_IP, V_GP, V1, V2, V3, V4;
         double u_n, u_t, u_n_GP, u_t_GP; //normal and tangential velocity components
-        Point BI;
+        Point BI_neighbor;
         Point n;
-        VM_dirichlet = VM;
-        VM_neumann = VM;
         std::pair<Point,Point> BI_normal_pair;
         for (auto &e: intercepts) {
+            //cout << "i = "<<e.first.i << "j = "<<e.first.j<<endl;
             //finding the image point, by using that IP = GP + 2*(BI - GP) = 2*BI - GP
             Point IP = e.second.first * 2 - ind2point(e.first.i, e.first.j);
             bottom_left_ind = point2ind(IP.x, IP.y);
@@ -206,7 +171,7 @@ namespace solid {
                 //Dirichlet: u_n_BI = 0 -> u_n_GP = -u_n_IP
                 u_n_GP = -(V_IP.u2*n.x + V_IP.u3*n.y);
                 //Neumann: du_t/dn = 0, d_rho/dn = 0 and dp/dn = 0: u_t_GP = u_t_IP, rho_GP = rho_IP, p_GP = p_IP
-                u_t_GP = V_IP.u2*n.y - V_IP.u3*n.x;
+                u_t_GP = -V_IP.u2*n.y + V_IP.u3*n.x;
                 V_GP.u1 = V_IP.u1;
                 V_GP.u4 = V_IP.u4;
 
@@ -217,40 +182,41 @@ namespace solid {
                 }
                 //Ghost cells are part of the interpolation stencil. Dirichlet and Neumann onditions at body interface
                 //is used in the interpolation
-
+                VM_dirichlet = VM;
+                VM_neumann = VM;
                 if (S1 == CS::Ghost){
                     BI_normal_pair = intercepts[Cell{i,j}];
-                    BI = BI_normal_pair.first;
+                    BI_neighbor = BI_normal_pair.first;
                     n = BI_normal_pair.second;
-                    DX = BI.x - bottom_left_point.x;
-                    DY = BI.y - bottom_left_point.y;
+                    DX = BI_neighbor.x - bottom_left_point.x;
+                    DY = BI_neighbor.y - bottom_left_point.y;
                     VM_dirichlet.block<1,4>(0,0) << 1, DX, DY, DX*DY;
                     VM_neumann.block<1,4>(0,0) << 0, n.x, n.y, DY*n.x + DX*n.y;
                 }
                 if (S2 == CS::Ghost){
                     BI_normal_pair = intercepts[Cell{i+1,j}];
-                    BI = BI_normal_pair.first;
+                    BI_neighbor = BI_normal_pair.first;
                     n = BI_normal_pair.second;
-                    DX = BI.x - bottom_left_point.x;
-                    DY = BI.y - bottom_left_point.y;
+                    DX = BI_neighbor.x - bottom_left_point.x;
+                    DY = BI_neighbor.y - bottom_left_point.y;
                     VM_dirichlet.block<1,4>(1,0) << 1, DX, DY, DX*DY;
                     VM_neumann.block<1,4>(1,0) << 0, n.x, n.y, DY*n.x + DX*n.y;
                 }
                 if (S3 == CS::Ghost){
                     BI_normal_pair = intercepts[Cell{i+1,j+1}];
-                    BI = BI_normal_pair.first;
+                    BI_neighbor = BI_normal_pair.first;
                     n = BI_normal_pair.second;
-                    DX = BI.x - bottom_left_point.x;
-                    DY = BI.y - bottom_left_point.y;
+                    DX = BI_neighbor.x - bottom_left_point.x;
+                    DY = BI_neighbor.y - bottom_left_point.y;
                     VM_dirichlet.block<1,4>(2,0) << 1, DX, DY, DX*DY;
                     VM_neumann.block<1,4>(2,0) << 0, n.x, n.y, DY*n.x + DX*n.y;
                 }
                 if (S4 == CS::Ghost){
                     BI_normal_pair = intercepts[Cell{i,j+1}];
-                    BI = BI_normal_pair.first;
+                    BI_neighbor = BI_normal_pair.first;
                     n = BI_normal_pair.second;
-                    DX = BI.x - bottom_left_point.x;
-                    DY = BI.y - bottom_left_point.y;
+                    DX = BI_neighbor.x - bottom_left_point.x;
+                    DY = BI_neighbor.y - bottom_left_point.y;
                     VM_dirichlet.block<1,4>(3,0) << 1, DX, DY, DX*DY;
                     VM_neumann.block<1,4>(3,0) << 0, n.x, n.y, DY*n.x + DX*n.y;
                 }
@@ -258,7 +224,18 @@ namespace solid {
                 VM_neumann.transposeInPlace();
                 alpha_dirichlet = VM_dirichlet.partialPivLu().solve(VM_IP);
                 alpha_neumann = VM_neumann.partialPivLu().solve(VM_IP);
+                /*
+                if (e.first.i == 11 && e.first.j == 15) {
+                    cout << "GP_ind" << e.first<<endl;
+                    cout << "e.BI " <<e.second.first<<endl;
+                    cout << "BI_norm "<<e.second.second<<endl;
+                    cout << "a_dir = " << alpha_dirichlet << "\na_neum = " << alpha_neumann << endl;
+                    cout << "VM:\n"<< VM<<endl;
+                    cout << "VM_dir:\n"<<VM_dirichlet.transpose()<<endl;
+                    cout << "VM_neu:\n"<<VM_neumann.transpose()<<endl;
+                    cout << "states: "<< (S1 ==CS::Fluid) << (S2 == CS::Fluid) << (S3 == CS::Fluid) << (S4 == CS::Fluid)<<endl;
 
+                }*/
                 //Dirichlet on the normal velocity: u_n_BI = 0. Neumann on u_t, rho, p
                 u_n_GP = 0;
                 u_t_GP = 0;
@@ -266,32 +243,59 @@ namespace solid {
                 n = e.second.second;
                 if (S1 == CS::Fluid){
                     u_n_GP -= alpha_dirichlet(0)*(V1.u2*n.x + V1.u3*n.y);
-                    u_t_GP += alpha_neumann(0)*(V1.u2*n.y - V1.u3*n.x);
+                    u_t_GP += alpha_neumann(0)*(-V1.u2*n.y + V1.u3*n.x);
                     V_GP.u1 += alpha_neumann(0)*V1.u1;
                     V_GP.u4 += alpha_neumann(0)*V1.u4;
                 }
                 if (S2 == CS::Fluid){
                     u_n_GP -= alpha_dirichlet(1)*(V2.u2*n.x + V2.u3*n.y);
-                    u_t_GP += alpha_neumann(1)*(V2.u2*n.y - V2.u3*n.x);
+                    u_t_GP += alpha_neumann(1)*(-V2.u2*n.y + V2.u3*n.x);
                     V_GP.u1 += alpha_neumann(1)*V2.u1;
                     V_GP.u4 += alpha_neumann(1)*V2.u4;
                 }
                 if (S3 == CS::Fluid){
                     u_n_GP -= alpha_dirichlet(2)*(V3.u2*n.x + V3.u3*n.y);
-                    u_t_GP += alpha_neumann(2)*(V3.u2*n.y - V3.u3*n.x);
+                    u_t_GP += alpha_neumann(2)*(-V3.u2*n.y + V3.u3*n.x);
                     V_GP.u1 += alpha_neumann(2)*V3.u1;
                     V_GP.u4 += alpha_neumann(2)*V3.u4;
                 }
                 if (S4 == CS::Fluid){
                     u_n_GP -= alpha_dirichlet(3)*(V4.u2*n.x + V4.u3*n.y);
-                    u_t_GP += alpha_neumann(3)*(V4.u2*n.y - V4.u3*n.x);
+                    u_t_GP += alpha_neumann(3)*(-V4.u2*n.y + V4.u3*n.x);
                     V_GP.u1 += alpha_neumann(3)*V4.u1;
                     V_GP.u4 += alpha_neumann(3)*V4.u4;
                 }
             }
             //transform back
-            V_GP.u2 = n.y*u_t_GP + n.x*u_n_GP;
-            V_GP.u3 = -n.x*u_t_GP + n.y*u_n_GP;
+            V_GP.u2 = n.x*u_n_GP - n.y*u_t_GP;
+            V_GP.u3 = n.y*u_n_GP + n.x*u_t_GP;
+            if (S1 == CS::Fluid && S2 == CS::Fluid && S3 == CS::Fluid && S4 == CS::Fluid){
+                /*
+                if (e.first.i == 11 && e.first.j == 9){
+                    cout << "u_n_GP = " << u_n_GP << ", u_t_GP = "<< u_t_GP<<endl;
+                    cout << "n = "<<n<<endl;
+                    cout << "V_GP = "<<V_GP<<endl;
+                }*/
+                //cout << e.first;
+                //cout << ", V_GP = "<<V_GP<<endl;
+                /*if (e.first.i == 9 && e.first.j== 11 || e.first.i == 9 && e.first.j == 12){
+                    cout << e.first<<endl;
+                    cout << "V_GP = "<<V_GP<<endl;
+                    cout << "GP = " << e.second.first<<endl;
+                    cout << "n = "<<e.second.second<<endl<<endl;
+                }*/
+
+            }
+            else{
+                /*
+                if (e.first.i == 11 && e.first.j == 15){
+                    cout << "V_GP = "<<V_GP<<endl;
+                }*/
+
+            }
+            //double nan = -sqrt(-1);
+            //if (V_GP.)
+
             U_in[IX(e.first.i,e.first.j)] = fluid::FVM_Solver::primitive2conserved(V_GP);
 
 
@@ -318,12 +322,8 @@ namespace solid {
         if (!ost) std::cerr << "error, couldn't open solid debug intercepts csv file\n";
 
         ost << "#x_i,y_i\n";
-        /*
-        for (Point& p : intercepts){
-            ost << p.x << "," << p.y << '\n';
-        }*/
         for(auto&e : intercepts){
-            ost << e.second.x << ',' <<e.second.y << '\n';
+            ost << e.second.first.x << ',' <<e.second.first.y << '\n';
         }
     }
 
@@ -338,7 +338,7 @@ namespace solid {
     }
 
 
-    bool SolidBody::point_inside(Point p) {
+    bool SolidBody::point_inside(Point p) const{
         //using namespace std;
         //See https://www.geeksforgeeks.org/how-to-check-if-a-given-point-lies-inside-a-Polygon/ for details
         Point extreme{INF, p.y};

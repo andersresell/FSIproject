@@ -14,14 +14,9 @@
 int main() {
     using namespace std;
     using namespace Eigen;
-    Matrix3d m;
-    m << 1,2,3,
-         4,5,6,
-         7,8,9;
-    m.block<1,3>(0,0) << 0,0,0;
-    cout << m;
 
-
+    FSI_Solver::solid_test();
+/*
     int ni = 20;
     int nj = 20;
     double L_x = 10;
@@ -46,9 +41,12 @@ int main() {
     }
 
     solid::SolidBody sb{fvm,circle};
+
+
     sb.find_solid_cells();
     sb.find_ghost_cells();
     sb.find_intercepts();
+    sb.interpolate_invicid_wall(fvm.U);
     sb.debug_csv();
     sb.write_boundary_csv("solid_debug_boundary");
     sb.debug_intercepts_csv();
