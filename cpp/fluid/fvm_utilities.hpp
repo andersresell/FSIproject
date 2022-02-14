@@ -21,6 +21,8 @@ template <typename T> int sgn(T val) {
 
 namespace fluid {
 
+    constexpr double Gamma = 1.4;
+
     struct vec4 {
         //data structure to hold field variables using an AoS structure
         double u1, u2, u3, u4;
@@ -54,55 +56,26 @@ namespace fluid {
     };
 
 
-    class ExternalBC {
-    public:
-        virtual vec4 select_bc_type(const vec4 &U_in) = 0;
-    };
+
+    enum class BC_Type{InvicidWall, SupersonicInflow, NonreflectingOutflow};
 
     class ExternalBCs {
-        ExternalBC &west, &east, &south, &north;
+        //ExternalBC &west, &east, &south, &north;
+        BC_Type west, east, south, north;
         const int ni, nj;
-
+        vec4 U_inf; //Used in case of supersonic inflow
     public:
-        ExternalBCs(int ni, int nj, ExternalBC &west, ExternalBC &east, ExternalBC &south, ExternalBC &north);
-
+        //ExternalBCs(int ni, int nj, ExternalBC &west, ExternalBC &east, ExternalBC &south, ExternalBC &north);
+        ExternalBCs(int ni, int nj, BC_Type west, BC_Type east, BC_Type south, BC_Type north,
+                    double M_inf = 0, double p_inf = 1e5, double rho_inf = 1.2);
         void set_BCs(vec4 *U_in);
+        static vec4 set_vertical_invicid_wall(const vec4& U_in);
+        static vec4 set_horizontal_invicid_wall(const vec4& U_in);
     };
 
-    class VerticalInvicidWall : public ExternalBC {
-        vec4 select_bc_type(const vec4 &U_in) override final {
-            //Enforced by setting x velocity component at ghost cell to the nagative value of internal cell. This can be done
-            //by switching the sign of the x momentum.
-            return {U_in.u1,
-                    -U_in.u2,
-                    U_in.u3,
-                    U_in.u4};
-        }
-    };
 
-    class HorizontalInvicidWall : public ExternalBC {
-        vec4 select_bc_type(const vec4 &U_in) {
-            //Enforced by setting y velocity component at ghost cell to the nagative value of internal cell. This can be done
-            //by switching the sign of the y momentum.
-            return {U_in.u1,
-                    U_in.u2,
-                    -U_in.u3,
-                    U_in.u4};
-        }
-    };
 
-    class AllWalls : public ExternalBCs {
-        //creates an ExternalBCs object consisting of only walls
-        VerticalInvicidWall west, east;
-        HorizontalInvicidWall south, north;
-    public:
-        AllWalls(int ni, int nj) : west{VerticalInvicidWall{}}, east{VerticalInvicidWall{}},
-                                   south{HorizontalInvicidWall{}}, north{HorizontalInvicidWall{}},
-                                   ExternalBCs(ni, nj, west, east, south, north) {
-        }
-    };
 
-    void field2console(vec4 *U_in, int ni, int nj, int fieldvar);
 }
 
 #endif //FSIPROJECT_FVM_UTILITIES_HPP

@@ -3,6 +3,7 @@
 //
 
 #include "fvm_solver.hpp"
+#include "../solid/solid_body.hpp"
 
 namespace fluid {
     using namespace std;
@@ -68,9 +69,15 @@ namespace fluid {
 
     }
 
+    void FVM_Solver::set_solid_BCs(vec4* U_in){
+        for (auto& sb_ptr : solid_bodies){
+            sb_ptr->set_bc(U_in);
+        }
+    }
 
     double FVM_Solver::ode_step() {
         external_bcs.set_BCs(U); //External bc's are only applied once per timestep regardless of ode scheme for now
+        set_solid_BCs(U);
         double dt = calc_timestep();
         switch (ode_scheme) {
             case OdeScheme::ExplicitEuler: {
@@ -86,21 +93,25 @@ namespace fluid {
                 eval_RHS(U);
                 for (int i{2}; i < ni + 2; i++) {
                     for (int j{2}; j < nj + 2; j++) {
-                        U_tmp[IX(i, j)] = U[IX(i, j)] + dt * Res[IXR(i, j)];
+                        if (cell_status[IX(i,j)] == CellStatus::Fluid) U_tmp[IX(i, j)] = U[IX(i, j)] + dt * Res[IXR(i, j)];
                     }
                 }
                 external_bcs.set_BCs(U_tmp);
+                set_solid_BCs(U_tmp);
                 eval_RHS(U_tmp);
                 for (int i{2}; i < ni + 2; i++) {
                     for (int j{2}; j < nj + 2; j++) {
-                        U_tmp[IX(i, j)] = 3.0 / 4 * U[IX(i, j)] + 1.0 / 4 * U_tmp[IX(i, j)] + dt / 4 * Res[IXR(i, j)];
+                        if (cell_status[IX(i,j)] == CellStatus::Fluid)
+                            U_tmp[IX(i, j)] = 3.0 / 4 * U[IX(i, j)] + 1.0 / 4 * U_tmp[IX(i, j)] + dt / 4 * Res[IXR(i, j)];
                     }
                 }
                 external_bcs.set_BCs(U_tmp);
+                set_solid_BCs(U_tmp);
                 eval_RHS(U_tmp);
                 for (int i{2}; i < ni + 2; i++) {
                     for (int j{2}; j < nj + 2; j++) {
-                        U[IX(i, j)] = 1.0 / 3 * U[IX(i, j)] + 2.0 / 3 * U_tmp[IX(i, j)] + 2 * dt / 3 * Res[IXR(i, j)];
+                        if (cell_status[IX(i,j)] == CellStatus::Fluid)
+                            U[IX(i, j)] = 1.0 / 3 * U[IX(i, j)] + 2.0 / 3 * U_tmp[IX(i, j)] + 2 * dt / 3 * Res[IXR(i, j)];
                     }
                 }
                 break;
@@ -125,7 +136,8 @@ namespace fluid {
 
         for (int i{2}; i < ni + 2; i++) {
             for (int j{2}; j < nj + 2; j++) {
-                Res[IXR(i, j)] =
+                if (cell_status[IX(i,j)] == CellStatus::Fluid)
+                    Res[IXR(i, j)] =
                         -1 / dx * (F_f[IXF(i, j)] - F_f[IXF(i - 1, j)]) -
                         1 / dy * (G_f[IXG(i, j)] - G_f[IXG(i, j - 1)]);
             }

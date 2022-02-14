@@ -16,23 +16,23 @@ namespace solid {
         Cell::nj = nj;
     }
 
-    void SolidBody::set_bc(){
+    void SolidBody::set_bc(fluid::vec4* U_in){
         find_solid_cells();
         find_ghost_cells();
         find_intercepts();
-        interpolate_invicid_wall(fvm.U);
+        interpolate_invicid_wall(U_in);
     }
 
     void SolidBody::find_solid_cells() {
-        //Sets
+        Point p;
         for (int i{2}; i < ni + 2; i++) {
             for (int j{2}; j < nj + 2; j++) {
-                Point p{ind2point(i, j)};
+                p = ind2point(i, j);
                 if (point_inside(p)) {
                     solid_cells.push_back(Cell{i,j});
                     fvm.cell_status[IX(i, j)] = fluid::CellStatus::Solid;
                 }
-
+                //Need a way to set cells to Fluid without ruining a different solid object.
             }
         }
     }
@@ -131,7 +131,7 @@ namespace solid {
         Vector4d VM_IP;
         Matrix4d VM_dirichlet;
         Matrix4d VM_neumann;
-        int i,j;
+        int i, j;
         double DX, DY;
         Cell bottom_left_ind;
         Point bottom_left_point;
@@ -140,7 +140,7 @@ namespace solid {
         double u_n, u_t, u_n_GP, u_t_GP; //normal and tangential velocity components
         Point BI_neighbor;
         Point n;
-        std::pair<Point,Point> BI_normal_pair;
+        std::pair<Point, Point> BI_normal_pair;
         for (auto &e: intercepts) {
             //cout << "i = "<<e.first.i << "j = "<<e.first.j<<endl;
             //finding the image point, by using that IP = GP + 2*(BI - GP) = 2*BI - GP
@@ -154,10 +154,10 @@ namespace solid {
             VM_IP << 1, DX, DY, DX * DY;
 
             //May probably be optimized by extracting the variables from fvm.V
-            V1 = fluid::FVM_Solver::conserved2primitive(U_in[IX(i,j)]);
-            V2 = fluid::FVM_Solver::conserved2primitive(U_in[IX(i+1,j)]);
-            V3 = fluid::FVM_Solver::conserved2primitive(U_in[IX(i+1,j+1)]);
-            V4 = fluid::FVM_Solver::conserved2primitive(U_in[IX(i,j+1)]);
+            V1 = fluid::FVM_Solver::conserved2primitive(U_in[IX(i, j)]);
+            V2 = fluid::FVM_Solver::conserved2primitive(U_in[IX(i + 1, j)]);
+            V3 = fluid::FVM_Solver::conserved2primitive(U_in[IX(i + 1, j + 1)]);
+            V4 = fluid::FVM_Solver::conserved2primitive(U_in[IX(i, j + 1)]);
 
             S1 = fvm.cell_status[IX(i, j)];
             S2 = fvm.cell_status[IX(i + 1, j)];
@@ -166,59 +166,58 @@ namespace solid {
             if (S1 == CS::Fluid && S2 == CS::Fluid && S3 == CS::Fluid && S4 == CS::Fluid) {
                 //All interpolation points are fluid cells
                 alpha = VM_inv_T * VM_IP;
-                V_IP = alpha(0)*V1 + alpha(1)*V2 + alpha(2)*V3 + alpha(3)*V4;
+                V_IP = alpha(0) * V1 + alpha(1) * V2 + alpha(2) * V3 + alpha(3) * V4;
                 n = e.second.second;
                 //Dirichlet: u_n_BI = 0 -> u_n_GP = -u_n_IP
-                u_n_GP = -(V_IP.u2*n.x + V_IP.u3*n.y);
+                u_n_GP = -(V_IP.u2 * n.x + V_IP.u3 * n.y);
                 //Neumann: du_t/dn = 0, d_rho/dn = 0 and dp/dn = 0: u_t_GP = u_t_IP, rho_GP = rho_IP, p_GP = p_IP
-                u_t_GP = -V_IP.u2*n.y + V_IP.u3*n.x;
+                u_t_GP = -V_IP.u2 * n.y + V_IP.u3 * n.x;
                 V_GP.u1 = V_IP.u1;
                 V_GP.u4 = V_IP.u4;
 
-            }
-            else{
-                if (S1 ==CS::Solid || S2 == CS::Solid || S3 == CS::Solid || S4 == CS::Solid) {
+            } else {
+                if (S1 == CS::Solid || S2 == CS::Solid || S3 == CS::Solid || S4 == CS::Solid) {
                     std::cerr << "Solid point in bilinear interpolation stencil detected\n";
                 }
                 //Ghost cells are part of the interpolation stencil. Dirichlet and Neumann onditions at body interface
                 //is used in the interpolation
                 VM_dirichlet = VM;
                 VM_neumann = VM;
-                if (S1 == CS::Ghost){
-                    BI_normal_pair = intercepts[Cell{i,j}];
+                if (S1 == CS::Ghost) {
+                    BI_normal_pair = intercepts[Cell{i, j}];
                     BI_neighbor = BI_normal_pair.first;
                     n = BI_normal_pair.second;
                     DX = BI_neighbor.x - bottom_left_point.x;
                     DY = BI_neighbor.y - bottom_left_point.y;
-                    VM_dirichlet.block<1,4>(0,0) << 1, DX, DY, DX*DY;
-                    VM_neumann.block<1,4>(0,0) << 0, n.x, n.y, DY*n.x + DX*n.y;
+                    VM_dirichlet.block<1, 4>(0, 0) << 1, DX, DY, DX * DY;
+                    VM_neumann.block<1, 4>(0, 0) << 0, n.x, n.y, DY * n.x + DX * n.y;
                 }
-                if (S2 == CS::Ghost){
-                    BI_normal_pair = intercepts[Cell{i+1,j}];
+                if (S2 == CS::Ghost) {
+                    BI_normal_pair = intercepts[Cell{i + 1, j}];
                     BI_neighbor = BI_normal_pair.first;
                     n = BI_normal_pair.second;
                     DX = BI_neighbor.x - bottom_left_point.x;
                     DY = BI_neighbor.y - bottom_left_point.y;
-                    VM_dirichlet.block<1,4>(1,0) << 1, DX, DY, DX*DY;
-                    VM_neumann.block<1,4>(1,0) << 0, n.x, n.y, DY*n.x + DX*n.y;
+                    VM_dirichlet.block<1, 4>(1, 0) << 1, DX, DY, DX * DY;
+                    VM_neumann.block<1, 4>(1, 0) << 0, n.x, n.y, DY * n.x + DX * n.y;
                 }
-                if (S3 == CS::Ghost){
-                    BI_normal_pair = intercepts[Cell{i+1,j+1}];
+                if (S3 == CS::Ghost) {
+                    BI_normal_pair = intercepts[Cell{i + 1, j + 1}];
                     BI_neighbor = BI_normal_pair.first;
                     n = BI_normal_pair.second;
                     DX = BI_neighbor.x - bottom_left_point.x;
                     DY = BI_neighbor.y - bottom_left_point.y;
-                    VM_dirichlet.block<1,4>(2,0) << 1, DX, DY, DX*DY;
-                    VM_neumann.block<1,4>(2,0) << 0, n.x, n.y, DY*n.x + DX*n.y;
+                    VM_dirichlet.block<1, 4>(2, 0) << 1, DX, DY, DX * DY;
+                    VM_neumann.block<1, 4>(2, 0) << 0, n.x, n.y, DY * n.x + DX * n.y;
                 }
-                if (S4 == CS::Ghost){
-                    BI_normal_pair = intercepts[Cell{i,j+1}];
+                if (S4 == CS::Ghost) {
+                    BI_normal_pair = intercepts[Cell{i, j + 1}];
                     BI_neighbor = BI_normal_pair.first;
                     n = BI_normal_pair.second;
                     DX = BI_neighbor.x - bottom_left_point.x;
                     DY = BI_neighbor.y - bottom_left_point.y;
-                    VM_dirichlet.block<1,4>(3,0) << 1, DX, DY, DX*DY;
-                    VM_neumann.block<1,4>(3,0) << 0, n.x, n.y, DY*n.x + DX*n.y;
+                    VM_dirichlet.block<1, 4>(3, 0) << 1, DX, DY, DX * DY;
+                    VM_neumann.block<1, 4>(3, 0) << 0, n.x, n.y, DY * n.x + DX * n.y;
                 }
                 VM_dirichlet.transposeInPlace();
                 VM_neumann.transposeInPlace();
@@ -241,62 +240,63 @@ namespace solid {
                 u_t_GP = 0;
                 V_GP *= 0;
                 n = e.second.second;
-                if (S1 == CS::Fluid){
-                    u_n_GP -= alpha_dirichlet(0)*(V1.u2*n.x + V1.u3*n.y);
-                    u_t_GP += alpha_neumann(0)*(-V1.u2*n.y + V1.u3*n.x);
-                    V_GP.u1 += alpha_neumann(0)*V1.u1;
-                    V_GP.u4 += alpha_neumann(0)*V1.u4;
+                if (S1 == CS::Fluid) {
+                    u_n_GP -= alpha_dirichlet(0) * (V1.u2 * n.x + V1.u3 * n.y);
+                    u_t_GP += alpha_neumann(0) * (-V1.u2 * n.y + V1.u3 * n.x);
+                    V_GP.u1 += alpha_neumann(0) * V1.u1;
+                    V_GP.u4 += alpha_neumann(0) * V1.u4;
                 }
-                if (S2 == CS::Fluid){
-                    u_n_GP -= alpha_dirichlet(1)*(V2.u2*n.x + V2.u3*n.y);
-                    u_t_GP += alpha_neumann(1)*(-V2.u2*n.y + V2.u3*n.x);
-                    V_GP.u1 += alpha_neumann(1)*V2.u1;
-                    V_GP.u4 += alpha_neumann(1)*V2.u4;
+                if (S2 == CS::Fluid) {
+                    u_n_GP -= alpha_dirichlet(1) * (V2.u2 * n.x + V2.u3 * n.y);
+                    u_t_GP += alpha_neumann(1) * (-V2.u2 * n.y + V2.u3 * n.x);
+                    V_GP.u1 += alpha_neumann(1) * V2.u1;
+                    V_GP.u4 += alpha_neumann(1) * V2.u4;
                 }
-                if (S3 == CS::Fluid){
-                    u_n_GP -= alpha_dirichlet(2)*(V3.u2*n.x + V3.u3*n.y);
-                    u_t_GP += alpha_neumann(2)*(-V3.u2*n.y + V3.u3*n.x);
-                    V_GP.u1 += alpha_neumann(2)*V3.u1;
-                    V_GP.u4 += alpha_neumann(2)*V3.u4;
+                if (S3 == CS::Fluid) {
+                    u_n_GP -= alpha_dirichlet(2) * (V3.u2 * n.x + V3.u3 * n.y);
+                    u_t_GP += alpha_neumann(2) * (-V3.u2 * n.y + V3.u3 * n.x);
+                    V_GP.u1 += alpha_neumann(2) * V3.u1;
+                    V_GP.u4 += alpha_neumann(2) * V3.u4;
                 }
-                if (S4 == CS::Fluid){
-                    u_n_GP -= alpha_dirichlet(3)*(V4.u2*n.x + V4.u3*n.y);
-                    u_t_GP += alpha_neumann(3)*(-V4.u2*n.y + V4.u3*n.x);
-                    V_GP.u1 += alpha_neumann(3)*V4.u1;
-                    V_GP.u4 += alpha_neumann(3)*V4.u4;
+                if (S4 == CS::Fluid) {
+                    u_n_GP -= alpha_dirichlet(3) * (V4.u2 * n.x + V4.u3 * n.y);
+                    u_t_GP += alpha_neumann(3) * (-V4.u2 * n.y + V4.u3 * n.x);
+                    V_GP.u1 += alpha_neumann(3) * V4.u1;
+                    V_GP.u4 += alpha_neumann(3) * V4.u4;
                 }
             }
             //transform back
-            V_GP.u2 = n.x*u_n_GP - n.y*u_t_GP;
-            V_GP.u3 = n.y*u_n_GP + n.x*u_t_GP;
-            if (S1 == CS::Fluid && S2 == CS::Fluid && S3 == CS::Fluid && S4 == CS::Fluid){
+            V_GP.u2 = n.x * u_n_GP - n.y * u_t_GP;
+            V_GP.u3 = n.y * u_n_GP + n.x * u_t_GP;
+            /*if (S1 == CS::Fluid && S2 == CS::Fluid && S3 == CS::Fluid && S4 == CS::Fluid){
                 /*
                 if (e.first.i == 11 && e.first.j == 9){
                     cout << "u_n_GP = " << u_n_GP << ", u_t_GP = "<< u_t_GP<<endl;
                     cout << "n = "<<n<<endl;
                     cout << "V_GP = "<<V_GP<<endl;
                 }*/
-                //cout << e.first;
-                //cout << ", V_GP = "<<V_GP<<endl;
-                /*if (e.first.i == 9 && e.first.j== 11 || e.first.i == 9 && e.first.j == 12){
-                    cout << e.first<<endl;
-                    cout << "V_GP = "<<V_GP<<endl;
-                    cout << "GP = " << e.second.first<<endl;
-                    cout << "n = "<<e.second.second<<endl<<endl;
-                }*/
+            //cout << e.first;
+            //cout << ", V_GP = "<<V_GP<<endl;
+            /*if (e.first.i == 9 && e.first.j== 11 || e.first.i == 9 && e.first.j == 12){
+                cout << e.first<<endl;
+                cout << "V_GP = "<<V_GP<<endl;
+                cout << "GP = " << e.second.first<<endl;
+                cout << "n = "<<e.second.second<<endl<<endl;
+            }*/
 
-            }
+
+        /*
             else{
-                /*
+
                 if (e.first.i == 11 && e.first.j == 15){
                     cout << "V_GP = "<<V_GP<<endl;
-                }*/
+                }
 
-            }
-            //double nan = -sqrt(-1);
-            //if (V_GP.)
+            }*/
+        //double nan = -sqrt(-1);
+        //if (V_GP.)
 
-            U_in[IX(e.first.i,e.first.j)] = fluid::FVM_Solver::primitive2conserved(V_GP);
+        U_in[IX(e.first.i, e.first.j)] = fluid::FVM_Solver::primitive2conserved(V_GP);
 
 
 

@@ -11,10 +11,15 @@
 #include "fvm_utilities.hpp"
 #include "../../includes.hpp"
 
+
+namespace solid{
+    //Forward declaration
+    class SolidBody;
+}
+
+
 namespace fluid {
 //typedef vec4 (*bc_func_ptr)(const vec4& U_in); //In order to set appropriate BC's functions are passed as arguents and return types
-
-    constexpr double Gamma = 1.4;
 
     enum class CellStatus{Fluid=0, Ghost, Solid};
 
@@ -28,6 +33,7 @@ namespace fluid {
         OdeScheme ode_scheme;
         FluxScheme flux_scheme;
         ExternalBCs external_bcs;
+        std::vector<std::shared_ptr<solid::SolidBody>> solid_bodies;
         CellStatus* cell_status;
         vec4 *U;
     private:
@@ -47,6 +53,8 @@ namespace fluid {
         static vec4 primitive2conserved(const vec4 &V_in);
 
     private:
+        void set_solid_BCs(vec4* U_in);
+
         double calc_timestep() const;
 
         void eval_RHS(vec4 *U_in);

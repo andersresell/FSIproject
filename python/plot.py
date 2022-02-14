@@ -6,12 +6,12 @@ from riemann_exact import riemann_exact
 from plotting_utilities import read_header
 
 #Read header
-fvm_output_folder = "output0"
+fvm_output_folder = "output1"
 ni,nj,L_x,L_y,write_stride,n_timesteps, t_end, dx,dy, x,y = read_header(fvm_output_folder)
 
 
 
-levels = np.linspace(0.8e5,10e5,100)
+levels = np.linspace(0.5e4,4e5,100)
 
 #animate
 for n in range(0,n_timesteps+1):

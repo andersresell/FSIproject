@@ -52,6 +52,18 @@ namespace fluid {
         std::cout << "Initial condition 2 set\n";
     }
 
+    void set_constant_horizontal_flow_cond(vec4* U, int ni, int nj, double M, double rho, double p){
+        double u = M*sqrt(Gamma*p/rho);
+        for (int i{0}; i < ni + 4; i++) {
+            for (int j{0}; j < nj + 4; j++) {
+                U[IX(i, j)].u1 = rho;
+                U[IX(i, j)].u2 = rho * u;
+                U[IX(i, j)].u3 = 0;
+                U[IX(i, j)].u4 = p / (fluid::Gamma - 1) + 0.5 * rho * u * u;
+            }
+        }
+        std::cout << "Initial condition horizontal constant flow, Mach "+std::to_string(M)+" set\n";
+    }
 
     void set_initial_cond_riemann(vec4* U, int ni, int nj, const vec4& V_l, const vec4& V_r){
         if (ni%2 != 0) {

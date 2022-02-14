@@ -9,8 +9,11 @@
 #include "solid_utilities.hpp"
 #include "../fluid/fvm_solver.hpp"
 
+
+
 namespace solid {
 
+    enum class SolidBodyType{Static, MovableRigid, Deformable};
 
     class SolidBody {
         Point *boundary; //A polygon defining the boundary
@@ -26,7 +29,7 @@ namespace solid {
     public:
         SolidBody(fluid::FVM_Solver &fvm, const std::vector<Point> &boundary_in);
 
-        void set_bc();
+        void set_bc(fluid::vec4* U_in);
 
         void debug_csv();
 

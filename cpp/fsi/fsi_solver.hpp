@@ -16,15 +16,15 @@ enum class StoppingCrit{Time=0, Timesteps};
 class FSI_Solver{
 public: //remove later
     fluid::FVM_Solver& fvm;
-    std::vector<std::unique_ptr<solid::SolidBody>> solid_bodies;
+    std::vector<std::shared_ptr<solid::SolidBody>> solid_bodies;
     std::pair<StoppingCrit,double> stopping_crit;
     const int fvm_write_stride;
     const std::string fvm_output_folder;
 public:
 
-    void add_solid(std::unique_ptr<solid::SolidBody> solid_body);
+    void add_solid(std::shared_ptr<solid::SolidBody>&& solid_body);
 
-    FSI_Solver(fluid::FVM_Solver& fvm, int write_stride, std::string fvm_output_folder);
+    FSI_Solver(fluid::FVM_Solver& fvm, int fvm_write_stride, std::string fvm_output_folder);
 
     int solve();
 
