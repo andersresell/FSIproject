@@ -20,6 +20,7 @@ int FSI_Solver::solve() {
     int n{0};
     double t{0};
     double dt;
+    fvm.initialize_solids();
     bool breaker{false};
     while (true) {
         std::cout << "FSI solve: n = " + std::to_string(n) + "\n";
@@ -63,12 +64,12 @@ int FSI_Solver::solve() {
 
 void FSI_Solver::solid_test(){
     using namespace std;
-    int ni = 300;
-    int nj = 300;
+    int ni = 50;
+    int nj = 50;
     double L_x = 10;
     double L_y = 10;
     double CFL = 0.5;
-    int n_timesteps{500};
+    int n_timesteps{1500};
     int fvm_write_stride{10};
     //std::string fvm_output_folder{"output0"};
     std::string fvm_output_folder{"output1"};
@@ -77,19 +78,19 @@ void FSI_Solver::solid_test(){
     fluid::FluxScheme flux_scheme{fluid::FluxScheme::HLLC};
     fluid::OdeScheme ode_scheme{fluid::OdeScheme::TVD_RK3};
     fluid::BC_Type wall = fluid::BC_Type::InvicidWall;
-    //fluid::ExternalBCs bcs{ni,nj,wall,wall,wall,wall};
-    double M_inf{3};
-    fluid::ExternalBCs bcs{ni,nj,fluid::BC_Type::SupersonicInflow, fluid::BC_Type::NonreflectingOutflow,wall, wall, M_inf};
+    fluid::ExternalBCs bcs{ni,nj,wall,wall,wall,wall};
+    double M_inf{2};
+    //fluid::ExternalBCs bcs{ni,nj,fluid::BC_Type::SupersonicInflow, fluid::BC_Type::NonreflectingOutflow,wall, wall, M_inf};
     fluid::FVM_Solver fvm{ni,nj,L_x,L_y,CFL,ode_scheme,flux_scheme,bcs};
-    //fluid::set_initial_cond2(fvm.U, fvm.ni, fvm.nj);
-    fluid::set_constant_horizontal_flow_cond(fvm.U,ni,nj,M_inf);
+    fluid::set_initial_cond2(fvm.U, fvm.ni, fvm.nj);
+    //fluid::set_constant_horizontal_flow_cond(fvm.U,ni,nj,M_inf);
     FSI_Solver fsi{fvm, fvm_write_stride, fvm_output_folder};
     fsi.set_timesteps(n_timesteps);
     {
         vector<solid::Point> circle1;
         vector<solid::Point> circle2;
         vector<solid::Point> circle3;
-        double R = 2.99999999;
+        double R = 1.99999;
         double x0 = 5;
         double y0 = 5;
         int n = 4;
@@ -98,7 +99,7 @@ void FSI_Solver::solid_test(){
             circle1.push_back(solid::Point{x0 + R * cos(theta), R * sin(theta)});
             circle2.push_back(solid::Point{x0 + R * cos(theta), L_y + R * sin(theta)});
         }
-        n = 20;
+        n = 10;
         R = 0.76;
         for (int i{0}; i < n; i++) {
             double theta = 2 * M_PI * i / n;
@@ -109,10 +110,10 @@ void FSI_Solver::solid_test(){
         tri.push_back(solid::Point{6,4});
         tri.push_back(solid::Point{6,6});
 
-        //fsi.add_solid(std::make_unique<solid::SolidBody>(fvm,circle1));
-        //fsi.add_solid(std::make_unique<solid::SolidBody>(fvm,circle2));
-        //fsi.add_solid(std::make_unique<solid::SolidBody>(fvm, circle3));
-        fsi.add_solid(std::move(std::make_shared<solid::SolidBody>(fvm,tri)));
+        //fsi.add_solid(std::make_unique<solid::SolidBody>(fvm,circle1,solid::SolidBodyType::Static));
+        //fsi.add_solid(std::make_unique<solid::SolidBody>(fvm,circle2,solid::SolidBodyType::Static));
+        fsi.add_solid(std::make_unique<solid::SolidBody>(fvm, circle3,solid::SolidBodyType::Static));
+        //fsi.add_solid(std::move(std::make_shared<solid::SolidBody>(fvm,tri,solid::SolidBodyType::Static)));
     }
     fsi.solve();
 

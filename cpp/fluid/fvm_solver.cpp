@@ -11,7 +11,7 @@ namespace fluid {
     FVM_Solver::FVM_Solver(int ni, int nj, double L_x, double L_y, double CFL, OdeScheme ode_scheme,
                            FluxScheme flux_scheme, const ExternalBCs& external_bcs)
             : ni{ni}, nj{nj}, L_x{L_x}, L_y{L_y}, dx{L_x / ni}, dy{L_y / nj}, CFL{CFL}, ode_scheme{ode_scheme},
-              flux_scheme{flux_scheme}, external_bcs{external_bcs} {
+              flux_scheme{flux_scheme}, external_bcs{external_bcs}, solids_initialized{false}{
         U = new vec4[(ni + 4) * (nj + 4)];
         V = new vec4[(ni + 4) * (nj + 4)];
         U_left = new vec4[(ni + 2) * nj];
@@ -27,9 +27,12 @@ namespace fluid {
             U_tmp = nullptr;
         }
         cell_status = new CellStatus[(ni + 4) * (nj + 4)];
+        is_static = new bool[(ni + 4) * (nj + 4)];
+        /*
         for (int i{0}; i < (ni + 4) * (nj + 4); i++) {
             cell_status[i] = CellStatus::Fluid; //setting all values to fluid, including the ones at the exterior
-        }
+            is_static[i] = false;
+        }*/
 
     }
 
@@ -69,9 +72,37 @@ namespace fluid {
 
     }
 
+    void FVM_Solver::initialize_solids() {
+        for (int i{0}; i < ni + 4; i++) {
+            for (int j{0}; j < nj + 4; j++) {
+                if (i == 0 || i == 1 || i == ni + 2 || i == ni + 3 || j == 0 || j == 1 || j == nj + 2 || j == nj + 3) {
+                    cell_status[IX(i,j)] = CellStatus::Ghost; //setting all values to fluid, including the ones at the exterior
+                } else {
+                    cell_status[IX(i, j)] = CellStatus::Fluid;
+                }
+                is_static[IX(i,j)] = false;
+            }
+        }
+
+        for (auto &sb_ptr: solid_bodies) {
+            if (sb_ptr->type == solid::SolidBodyType::Static) {
+                sb_ptr->find_solid_cells();
+                sb_ptr->flag_static();
+                sb_ptr->find_ghost_cells();
+                sb_ptr->find_intercepts();
+            }
+        }
+        solids_initialized = true;
+    }
+
     void FVM_Solver::set_solid_BCs(vec4* U_in){
         for (auto& sb_ptr : solid_bodies){
-            sb_ptr->set_bc(U_in);
+            if (sb_ptr->type != solid::SolidBodyType::Static){
+                sb_ptr->find_solid_cells();
+                sb_ptr->find_ghost_cells();
+                sb_ptr->find_intercepts();
+            }
+            sb_ptr->interpolate_invicid_wall(U_in);
         }
     }
 
@@ -222,6 +253,7 @@ namespace fluid {
         delete[] G_f;
         delete[] Res;
         delete[] cell_status;
+        delete[] is_static;
 
         if (ode_scheme == OdeScheme::TVD_RK3) {
             delete[] U_tmp;

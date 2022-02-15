@@ -35,6 +35,8 @@ namespace fluid {
         ExternalBCs external_bcs;
         std::vector<std::shared_ptr<solid::SolidBody>> solid_bodies;
         CellStatus* cell_status;
+        bool* is_static;
+        bool solids_initialized;
         vec4 *U;
     private:
         vec4 *U_tmp, *V, *Res, *U_left, *U_right, *U_down, *U_up, *F_f, *G_f;
@@ -52,7 +54,9 @@ namespace fluid {
 
         static vec4 primitive2conserved(const vec4 &V_in);
 
+        void initialize_solids();
     private:
+
         void set_solid_BCs(vec4* U_in);
 
         double calc_timestep() const;

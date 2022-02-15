@@ -6,22 +6,21 @@
 
 namespace solid {
 
-    SolidBody::SolidBody(fluid::FVM_Solver &fvm, const std::vector<Point> &boundary_in)
+    SolidBody::SolidBody(fluid::FVM_Solver &fvm, const std::vector<Point> &boundary_in, SolidBodyType type)
             : fvm{fvm}, n_bound{static_cast<unsigned int>(boundary_in.size())}, ni{fvm.ni}, nj{fvm.nj},
-              dx{fvm.L_x / ni}, dy{fvm.L_y / nj}{
+              dx{fvm.L_x / ni}, dy{fvm.L_y / nj}, type{type}{
         boundary = new Point[n_bound];
         for (int i{0}; i < boundary_in.size(); i++) {
             boundary[i] = boundary_in[i];
         }
         Cell::nj = nj;
-    }
-
+    }/*
     void SolidBody::set_bc(fluid::vec4* U_in){
         find_solid_cells();
         find_ghost_cells();
         find_intercepts();
         interpolate_invicid_wall(U_in);
-    }
+    }*/
 
     void SolidBody::find_solid_cells() {
         Point p;
@@ -32,8 +31,17 @@ namespace solid {
                     solid_cells.push_back(Cell{i,j});
                     fvm.cell_status[IX(i, j)] = fluid::CellStatus::Solid;
                 }
-                //Need a way to set cells to Fluid without ruining a different solid object.
+                else if (~fvm.is_static[IX(i,j)] && fvm.solids_initialized){
+                    //If the cell is not a static solid cell the cell is set back to fluid in case it has moved
+                    fvm.cell_status[IX(i, j)] = fluid::CellStatus::Fluid;
+                }
             }
+        }
+    }
+
+    void SolidBody::flag_static(){
+        for (auto& c : solid_cells){
+            fvm.is_static[IX(c.i,c.j)] = true;
         }
     }
 
@@ -59,21 +67,10 @@ namespace solid {
             }
             if (ghost){
                 fvm.cell_status[IX(i,j)] = fluid::CellStatus::Ghost;
-                //ghost_cells.push_back(c);
                 intercepts[c]; //assigning the key so that the ghost cells are known
             }
         }
     }
-/*
-    Point SolidBody::compute_intercept(Point GP, Point p, Point q) {
-        double line_length{sqrt((q.x - p.x) * (q.x - p.x) + (q.y - p.y) * (q.y - p.y))};
-        //normal vector of line segment p-q
-        double n_x = (q.y - p.y) / line_length;
-        double n_y = -(q.x - p.y) / line_length;
-
-        double r_dot_n = (q.x - GP.x) * n_x + (q.y - GP.y) * n_y; //vector from ghost point to q dotted with normal
-        return {r_dot_n * n_x, r_dot_n * n_y};
-    }*/
 
     void SolidBody::find_intercepts() {
         using namespace std;
@@ -223,19 +220,7 @@ namespace solid {
                 VM_neumann.transposeInPlace();
                 alpha_dirichlet = VM_dirichlet.partialPivLu().solve(VM_IP);
                 alpha_neumann = VM_neumann.partialPivLu().solve(VM_IP);
-                /*
-                if (e.first.i == 11 && e.first.j == 15) {
-                    cout << "GP_ind" << e.first<<endl;
-                    cout << "e.BI " <<e.second.first<<endl;
-                    cout << "BI_norm "<<e.second.second<<endl;
-                    cout << "a_dir = " << alpha_dirichlet << "\na_neum = " << alpha_neumann << endl;
-                    cout << "VM:\n"<< VM<<endl;
-                    cout << "VM_dir:\n"<<VM_dirichlet.transpose()<<endl;
-                    cout << "VM_neu:\n"<<VM_neumann.transpose()<<endl;
-                    cout << "states: "<< (S1 ==CS::Fluid) << (S2 == CS::Fluid) << (S3 == CS::Fluid) << (S4 == CS::Fluid)<<endl;
 
-                }*/
-                //Dirichlet on the normal velocity: u_n_BI = 0. Neumann on u_t, rho, p
                 u_n_GP = 0;
                 u_t_GP = 0;
                 V_GP *= 0;
@@ -268,37 +253,8 @@ namespace solid {
             //transform back
             V_GP.u2 = n.x * u_n_GP - n.y * u_t_GP;
             V_GP.u3 = n.y * u_n_GP + n.x * u_t_GP;
-            /*if (S1 == CS::Fluid && S2 == CS::Fluid && S3 == CS::Fluid && S4 == CS::Fluid){
-                /*
-                if (e.first.i == 11 && e.first.j == 9){
-                    cout << "u_n_GP = " << u_n_GP << ", u_t_GP = "<< u_t_GP<<endl;
-                    cout << "n = "<<n<<endl;
-                    cout << "V_GP = "<<V_GP<<endl;
-                }*/
-            //cout << e.first;
-            //cout << ", V_GP = "<<V_GP<<endl;
-            /*if (e.first.i == 9 && e.first.j== 11 || e.first.i == 9 && e.first.j == 12){
-                cout << e.first<<endl;
-                cout << "V_GP = "<<V_GP<<endl;
-                cout << "GP = " << e.second.first<<endl;
-                cout << "n = "<<e.second.second<<endl<<endl;
-            }*/
 
-
-        /*
-            else{
-
-                if (e.first.i == 11 && e.first.j == 15){
-                    cout << "V_GP = "<<V_GP<<endl;
-                }
-
-            }*/
-        //double nan = -sqrt(-1);
-        //if (V_GP.)
-
-        U_in[IX(e.first.i, e.first.j)] = fluid::FVM_Solver::primitive2conserved(V_GP);
-
-
+            U_in[IX(e.first.i, e.first.j)] = fluid::FVM_Solver::primitive2conserved(V_GP);
 
         }
 
