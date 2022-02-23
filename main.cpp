@@ -15,7 +15,7 @@ int main() {
     using namespace Eigen;
 
 
-    FSI_Solver::solid_test();
+    FSI_Solver::wedge_verification();
 /*
     int ni = 20;
     int nj = 20;

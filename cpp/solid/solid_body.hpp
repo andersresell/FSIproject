@@ -13,11 +13,9 @@
 
 namespace solid {
 
-    enum class SolidBodyType{Static, MovableRigid, Deformable};
+    enum class SolidBodyType{Static, Movable};
 
     class SolidBody {
-        Point *boundary; //A polygon defining the boundary
-        const unsigned int n_bound;
         std::vector<Cell> solid_cells;
         //A map from ghost cells to intercepts. Key is the ghost cell, 1st value is the intercept, 2nd value is the normal
         std::map<Cell, std::pair<Point, Point>> intercepts;
@@ -27,7 +25,9 @@ namespace solid {
         double dx, dy;
 
     public:
-        SolidBodyType type;
+        Point *boundary; //A polygon defining the boundary
+        const SolidBodyType type;
+        const unsigned int n_bound;
 
         SolidBody(fluid::FVM_Solver &fvm, const std::vector<Point> &boundary_in, SolidBodyType type);
 
@@ -37,7 +37,7 @@ namespace solid {
 
         void debug_intercepts_csv();
 
-        void write_boundary_csv(const std::string &output_folder);
+        //void write_boundary_csv(const std::string &output_folder, int solid_index, int n=-1);
 
         void find_solid_cells();
 

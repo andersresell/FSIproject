@@ -283,15 +283,17 @@ namespace solid {
         }
     }
 
-
-    void SolidBody::write_boundary_csv(const std::string &output_folder) {
-        std::ofstream ost{"../python/output_folders/"+output_folder+"/boundary.csv"};
+/*
+    void SolidBody::write_boundary_csv(const std::string &output_folder, int solid_index, int n) {
+        std::ofstream ost{
+                "../python/output_folders/" + output_folder + "/boundary" + std::to_string(solid_index) + "_step" +
+                std::to_string(n) + ".csv"};
         if (!ost) std::cerr << "error: couldn't open solid boundary csv file\n";
         ost << "#x,y\n";
-        for (int i{0}; i<n_bound;i++){
+        for (int i{0}; i < n_bound; i++) {
             ost << boundary[i].x << ',' << boundary[i].y << '\n';
         }
-    }
+    }*/
 
 
     bool SolidBody::point_inside(Point p) const{

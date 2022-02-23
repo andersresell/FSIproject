@@ -8,12 +8,14 @@ namespace fluid {
     void FVM_Solver::HLLC() {
         for (int i{1}; i < ni + 2; i++) {
             for (int j{2}; j < nj + 2; j++) {
-                F_f[IXF(i, j)] = F_f_HLLC(U_right[IXH(i, j)], U_left[IXH(i + 1, j)]);
+                if (cell_status[IX(i,j)] != CellStatus::Solid)
+                    F_f[IXF(i, j)] = F_f_HLLC(U_right[IXH(i, j)], U_left[IXH(i + 1, j)]);
             }
         }
         for (int i{2}; i < ni + 2; i++) {
             for (int j{1}; j < nj + 2; j++) {
-                G_f[IXG(i, j)] = G_f_HLLC(U_up[IXV(i, j)], U_up[IXV(i, j + 1)]);
+                if (cell_status[IX(i,j)] != CellStatus::Solid)
+                    G_f[IXG(i, j)] = G_f_HLLC(U_up[IXV(i, j)], U_up[IXV(i, j + 1)]);
             }
         }
     }

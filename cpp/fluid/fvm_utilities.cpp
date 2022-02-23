@@ -17,8 +17,8 @@ namespace fluid {
             std::cerr << "Supersonic inflow only permitted at western wall\n";
         }
 
-        if (west == BC_Type::NonreflectingOutflow || north == BC_Type::NonreflectingOutflow || south == BC_Type::NonreflectingOutflow) {
-            std::cerr << "Nonreflecting outflow only permitted at eastern wall\n";
+        if (west == BC_Type::NonreflectingOutflow) {
+            std::cerr << "Nonreflecting outflow not permitted at western wall\n";
         }
         double u_inf = M_inf*sqrt(Gamma*p_inf/rho_inf);
         U_inf = {rho_inf,rho_inf*u_inf, 0, p_inf/(Gamma-1) + 0.5*rho_inf*u_inf*u_inf};
@@ -66,12 +66,26 @@ namespace fluid {
                 }
                 break;
             }
+            case BC_Type::NonreflectingOutflow : {
+                for (int i{ 0 }; i < ni + 4; i++) {
+                    U_in[IX(i, 0)] = U_in[IX(i, 2)];
+                    U_in[IX(i, 1)] = U_in[IX(i, 2)];
+                }
+                break;
+            }
         }
         switch (north) {
             case BC_Type::InvicidWall : {
                 for (int i{0}; i < ni + 4; i++) {
                     U_in[IX(i, nj + 3)] = set_horizontal_invicid_wall(U_in[IX(i, nj)]);
                     U_in[IX(i, nj + 2)] = set_horizontal_invicid_wall(U_in[IX(i, nj + 1)]);
+                }
+                break;
+            }
+            case BC_Type::NonreflectingOutflow : {
+                for (int i{ 0 }; i < ni + 4; i++) {
+                    U_in[IX(i, nj + 3)] = U_in[IX(i, nj + 1)];
+                    U_in[IX(i, nj + 2)] = U_in[IX(i, nj + 1)];
                 }
                 break;
             }

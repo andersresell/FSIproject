@@ -13,7 +13,7 @@ ni,nj,L_x,L_y,write_stride,n_timesteps, t_end, dx,dy, x,y = read_header(fvm_outp
 
 #Plotting the last step
 levels = np.linspace(0,3,100)
-my_data = genfromtxt("output_folders/"+fvm_output_folder+"/fvm_out_t"+str(n_timesteps)+".csv",comments = "#", delimiter=',')
+my_data = genfromtxt("output_folders/"+fvm_output_folder+"/fvm_output_t"+str(n_timesteps)+".csv",comments = "#", delimiter=',')
 rho = my_data[:,0]
 rho = np.transpose(rho.reshape((ni,nj)))
 u = my_data[:,1]

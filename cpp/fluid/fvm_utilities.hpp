@@ -15,8 +15,12 @@
 #define IXG(i,j) ((i)*(nj+1) + (j) -2*nj -3) //Access of vertical fluxes. The fluxes are defined at the north cell face
 #define IXR(i,j) ((i)*nj + (j) - 2*(nj+1)) //for fields only defined in the solution domain (omitting ghost points)
 
-template <typename T> int sgn(T val) {
+template <typename T> inline int sgn(T val) {
     return (T(0) < val) - (val < T(0));
+}
+
+template <typename T> inline T squared(T val){
+    return val*val;
 }
 
 namespace fluid {
