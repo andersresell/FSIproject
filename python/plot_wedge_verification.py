@@ -11,8 +11,8 @@ from plotting_utilities import *
 output_folder = "wedge_verification_attached"
 output_folder = "wedge_verification_detached"
 
-p = Plot(output_folder)
+p = Plotter(output_folder)
 #p.plot_steady_state("M")
-p.animate("p")
+p.animate("M")
 
 

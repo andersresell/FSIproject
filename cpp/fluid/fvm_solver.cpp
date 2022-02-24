@@ -33,7 +33,7 @@ namespace fluid {
     void FVM_Solver::write_fvm_output(const std::string& output_folder, int n) {
         //Writing one output data file for every timestep
         conserved2primitive(U);
-        std::ofstream ost{"../python/output_folders/" + output_folder +  "/fvm_output_t" + std::to_string(n) + ".csv"};
+        std::ofstream ost{"python/output_folders/" + output_folder +  "/fvm_output_t" + std::to_string(n) + ".csv"};
         if (!ost) {
             std::cerr << "Error: couldn't open fvm csv output file\n";
             exit(1);
@@ -55,7 +55,7 @@ namespace fluid {
     }
     void FVM_Solver::write_fvm_header(const std::string& output_folder, int write_stride, int n_last, double t_end) const{
         //Writing header file containg information about the simulation. This info is used by the python plotter
-        std::ofstream ost{"../python/output_folders/" + output_folder + "/fvm_header.csv"};
+        std::ofstream ost{"python/output_folders/" + output_folder + "/fvm_header.csv"};
         if (!ost) {
             std::cerr << "Error: couldn't open fvm csv header file\n";
             exit(1);

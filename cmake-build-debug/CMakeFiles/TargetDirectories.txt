@@ -1,7 +1,3 @@
 /home/anders/Dev/Master/FSIproject/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/anders/Dev/Master/FSIproject/cmake-build-debug/CMakeFiles/FSIproject.dir
-/home/anders/Dev/Master/FSIproject/cmake-build-debug/CMakeFiles/module_name.dir
-/home/anders/Dev/Master/FSIproject/cmake-build-debug/CMakeFiles/fluid_solver_py.dir
 /home/anders/Dev/Master/FSIproject/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/anders/Dev/Master/FSIproject/cmake-build-debug/pybind11/CMakeFiles/rebuild_cache.dir
-/home/anders/Dev/Master/FSIproject/cmake-build-debug/pybind11/CMakeFiles/edit_cache.dir
+/home/anders/Dev/Master/FSIproject/cmake-build-debug/CMakeFiles/FSIproject.dir

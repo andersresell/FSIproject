@@ -1,0 +1,8 @@
+//
+// Created by anders on 2/23/22.
+//
+
+#ifndef FSIPROJECT_SETUP_CASES_HPP
+#define FSIPROJECT_SETUP_CASES_HPP
+
+#endif //FSIPROJECT_SETUP_CASES_HPP

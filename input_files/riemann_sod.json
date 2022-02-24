@@ -1,0 +1,51 @@
+{
+  "output_folder": "output_riemann_sod",
+  "ni": 200,
+  "nj": 200,
+  "L_x": 3,
+  "L_y": 3,
+  "CFL": 0.6,
+  "flux_scheme": "Rusanov",
+  "ode_scheme": "TVD_RK3",
+  "fvm_write_stride": 10,
+
+  "west_bc": {
+    "type": "InvicidWall",
+    "M_inf": false
+  },
+  "east_bc": {
+    "type": "InvicidWall"
+  },
+  "south_bc": {
+    "type": "InvicidWall"
+  },
+  "north_bc": {
+    "type": "InvicidWall"
+  },
+
+  "initial_cond": {
+    "case": "riemann_problem",
+    "rho_l": 3,
+    "u_l": 0,
+    "v_l": 0,
+    "p_l": 3,
+    "rho_r": 1,
+    "u_r": 0,
+    "v_r": 0,
+    "p_r": 1
+  },
+
+
+  "stopping_crit": {
+    "type": "Time",
+    "value": 0.5
+  },
+
+  "static_solids": [
+    {
+      "type": "wedges",
+      "angle": 30
+    }
+  ]
+}
+

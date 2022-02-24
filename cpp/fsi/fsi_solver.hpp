@@ -46,6 +46,8 @@ public:
     void write_static_solid_boundaries();
     void write_movable_solid_boudnaries(int n);
 
+    static void riemann_test();
+
     static void solid_test();
 
     static void fluid_solve_test(int ni,

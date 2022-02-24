@@ -3,7 +3,7 @@ from numpy import genfromtxt
 import matplotlib.pyplot as plt
 from riemann_exact import *
 
-class Plot:
+class Plotter:
     def __init__(self, output_folder):
         self.output_folder = output_folder
         #read fvm header:
@@ -90,7 +90,7 @@ class Plot:
             plt.plot(np.append(data[:,0],data[0,0]),np.append(data[:,1],data[0,1]),"black")
 
     def plot_riemann_problem(self):
-        levels = np.linspace(0,3,100)
+
         data = genfromtxt("output_folders/"+self.output_folder+"/fvm_output_t"+str(self.n_timesteps)+".csv",comments = "#", delimiter=',')
         rho = data[:,0]
         rho = np.transpose(rho.reshape((self.ni,self.nj)))
@@ -99,30 +99,34 @@ class Plot:
         p = data[:,3]
         p = np.transpose(p.reshape((self.ni,self.nj)))
 
-        rho_l = rho[int(self.nj/2),self.ni/4]
-        rho_r = rho[int(self.nj/2),self.ni*3/4]
-        u_l = u[int(self.nj/2),self.ni/4]
-        u_r = u[int(self.nj/2),self.ni*3/4]
-        p_l = p[int(self.nj/2),self.ni/4]
-        p_r = p[int(self.nj/2),self.ni*3/4]
+        rho_l = rho[(int(self.nj/2)),0]
+        rho_r = rho[int(self.nj/2),self.ni-1]
+        u_l = u[int(self.nj/2),0]
+        u_r = u[int(self.nj/2),self.ni-1]
+        p_l = p[int(self.nj/2),0]
+        p_r = p[int(self.nj/2),self.ni-1]
 
+        rho_exact,u_exact,p_exact = riemann_exact(rho_l,u_l,p_l,rho_r,u_r,p_r,self.ni,self.L_x,self.t_end)
+
+        plt.figure()
         plt.plot(self.x,rho[int(self.nj/2),:],'.')
-        plt.plot(self.x,u[int(self.nj/2),:],'.')
-        plt.plot(self.x,p[int(self.nj/2),:],'.')
-
-        rho,u,p = riemann_exact(rho_l,u_l,p_l,rho_r,u_r,p_r,self.ni,self.L_x,self.t_end)
-        plt.plot(self.x,rho)
+        plt.plot(self.x,rho_exact,"black")
         plt.xlabel("x")
         plt.ylabel("Density")
 
-        plt.plot(self.x,u)
-        plt.set_xlabel("x")
-        plt.set_ylabel("Velocity")
+        plt.figure()
+        plt.plot(self.x,u[int(self.nj/2),:],'.')
+        plt.plot(self.x,u_exact,"black")
+        plt.xlabel("x")
+        plt.ylabel("Velocity")
 
-#axis[0,1].plot(x,p)
-##axis[0,1].set_xlabel("x")
-#axis[0,1].set_ylabel("Pressure")
+        plt.figure()
 
-#fig = plt.gcf()
-#fig.set_size_inches(8, 6)
+        plt.plot(self.x,p[int(self.nj/2),:],'k.')
+        plt.plot(self.x,p_exact,'--r')
+        plt.legend(['numerical','exact'])
+
+        plt.xlabel("x")
+        plt.ylabel("Pressure")
+
 

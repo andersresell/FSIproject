@@ -69,12 +69,10 @@ int FSI_Solver::solve() {
         //Writing fvm header at last timestep, since the number of steps can't be known a priori if endtime is
         //used as stopping criterion
         if (breaker) {
+            if (n % fvm_write_stride != 0) fvm.write_fvm_output(output_folder, n); //making sure that last step is read
             fvm.write_fvm_header(output_folder, fvm_write_stride, n, t);
             write_fsi_header();
-            if (stopping_crit.first == StoppingCrit::Convergence){
-                std::cout << "Writing fvm convergence history\n";
-                write_fvm_convergence_history();
-            }
+            write_fvm_convergence_history();
             break;
         }
         t += dt;
@@ -109,7 +107,7 @@ void FSI_Solver::set_rho_old() {
 }
 
 void FSI_Solver::write_fvm_convergence_history() {
-    std::ofstream ost{"../python/output_folders/" + output_folder + "/fvm_convergence_history.csv"};
+    std::ofstream ost{"python/output_folders/" + output_folder + "/fvm_convergence_history.csv"};
     if (!ost) {
         std::cerr << "Error: couldn't open fvm convergence csv output file\n";
         exit(1);
@@ -122,7 +120,7 @@ void FSI_Solver::write_fvm_convergence_history() {
 
 
 void FSI_Solver::write_fsi_header() {
-    std::ofstream ost{"../python/output_folders/" + output_folder + "/fsi_header.csv"};
+    std::ofstream ost{"python/output_folders/" + output_folder + "/fsi_header.csv"};
     if (!ost) {
         std::cerr << "Error: couldn't open fsi csv header file\n";
         exit(1);
@@ -148,7 +146,7 @@ void FSI_Solver::write_static_solid_boundaries() {
     for (auto &s: solid_bodies) {
         if (s->type == solid::SolidBodyType::Static) {
             std::ofstream ost{
-                    "../python/output_folders/" + output_folder + "/static_boundary" + std::to_string(solid_ind) +
+                    "python/output_folders/" + output_folder + "/static_boundary" + std::to_string(solid_ind) +
                     ".csv"};
             if (!ost) {
                 std::cerr << "error: couldn't open static boundary csv file\n";
@@ -167,7 +165,7 @@ void FSI_Solver::write_movable_solid_boudnaries(int n) {
     for (auto &s: solid_bodies) {
         if (s->type == solid::SolidBodyType::Movable) {
             std::ofstream ost{
-                    "../python/output_folders/" + output_folder + "/movable_boundary" + std::to_string(solid_ind) +
+                    "python/output_folders/" + output_folder + "/movable_boundary" + std::to_string(solid_ind) +
                     "_t" + std::to_string(n) + ".csv"};
             if (!ost) {
                 std::cerr << "error: couldn't open movable boundary csv file\n";
@@ -179,6 +177,47 @@ void FSI_Solver::write_movable_solid_boudnaries(int n) {
             }
         }
     }
+}
+
+void FSI_Solver::riemann_test(){
+    int ni{100};
+    int nj{100};
+    double L_x = 4;
+    double L_y = 4;
+    double CFL = 0.8;
+    int n_timesteps{100};
+    int fvm_write_stride{1};
+    std::string output_folder{"output_riemann_sod"};
+    //fluid::OdeScheme ode_scheme{fluid::OdeScheme::TVD_RK3};
+    fluid::FluxScheme flux_scheme{fluid::FluxScheme::HLLC};
+    fluid::OdeScheme ode_scheme{fluid::OdeScheme::ExplicitEuler};
+    //fluid::FluxScheme flux_scheme{fluid::FluxScheme::Rusanov};
+
+    //Testing sod's problem
+    double rho_l = 3;
+    double u_l = 0;
+    double v_l = 0;
+    double p_l = 3;
+    double rho_r = 1;
+    double u_r = 0;
+    double v_r = 0;
+    double p_r = 1;
+
+    fluid::vec4 V_l{rho_l, u_l, v_l, p_l};
+    fluid::vec4 V_r{rho_r, u_r, v_r, p_r};
+    double endtime{0.5};
+    fluid::BC_Type wall = fluid::BC_Type::InvicidWall;
+    fluid::ExternalBCs bcs{ni,nj,wall,wall,wall,wall};
+
+    fluid::FVM_Solver fvm{ni, nj, L_x, L_y, CFL, ode_scheme, flux_scheme, bcs};
+    fluid::set_initial_cond_riemann(fvm.U,fvm.ni,fvm.nj, V_l, V_r);
+    FSI_Solver fsi{fvm, fvm_write_stride, output_folder};
+    //fsi.set_timesteps(n_timesteps);
+    fsi.set_endtime(endtime);
+    fsi.solve();
+
+
+
 }
 
 void FSI_Solver::solid_test(){
@@ -295,7 +334,7 @@ void FSI_Solver::wedge_verification(){
     double L_x = 10;
     double L_y = 10;
     double CFL = 0.5;
-    int n_timesteps{3000};
+    int n_timesteps{10000};
     int fvm_write_stride{100};
 
     //std::string output_folder{"wedge_verification_attached"};
@@ -321,7 +360,7 @@ void FSI_Solver::wedge_verification(){
 
         //Constructing a wedge around origin
         vector<solid::Point> wedge;
-        double theta = 40 * M_PI / 180; //half angle of the wedge
+        double theta = 35 * M_PI / 180; //half angle of the wedge
         double l = 3;
         double h = l * tan(theta);
         wedge.push_back(solid::Point{L_x / 2 - l, L_y / 2});
