@@ -23,6 +23,7 @@ int FSI_Solver::solve() {
     double dt;
     fvm.initialize_solids();
     write_static_solid_boundaries();
+    write_solid_debug_files();
     bool breaker{false};
     double res_norm, res_norm0;
     while (true) {
@@ -31,7 +32,7 @@ int FSI_Solver::solve() {
         if (n % fvm_write_stride == 0) {
             std::cout << "Writing output\n";
             fvm.write_fvm_output(output_folder, n);
-            write_movable_solid_boudnaries(n);
+            write_movable_solid_boundaries(n);
             set_rho_old();
         }
 
@@ -156,11 +157,12 @@ void FSI_Solver::write_static_solid_boundaries() {
             for (int i{0}; i < s->n_bound; i++) {
                 ost << s->boundary[i].x << ',' << s->boundary[i].y << '\n';
             }
+            solid_ind++;
         }
     }
 }
 
-void FSI_Solver::write_movable_solid_boudnaries(int n) {
+void FSI_Solver::write_movable_solid_boundaries(int n) {
     int solid_ind{0};
     for (auto &s: solid_bodies) {
         if (s->type == solid::SolidBodyType::Movable) {
@@ -175,207 +177,29 @@ void FSI_Solver::write_movable_solid_boudnaries(int n) {
             for (int i{0}; i < s->n_bound; i++) {
                 ost << s->boundary[i].x << ',' << s->boundary[i].y << '\n';
             }
+            solid_ind++;
         }
     }
 }
-
-void FSI_Solver::riemann_test(){
-    int ni{100};
-    int nj{100};
-    double L_x = 4;
-    double L_y = 4;
-    double CFL = 0.8;
-    int n_timesteps{100};
-    int fvm_write_stride{1};
-    std::string output_folder{"output_riemann_sod"};
-    //fluid::OdeScheme ode_scheme{fluid::OdeScheme::TVD_RK3};
-    fluid::FluxScheme flux_scheme{fluid::FluxScheme::HLLC};
-    fluid::OdeScheme ode_scheme{fluid::OdeScheme::ExplicitEuler};
-    //fluid::FluxScheme flux_scheme{fluid::FluxScheme::Rusanov};
-
-    //Testing sod's problem
-    double rho_l = 3;
-    double u_l = 0;
-    double v_l = 0;
-    double p_l = 3;
-    double rho_r = 1;
-    double u_r = 0;
-    double v_r = 0;
-    double p_r = 1;
-
-    fluid::vec4 V_l{rho_l, u_l, v_l, p_l};
-    fluid::vec4 V_r{rho_r, u_r, v_r, p_r};
-    double endtime{0.5};
-    fluid::BC_Type wall = fluid::BC_Type::InvicidWall;
-    fluid::ExternalBCs bcs{ni,nj,wall,wall,wall,wall};
-
-    fluid::FVM_Solver fvm{ni, nj, L_x, L_y, CFL, ode_scheme, flux_scheme, bcs};
-    fluid::set_initial_cond_riemann(fvm.U,fvm.ni,fvm.nj, V_l, V_r);
-    FSI_Solver fsi{fvm, fvm_write_stride, output_folder};
-    //fsi.set_timesteps(n_timesteps);
-    fsi.set_endtime(endtime);
-    fsi.solve();
-
-
-
-}
-
-void FSI_Solver::solid_test(){
-    using namespace std;
-    int ni = 250;
-    int nj = 250;
-    double L_x = 10;
-    double L_y = 10;
-    double CFL = 0.5;
-    int n_timesteps{500};
-    int fvm_write_stride{10};
-    //std::string output_folder{"output0"};
-    std::string output_folder{"output1"};
-    fluid::FluxScheme flux_scheme{fluid::FluxScheme::Rusanov};
-    //fluid::OdeScheme ode_scheme{fluid::OdeScheme::ExplicitEuler};
-    //fluid::FluxScheme flux_scheme{fluid::FluxScheme::HLLC};
-    fluid::OdeScheme ode_scheme{fluid::OdeScheme::TVD_RK3};
-    fluid::BC_Type wall = fluid::BC_Type::InvicidWall;
-    fluid::ExternalBCs bcs{ni,nj,wall,wall,wall,wall};
-    double M_inf{3};
-    //fluid::ExternalBCs bcs{ni,nj,fluid::BC_Type::SupersonicInflow, fluid::BC_Type::NonreflectingOutflow,wall, wall, M_inf};
-    fluid::FVM_Solver fvm{ni,nj,L_x,L_y,CFL,ode_scheme,flux_scheme,bcs};
-    fluid::set_initial_cond2(fvm.U, fvm.ni, fvm.nj);
-    //fluid::set_constant_horizontal_flow_cond(fvm.U,ni,nj,M_inf);
-    FSI_Solver fsi{fvm, fvm_write_stride, output_folder};
-    fsi.set_timesteps(n_timesteps);
-    {
-        vector<solid::Point> circle1;
-        vector<solid::Point> circle2;
-        vector<solid::Point> circle3;
-        double R = 1.99999;
-        double x0 = 5;
-        double y0 = 5;
-        int n = 4;
-        for (int i{0}; i < n; i++) {
-            double theta = 2 * M_PI * i / n;
-            circle1.push_back(solid::Point{x0 + R * cos(theta), R * sin(theta)});
-            circle2.push_back(solid::Point{x0 + R * cos(theta), L_y + R * sin(theta)});
+void FSI_Solver::write_solid_debug_files(){
+    //Writes the status of the solid bodies. One file for the node cell status and one for the intercepts
+    int nj = fvm.nj;
+    std::ofstream ost1{"python/output_folders/" + output_folder + "/debug_nodes.csv"};
+    if (!ost1) std::cerr << "error, couldn't open node debug csv file\n";
+    ost1 << "#type,x,y\n";
+    for (int i{0}; i < fvm.ni + 4; i++) {
+        for (int j{0}; j < nj + 4; j++) {
+            solid::Point p = {(i - 1.5) * fvm.dx, (j - 1.5) * fvm.dy};
+            ost1 << static_cast<int>(fvm.cell_status[IX(i, j)]) << ',' << p.x << ',' << p.y << '\n';
         }
-        n = 10;
-        R = 0.76;
-        for (int i{0}; i < n; i++) {
-            double theta = 2 * M_PI * i / n;
-            circle3.push_back(solid::Point{x0 + R * cos(theta), y0 + R * sin(theta)});
+    }
+    std::ofstream ost2{"python/output_folders/"+output_folder+"/debug_intercepts.csv"};
+    if (!ost2) std::cerr << "error, couldn't open solid debug intercepts csv file\n";
+    ost2 << "#x_i,y_i\n";
+    for (auto& s: solid_bodies) {
+        for(auto&e : s->intercepts){
+            ost2 << e.second.first.x << ',' <<e.second.first.y << '\n';
         }
-        vector<solid::Point> tri;
-        tri.push_back(solid::Point{4,5});
-        tri.push_back(solid::Point{6,4});
-        tri.push_back(solid::Point{6,6});
-
-        fsi.add_solid(std::make_unique<solid::SolidBody>(fvm,circle1,solid::SolidBodyType::Static));
-        fsi.add_solid(std::make_unique<solid::SolidBody>(fvm,circle2,solid::SolidBodyType::Static));
-        fsi.add_solid(std::make_unique<solid::SolidBody>(fvm, circle3,solid::SolidBodyType::Static));
-        //fsi.add_solid(std::move(std::make_shared<solid::SolidBody>(fvm,tri,solid::SolidBodyType::Static)));
-    }
-    fsi.solve();
-
-    if (fsi.solid_bodies.size() > 0) {
-        fsi.solid_bodies[0]->debug_intercepts_csv();
-        fsi.solid_bodies[0]->debug_csv();
-        //fsi.solid_bodies[0]->write_boundary_csv("solid_debug_boundary");
-    }
-
-
-
-}
-
-void FSI_Solver::fluid_solve_test(int ni,
-                 int nj,
-                 double L_x,
-                 double L_y,
-                 double CFL,
-                 int n_timesteps,
-                 int fvm_write_stride,
-                 std::string output_folder,
-                 fluid::OdeScheme ode_scheme,
-                 fluid::FluxScheme flux_scheme) {
-    //Should also add functionality for choosing the time scheme, flux scheme, boundaries and initital cond
-    fluid::BC_Type wall = fluid::BC_Type::InvicidWall;
-    fluid::ExternalBCs wall_BCs{ni,nj,wall,wall,wall,wall};
-    fluid::FVM_Solver fvm{ni, nj, L_x, L_y, CFL, ode_scheme, flux_scheme, wall_BCs};
-    fluid::set_initial_cond1(fvm.U, fvm.ni, fvm.nj);
-    FSI_Solver fsi{fvm, fvm_write_stride, output_folder};
-    fsi.set_timesteps(n_timesteps);
-    fsi.solve();
-}
-
-void FSI_Solver::fluid_solve_riemann(int ni,
-                                int nj,
-                                double L_x,
-                                double L_y,
-                                double CFL,
-                                const fluid::vec4& V_l,
-                                const fluid::vec4& V_r,
-                                double endtime,
-                                int fvm_write_stride,
-                                std::string output_folder,
-                                fluid::OdeScheme ode_scheme,
-                                fluid::FluxScheme flux_scheme){
-    fluid::BC_Type wall = fluid::BC_Type::InvicidWall;
-    fluid::ExternalBCs wall_BCs{ni,nj,wall,wall,wall,wall};
-    fluid::FVM_Solver fvm{ni, nj, L_x, L_y, CFL, ode_scheme, flux_scheme, wall_BCs};
-    fluid::set_initial_cond_riemann(fvm.U,fvm.ni,fvm.nj, V_l, V_r);
-    FSI_Solver fsi{fvm, fvm_write_stride, output_folder};
-    //fsi.set_timesteps(n_timesteps);
-    fsi.set_endtime(endtime);
-    fsi.solve();
-}
-
-void FSI_Solver::wedge_verification(){
-    using namespace std;
-    int ni = 250;
-    int nj = 250;
-    double L_x = 10;
-    double L_y = 10;
-    double CFL = 0.5;
-    int n_timesteps{10000};
-    int fvm_write_stride{100};
-
-    //std::string output_folder{"wedge_verification_attached"};
-    std::string output_folder{"wedge_verification_detached"};
-    fluid::FluxScheme flux_scheme{fluid::FluxScheme::Rusanov};
-    //fluid::OdeScheme ode_scheme{fluid::OdeScheme::ExplicitEuler};
-    //fluid::FluxScheme flux_scheme{fluid::FluxScheme::HLLC};
-    fluid::OdeScheme ode_scheme{fluid::OdeScheme::TVD_RK3};
-    fluid::BC_Type wall = fluid::BC_Type::InvicidWall;
-    fluid::BC_Type ss_outflow = fluid::BC_Type::NonreflectingOutflow;
-    double M_inf{3};
-    fluid::ExternalBCs bcs{ni,nj,fluid::BC_Type::SupersonicInflow,ss_outflow,ss_outflow,ss_outflow,M_inf};
-
-    fluid::FVM_Solver fvm{ni,nj,L_x,L_y,CFL,ode_scheme,flux_scheme,bcs};
-    fluid::set_constant_horizontal_flow_cond(fvm.U,ni,nj,M_inf);
-    FSI_Solver fsi{fvm, fvm_write_stride, output_folder};
-    fsi.set_timesteps(n_timesteps);
-    //fsi.set_convergence();
-    {
-        vector<solid::Point> circle1;
-        vector<solid::Point> circle2;
-        vector<solid::Point> circle3;
-
-        //Constructing a wedge around origin
-        vector<solid::Point> wedge;
-        double theta = 35 * M_PI / 180; //half angle of the wedge
-        double l = 3;
-        double h = l * tan(theta);
-        wedge.push_back(solid::Point{L_x / 2 - l, L_y / 2});
-        wedge.push_back(solid::Point{L_x / 2, L_y / 2 - h});
-        wedge.push_back(solid::Point{L_x / 2 + l, L_y / 2});
-        wedge.push_back(solid::Point{L_x / 2, L_y / 2 + h});
-
-        fsi.add_solid(std::make_unique<solid::SolidBody>(fvm, wedge, solid::SolidBodyType::Static));
-    }
-    fsi.solve();
-
-    if (~fsi.solid_bodies.empty()) {
-        fsi.solid_bodies[0]->debug_intercepts_csv();
-        fsi.solid_bodies[0]->debug_csv();
-        //fsi.solid_bodies[0]->write_boundary_csv("solid_debug_boundary",0,0);
     }
 }
 

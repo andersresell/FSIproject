@@ -8,8 +8,8 @@
 #include "../../includes.hpp"
 #include "../fluid/fvm_solver.hpp"
 #include "../fluid/fvm_utilities.hpp"
-#include "../fluid/fvm_test.hpp"
 #include "../solid/solid_body.hpp"
+#include "setup_cases.hpp"
 
 enum class StoppingCrit{Time=0, Timesteps, Convergence};
 
@@ -44,37 +44,8 @@ public:
 
     void write_fsi_header();
     void write_static_solid_boundaries();
-    void write_movable_solid_boudnaries(int n);
-
-    static void riemann_test();
-
-    static void solid_test();
-
-    static void fluid_solve_test(int ni,
-                     int nj,
-                     double L_x,
-                     double L_y,
-                     double CFL,
-                     int n_timesteps,
-                     int fvm_write_stride,
-                     std::string fvm_output_folder,
-                     fluid::OdeScheme ode_scheme,
-                     fluid::FluxScheme flux_scheme);
-
-    static void fluid_solve_riemann(int ni,
-                                 int nj,
-                                 double L_x,
-                                 double L_y,
-                                 double CFL,
-                                 const fluid::vec4& V_l,
-                                 const fluid::vec4& V_r,
-                                 double entime,
-                                 int fvm_write_stride,
-                                 std::string fvm_output_folder,
-                                 fluid::OdeScheme ode_scheme,
-                                 fluid::FluxScheme flux_scheme);
-
-    static void wedge_verification();
+    void write_movable_solid_boundaries(int n);
+    void write_solid_debug_files();
 
     ~FSI_Solver();
 };

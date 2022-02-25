@@ -6,7 +6,7 @@
 
 namespace solid {
 
-    SolidBody::SolidBody(fluid::FVM_Solver &fvm, const std::vector<Point> &boundary_in, SolidBodyType type)
+    SolidBody::SolidBody(fluid::FVM_Solver &fvm, std::vector<Point>&& boundary_in, SolidBodyType type)
             : fvm{fvm}, n_bound{static_cast<unsigned int>(boundary_in.size())}, ni{fvm.ni}, nj{fvm.nj},
               dx{fvm.L_x / ni}, dy{fvm.L_y / nj}, type{type}{
         boundary = new Point[n_bound];
@@ -14,13 +14,7 @@ namespace solid {
             boundary[i] = boundary_in[i];
         }
         Cell::nj = nj;
-    }/*
-    void SolidBody::set_bc(fluid::vec4* U_in){
-        find_solid_cells();
-        find_ghost_cells();
-        find_intercepts();
-        interpolate_invicid_wall(U_in);
-    }*/
+    }
 
     void SolidBody::find_solid_cells() {
         Point p;
@@ -259,42 +253,6 @@ namespace solid {
         }
 
     }
-
-    void SolidBody::debug_csv() {
-        std::ofstream ost{"../python/output_folders/solid_debug/out.csv"};
-        if (!ost) std::cerr << "error, couldn't open solid debug csv file\n";
-
-        ost << "#type,x,y\n";
-        for (int i{0}; i < ni + 4; i++) {
-            for (int j{0}; j < nj + 4; j++) {
-                Point p = ind2point(i, j);
-                ost << static_cast<int>(fvm.cell_status[IX(i, j)]) << ',' << p.x << ',' << p.y << '\n';
-            }
-        }
-    }
-
-    void SolidBody::debug_intercepts_csv(){
-        std::ofstream ost{"../python/output_folders/solid_debug_intercepts/out.csv"};
-        if (!ost) std::cerr << "error, couldn't open solid debug intercepts csv file\n";
-
-        ost << "#x_i,y_i\n";
-        for(auto&e : intercepts){
-            ost << e.second.first.x << ',' <<e.second.first.y << '\n';
-        }
-    }
-
-/*
-    void SolidBody::write_boundary_csv(const std::string &output_folder, int solid_index, int n) {
-        std::ofstream ost{
-                "../python/output_folders/" + output_folder + "/boundary" + std::to_string(solid_index) + "_step" +
-                std::to_string(n) + ".csv"};
-        if (!ost) std::cerr << "error: couldn't open solid boundary csv file\n";
-        ost << "#x,y\n";
-        for (int i{0}; i < n_bound; i++) {
-            ost << boundary[i].x << ',' << boundary[i].y << '\n';
-        }
-    }*/
-
 
     bool SolidBody::point_inside(Point p) const{
         //using namespace std;

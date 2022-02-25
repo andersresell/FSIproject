@@ -18,34 +18,24 @@ namespace solid {
     class SolidBody {
         std::vector<Cell> solid_cells;
         //A map from ghost cells to intercepts. Key is the ghost cell, 1st value is the intercept, 2nd value is the normal
-        std::map<Cell, std::pair<Point, Point>> intercepts;
         inline const static double INF = 1e6; //A large number used as inf in the calculation of points inside Boundary.
         fluid::FVM_Solver &fvm;
         int ni, nj;
         double dx, dy;
 
     public:
+        std::map<Cell, std::pair<Point, Point>> intercepts;
         Point *boundary; //A polygon defining the boundary
         const SolidBodyType type;
         const unsigned int n_bound;
 
-        SolidBody(fluid::FVM_Solver &fvm, const std::vector<Point> &boundary_in, SolidBodyType type);
-
-        //void set_bc(fluid::vec4* U_in);
-
-        void debug_csv();
-
-        void debug_intercepts_csv();
-
-        //void write_boundary_csv(const std::string &output_folder, int solid_index, int n=-1);
+        SolidBody(fluid::FVM_Solver &fvm, std::vector<Point>&& boundary_in, SolidBodyType type);
 
         void find_solid_cells();
 
         void flag_static();
 
         void find_ghost_cells();
-
-        //Point compute_intercept(Point GP, Point p, Point q);
 
         void find_intercepts();
 

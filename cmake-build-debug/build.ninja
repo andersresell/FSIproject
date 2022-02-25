@@ -100,13 +100,6 @@ build CMakeFiles/FSIproject.dir/cpp/fsi/fsi_solver.cpp.o: CXX_COMPILER__FSIproje
   OBJECT_DIR = CMakeFiles/FSIproject.dir
   OBJECT_FILE_DIR = CMakeFiles/FSIproject.dir/cpp/fsi
 
-build CMakeFiles/FSIproject.dir/cpp/fluid/fvm_test.cpp.o: CXX_COMPILER__FSIproject_Debug /home/anders/Dev/Master/FSIproject/cpp/fluid/fvm_test.cpp || cmake_object_order_depends_target_FSIproject
-  DEP_FILE = CMakeFiles/FSIproject.dir/cpp/fluid/fvm_test.cpp.o.d
-  FLAGS = -g -std=gnu++2a
-  INCLUDES = -I/usr/include/eigen3
-  OBJECT_DIR = CMakeFiles/FSIproject.dir
-  OBJECT_FILE_DIR = CMakeFiles/FSIproject.dir/cpp/fluid
-
 build CMakeFiles/FSIproject.dir/cpp/fluid/HLLC.cpp.o: CXX_COMPILER__FSIproject_Debug /home/anders/Dev/Master/FSIproject/cpp/fluid/HLLC.cpp || cmake_object_order_depends_target_FSIproject
   DEP_FILE = CMakeFiles/FSIproject.dir/cpp/fluid/HLLC.cpp.o.d
   FLAGS = -g -std=gnu++2a
@@ -150,7 +143,7 @@ build CMakeFiles/FSIproject.dir/cpp/fsi/simulate.cpp.o: CXX_COMPILER__FSIproject
 #############################################
 # Link the executable ../FSIproject
 
-build ../FSIproject: CXX_EXECUTABLE_LINKER__FSIproject_Debug CMakeFiles/FSIproject.dir/main.cpp.o CMakeFiles/FSIproject.dir/cpp/fluid/fvm_utilities.cpp.o CMakeFiles/FSIproject.dir/cpp/fluid/fvm_solver.cpp.o CMakeFiles/FSIproject.dir/cpp/fsi/fsi_solver.cpp.o CMakeFiles/FSIproject.dir/cpp/fluid/fvm_test.cpp.o CMakeFiles/FSIproject.dir/cpp/fluid/HLLC.cpp.o CMakeFiles/FSIproject.dir/cpp/solid/solid_utilities.cpp.o CMakeFiles/FSIproject.dir/cpp/solid/solid_body.cpp.o CMakeFiles/FSIproject.dir/cpp/fsi/setup_cases.cpp.o CMakeFiles/FSIproject.dir/cpp/fsi/simulate.cpp.o
+build ../FSIproject: CXX_EXECUTABLE_LINKER__FSIproject_Debug CMakeFiles/FSIproject.dir/main.cpp.o CMakeFiles/FSIproject.dir/cpp/fluid/fvm_utilities.cpp.o CMakeFiles/FSIproject.dir/cpp/fluid/fvm_solver.cpp.o CMakeFiles/FSIproject.dir/cpp/fsi/fsi_solver.cpp.o CMakeFiles/FSIproject.dir/cpp/fluid/HLLC.cpp.o CMakeFiles/FSIproject.dir/cpp/solid/solid_utilities.cpp.o CMakeFiles/FSIproject.dir/cpp/solid/solid_body.cpp.o CMakeFiles/FSIproject.dir/cpp/fsi/setup_cases.cpp.o CMakeFiles/FSIproject.dir/cpp/fsi/simulate.cpp.o
   FLAGS = -g
   OBJECT_DIR = CMakeFiles/FSIproject.dir
   POST_BUILD = :

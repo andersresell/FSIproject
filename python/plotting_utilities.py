@@ -25,6 +25,7 @@ class Plotter:
         self.n_movable_solids = int(data[1])
 
     def animate(self,datatype):
+        plt.figure()
         for n in range(0,self.n_timesteps+1):
             if n % self.write_stride == 0:
                 data = self.extract_data(datatype,n)
@@ -41,7 +42,6 @@ class Plotter:
                 plt.ylabel('y')
                 plt.pause(0.00001)
             print(n)
-        plt.show()
 
     def plot_steady_state(self,datatype):
         data = self.extract_data(datatype,self.n_timesteps)
@@ -59,7 +59,6 @@ class Plotter:
         plt.axis('equal')
         plt.xlabel('x')
         plt.ylabel('y')
-        plt.show()
 
     def extract_data(self,datatype,n):
         data = genfromtxt("output_folders/"+self.output_folder+"/fvm_output_t"+str(n)+".csv",comments = "#", delimiter=',')
@@ -82,7 +81,6 @@ class Plotter:
     def plot_solids(self, n):
         for i in range(0,self.n_static_solids+self.n_movable_solids):
             if i < self.n_static_solids:
-                print("output_folders/"+self.output_folder+"/static_boundary"+str(self.n_static_solids)+".csv")
                 data = genfromtxt("output_folders/"+self.output_folder+"/static_boundary"+str(i)+".csv",comments = "#", delimiter=',')
             else:
                 data = genfromtxt("output_folders/"+self.output_folder+"/movable_boundary"+str(i-self.n_static_solids)+"_t"+str(n)+".csv",comments = "#", delimiter=',')
@@ -128,5 +126,41 @@ class Plotter:
 
         plt.xlabel("x")
         plt.ylabel("Pressure")
+
+    def debug_points(self):
+        plt.figure()
+        #plotting points
+        data = genfromtxt("output_folders/"+self.output_folder+"/debug_nodes.csv",comments = "#", delimiter=',')
+        cell_type = data[:,0]
+        x = data[:,1]
+        y = data[:,2]
+        for i in range(0,cell_type.shape[0]):
+            if cell_type[i] == 0:
+                #fluid
+                plt.plot(x[i],y[i],'ob')
+            elif cell_type[i] == 1:
+                #ghost
+                plt.plot(x[i],y[i],'om')
+            elif cell_type[i] == 2:
+                #solid
+                plt.plot(x[i],y[i],'or')
+        #plotting boundaries
+        for i in range(0,self.n_static_solids+self.n_movable_solids):
+            if i < self.n_static_solids:
+                data = genfromtxt("output_folders/"+self.output_folder+"/static_boundary"+str(i)+".csv",comments = "#", delimiter=',')
+            else:
+                data = genfromtxt("output_folders/"+self.output_folder+"/movable_boundary"+str(i-self.n_static_solids)+"_t0.csv",comments = "#", delimiter=',')
+            x_b = data[:,0]
+            y_b = data[:,1]
+            plt.plot(x_b,y_b,'.-k')
+            plt.plot(np.array([x_b[-1],x_b[0]]),np.array([y_b[-1],y_b[0]]),'.-k')
+        #plotting intercepts
+        data = genfromtxt("output_folders/"+self.output_folder+"/debug_intercepts.csv",comments = "#", delimiter=',')
+        x_i = data[:,0]
+        y_i = data[:,1]
+        plt.plot(x_i,y_i,'y*')
+        plt.axis('equal')
+
+
 
 

@@ -5,9 +5,12 @@
 
 
 Simulate::Simulate(const std::string& input_file) {
+    using namespace std;
+
     namespace pt = boost::property_tree;
     pt::ptree root;
     pt::read_json("input_files/" + input_file, root);
+
     auto output_folder = root.get<std::string>("output_folder");
     auto ni = root.get<int>("ni");
     auto nj = root.get<int>("nj");
@@ -80,12 +83,39 @@ Simulate::Simulate(const std::string& input_file) {
         std::cerr << "Illegal stopping criterion read from " + input_file + '\n';
     }
 
+    for (pt::ptree::value_type &solid : root.get_child("solids")){
+        //Definately better ways to do this, this is mainly because I'm bad at json
+        string solid_str = "solids." + solid.first;
+        auto is_static = root.get<bool>(solid_str+".static");
+        solid::SolidBodyType solid_body_type = is_static ? solid::SolidBodyType::Static : solid::SolidBodyType::Movable;
+        string geom_str = solid_str + ".geometry";
+        vector<solid::Point> boundary;
+        if (root.get<string>(geom_str+".case") == "circle"){
+            auto R = root.get<double>(geom_str+".R");
+            auto n_nodes = root.get<int>(geom_str+".n_nodes");
+            auto x_center = root.get<double>(geom_str+".x_center");
+            auto y_center = root.get<double>(geom_str+".y_center");
+            boundary = solid::generate_circle(R,n_nodes,x_center,y_center);
+        }
+        else if (root.get<string>(geom_str+".case") == "wedge"){
+            auto l = root.get<double>(geom_str+".l");
+            auto half_angle_deg = root.get<double>(geom_str+".half_angle_deg");
+            auto x_center = root.get<double>(geom_str+".x_center");
+            auto y_center = root.get<double>(geom_str+".y_center");
+            boundary = solid::generate_wedge(l,half_angle_deg,x_center,y_center);
+        }
+        else{
+            std::cerr << "Invalid solid geometry in solid " + solid.first + " from " + input_file + '\n';
+            exit(1);
+        }
+        fsi.add_solid(std::move(std::make_shared<solid::SolidBody>(fvm,std::move(boundary),solid_body_type)));
+    }
+
     std::cout << "Setup complete\n";
-
-
     fsi.solve();
 
 }
+
 
 fluid::BC_Type Simulate::bc_type_from_str(std::string&& bc_type){
     if (bc_type == "InvicidWall"){

@@ -8,6 +8,10 @@
   "flux_scheme": "Rusanov",
   "ode_scheme": "TVD_RK3",
   "fvm_write_stride": 10,
+  "stopping_crit": {
+    "type": "Time",
+    "value": 0.5
+  },
 
   "west_bc": {
     "type": "InvicidWall",
@@ -35,17 +39,5 @@
     "p_r": 1
   },
 
-
-  "stopping_crit": {
-    "type": "Time",
-    "value": 0.5
-  },
-
-  "static_solids": [
-    {
-      "type": "wedges",
-      "angle": 30
-    }
-  ]
 }
 
