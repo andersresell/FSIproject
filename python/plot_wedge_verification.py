@@ -12,9 +12,9 @@ output_folder = "wedge_verification_attached"
 #output_folder = "wedge_verification_detached"
 
 p = Plotter(output_folder)
-#p.debug_points()
+p.debug_points()
 p.plot_steady_state("p")
-#p.animate("p")
+p.animate("p")
 
 plt.show()
 

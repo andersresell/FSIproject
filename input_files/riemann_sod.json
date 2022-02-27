@@ -1,11 +1,11 @@
 {
   "output_folder": "output_riemann_sod",
-  "ni": 200,
-  "nj": 200,
+  "ni": 100,
+  "nj": 100,
   "L_x": 3,
   "L_y": 3,
   "CFL": 0.6,
-  "flux_scheme": "Rusanov",
+  "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
   "fvm_write_stride": 10,
   "stopping_crit": {
@@ -38,6 +38,10 @@
     "v_r": 0,
     "p_r": 1
   },
+
+  "solids": {
+
+    }
 
 }
 

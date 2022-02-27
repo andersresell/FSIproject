@@ -86,8 +86,8 @@ namespace fluid {
     vec4 FVM_Solver::G_f_HLLC(const vec4 &U_D, const vec4 &U_U) {
         //The symmetry of the problem can be utilized to use the horizontal Riemann solver to solve the vertical flux.
         //Just switch the u and v momentum, and switch the flux components back afterwards
-        vec4 tmp = F_f_HLLC({U_D.u1, U_D.u3, U_D.u2, U_D.u4}, {U_U.u1, U_U.u3, U_U.u2, U_U.u4});
-        return {tmp.u1, tmp.u3, tmp.u2, tmp.u4};
+        vec4 tmp = F_f_HLLC({U_D.u1, U_D.u3, -U_D.u2, U_D.u4}, {U_U.u1, U_U.u3, -U_U.u2, U_U.u4});
+        return {tmp.u1, -tmp.u3, tmp.u2, tmp.u4};
     }
 
 }

@@ -5,12 +5,12 @@
   "L_x": 10,
   "L_y": 10,
   "CFL": 0.5,
-  "flux_scheme": "Rusanov",
+  "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
-  "fvm_write_stride": 10,
+  "fvm_write_stride": 100,
   "stopping_crit": {
     "type": "Timesteps",
-    "value": 1000
+    "value": 5000
   },
 
 
@@ -42,17 +42,8 @@
         "x_center": 5,
         "y_center": 5
       }
-    },
-    "s2": {
-      "static": true,
-      "geometry": {
-        "case": "circle",
-        "R": 1,
-        "n_nodes": 20,
-        "x_center": 8.5,
-        "y_center": 8.5
-      }
     }
   }
 }
+
 

@@ -15,5 +15,6 @@ int main() {
     using namespace std;
 
     Simulate("supersonic_wedge.json");
+    //Simulate("riemann_sod.json");
     return 0;
 }

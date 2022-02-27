@@ -146,7 +146,6 @@ namespace fluid {
 
     void FVM_Solver::eval_RHS(vec4 *U_in) {
         MUSCL_extrapolate(U_in); //eval U_left, U_right etc
-
         switch (flux_scheme) {
             case FluxScheme::Rusanov: {
                 rusanov();
@@ -266,4 +265,6 @@ namespace fluid {
             delete[] U_tmp;
         }
     }
+
+
 }
