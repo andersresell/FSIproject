@@ -1,7 +1,7 @@
 {
   "output_folder": "wedge_verification_attached",
-  "ni": 100,
-  "nj": 100,
+  "ni": 200,
+  "nj": 200,
   "L_x": 10,
   "L_y": 10,
   "CFL": 0.5,
@@ -9,8 +9,8 @@
   "ode_scheme": "TVD_RK3",
   "fvm_write_stride": 100,
   "stopping_crit": {
-    "type": "Timesteps",
-    "value": 5000
+    "type": "Convergence",
+    "value": 1e-6
   },
 
 

@@ -6,6 +6,7 @@
 
 namespace fluid {
     void FVM_Solver::HLLC() {
+
         for (int i{1}; i < ni + 2; i++) {
             for (int j{2}; j < nj + 2; j++) {
                 if (cell_status[IX(i,j)] != CellStatus::Solid)
@@ -15,7 +16,7 @@ namespace fluid {
         for (int i{2}; i < ni + 2; i++) {
             for (int j{1}; j < nj + 2; j++) {
                 if (cell_status[IX(i,j)] != CellStatus::Solid)
-                    G_f[IXG(i, j)] = G_f_HLLC(U_up[IXV(i, j)], U_up[IXV(i, j + 1)]);
+                    G_f[IXG(i, j)] = G_f_HLLC(U_up[IXV(i, j)], U_down[IXV(i, j + 1)]);
             }
         }
     }
@@ -24,7 +25,7 @@ namespace fluid {
         //The theory behind this implementation is found in Toro's book about Riemann solvers
         double rho_L = U_L.u1;
         double rho_R = U_R.u1;
-        double p_L = FVM_Solver::calc_P(U_L);
+        double p_L = calc_P(U_L);
         double p_R = calc_P(U_R);
         double u_L = U_L.u2 / rho_L;
         double u_R = U_R.u2 / rho_R;
@@ -46,7 +47,6 @@ namespace fluid {
         //Star region wave speed may be found analytically when the two other wave speeds are known
         double S_star = (p_R - p_L + rho_L * u_L * (S_L - u_L) - rho_R * u_R * (S_R - u_R)) /
                         (rho_L * (S_L - u_L) - rho_R * (S_R - u_R));
-
 
         //(10.71) Toro
         if (S_star >= 0) {
@@ -82,7 +82,9 @@ namespace fluid {
                 return F_R;
             }
         }
+
     }
+
     vec4 FVM_Solver::G_f_HLLC(const vec4 &U_D, const vec4 &U_U) {
         //The symmetry of the problem can be utilized to use the horizontal Riemann solver to solve the vertical flux.
         //Just switch the u and v momentum, and switch the flux components back afterwards
