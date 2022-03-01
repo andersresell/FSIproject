@@ -1,9 +1,9 @@
 {
-  "output_folder": "wedge_verification_attached",
-  "ni": 200,
+  "output_folder": "wedge_verification_detached",
+  "ni": 100,
   "nj": 200,
   "L_x": 10,
-  "L_y": 10,
+  "L_y": 20,
   "CFL": 0.5,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
@@ -16,7 +16,7 @@
 
   "west_bc": {
     "type": "SupersonicInflow",
-    "M_inf": 2
+    "M_inf": 1.84
   },
   "east_bc": {
     "type": "NonreflectingOutflow"
@@ -39,8 +39,8 @@
         "case": "wedge",
         "l": 2,
         "half_angle_deg": 20,
-        "x_center": 5,
-        "y_center": 5
+        "x_center": 4,
+        "y_center": 10
       }
     }
   }

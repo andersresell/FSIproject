@@ -84,6 +84,35 @@ namespace fluid {
         }
         std::cout << "Initial condition Riemann set\n";
     }
+
+    void set_initial_cond_pressure_bubble(vec4* U, int ni, int nj, double L_x, double L_y){
+        double rho = 1.2;
+        double p_low = 1e5;
+        double p_high = 10 * p_low;
+        double u{0};
+        double v{0};
+        double R = L_x/10;
+        double x, y;
+        double dx = L_x/ni;
+        double dy = L_y/nj;
+        double x_c = L_x/2;
+        double y_c = L_y/2;
+        for (int i{0}; i < ni + 4; i++) {
+            for (int j{0}; j < nj + 4; j++) {
+                x = dx*(i-1.5);
+                y = dy*(j-1.5);
+                U[IX(i, j)].u1 = rho;
+                U[IX(i, j)].u2 = rho * u;
+                U[IX(i, j)].u3 = rho * v;
+                if (squared(x-x_c) + squared(y-y_c) <= squared(R)) {
+                    U[IX(i, j)].u4 = p_high / (fluid::Gamma - 1) + 0.5 * rho * (u * u + v * v);
+                } else {
+                    U[IX(i, j)].u4 = p_low / (fluid::Gamma - 1) + 0.5 * rho * (u * u + v * v);
+                }
+            }
+        }
+        std::cout << "Initial condition 2 set\n";
+    }
 }
 
 namespace solid{

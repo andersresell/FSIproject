@@ -60,6 +60,7 @@ int FSI_Solver::solve() {
                 if (res_norm <= stopping_crit.second * res_norm0) {
                     breaker = true;
                 }
+                //std::cout <<"SC2 = "<< stopping_crit.second << std::endl;
                 std::cout << "Desired res norm is " << 100 * stopping_crit.second * res_norm0 / res_norm
                           << "% of current res norm\n";
             }
@@ -132,7 +133,7 @@ void FSI_Solver::write_fsi_header() {
     for (auto &s: solid_bodies) {
         if (s->type == solid::SolidBodyType::Static) {
             n_static++;
-        } else if (s->type == solid::SolidBodyType::Movable) {
+        } else if (s->type == solid::SolidBodyType::Dynamic) {
             n_movable++;
         } else {
             std::cerr << "Error: Solid Body type is neither Static or Movable (in write fsi header)\n";
@@ -165,7 +166,7 @@ void FSI_Solver::write_static_solid_boundaries() {
 void FSI_Solver::write_movable_solid_boundaries(int n) {
     int solid_ind{0};
     for (auto &s: solid_bodies) {
-        if (s->type == solid::SolidBodyType::Movable) {
+        if (s->type == solid::SolidBodyType::Dynamic) {
             std::ofstream ost{
                     "python/output_folders/" + output_folder + "/movable_boundary" + std::to_string(solid_ind) +
                     "_t" + std::to_string(n) + ".csv"};

@@ -161,6 +161,11 @@ class Plotter:
         plt.plot(x_i,y_i,'y*')
         plt.axis('equal')
 
+    def probe(self,datatype,x_point,y_point):
+        data = self.extract_data(datatype,self.n_timesteps)
+        i = int(x_point/self.dx-0.5)
+        j = int(y_point/self.dy-0.5)
+        return data[j,i]
 
 
 

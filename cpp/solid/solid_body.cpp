@@ -254,6 +254,12 @@ namespace solid {
 
     }
 
+    Point SolidBody::integrate_pressure(fluid::vec4* U_in){
+        for (int i{0}; i < n_bound;i++){
+
+        }
+    }
+
     bool SolidBody::point_inside(Point p) const{
         //using namespace std;
         //See https://www.geeksforgeeks.org/how-to-check-if-a-given-point-lies-inside-a-Polygon/ for details

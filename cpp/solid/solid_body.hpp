@@ -13,7 +13,7 @@
 
 namespace solid {
 
-    enum class SolidBodyType{Static, Movable};
+    enum class SolidBodyType{Static, Dynamic};
 
     class SolidBody {
         std::vector<Cell> solid_cells;
@@ -26,8 +26,9 @@ namespace solid {
     public:
         std::map<Cell, std::pair<Point, Point>> intercepts;
         Point *boundary; //A polygon defining the boundary
-        const SolidBodyType type;
         const unsigned int n_bound;
+        const SolidBodyType type;
+
 
         SolidBody(fluid::FVM_Solver &fvm, std::vector<Point>&& boundary_in, SolidBodyType type);
 
@@ -40,6 +41,8 @@ namespace solid {
         void find_intercepts();
 
         void interpolate_invicid_wall(fluid::vec4 *U_in);
+
+        Point integrate_pressure(fluid::vec4* U_in);//Integrates the pressure over the surface and returns {F_x,F_y}
 
     private:
         bool point_inside(Point p) const; //Check wether a poins is inside the solid boundary
@@ -58,7 +61,7 @@ namespace solid {
 
 
 
-    class DeformableSolidBody : SolidBody {
+    class DynamicRigid : public SolidBody {
         
     };
 

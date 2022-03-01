@@ -5,11 +5,6 @@
 
 namespace fluid {
 
-    /*
-    ExternalBCs::ExternalBCs(int ni, int nj, ExternalBC &west, ExternalBC &east, ExternalBC &south, ExternalBC &north)
-            : ni{ni}, nj{nj}, west{west}, east{east}, south{south}, north{north} {
-    }*/
-
     ExternalBCs::ExternalBCs(int ni, int nj, BC_Type west, BC_Type east, BC_Type south, BC_Type north,
                              double M_inf, double p_inf, double rho_inf)
             : ni{ni}, nj{nj}, west{west}, east{east}, south{south}, north{north} {

@@ -64,7 +64,10 @@ Simulate::Simulate(const std::string& input_file) {
         fluid::set_initial_cond_riemann(fvm.U,ni,nj,V_l,V_r);
     }else if (initial_cond == "constant_horizontal_flow") {
         fluid::set_constant_horizontal_flow_cond(fvm.U,ni,nj,M_inf);
-    } else{
+    }else if (initial_cond == "pressure_bubble"){
+        fluid::set_initial_cond_pressure_bubble(fvm.U,ni,nj,L_x,L_y);
+    }
+    else{
         std::cerr << "Invalid initial cond \"" + initial_cond + "\" in " + input_file + '\n';
         exit(1);
     }
@@ -87,7 +90,7 @@ Simulate::Simulate(const std::string& input_file) {
         //Definately better ways to do this, this is mainly because I'm bad at json
         string solid_str = "solids." + solid.first;
         auto is_static = root.get<bool>(solid_str+".static");
-        solid::SolidBodyType solid_body_type = is_static ? solid::SolidBodyType::Static : solid::SolidBodyType::Movable;
+        solid::SolidBodyType solid_body_type = is_static ? solid::SolidBodyType::Static : solid::SolidBodyType::Dynamic;
         string geom_str = solid_str + ".geometry";
         vector<solid::Point> boundary;
         if (root.get<string>(geom_str+".case") == "circle"){

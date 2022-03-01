@@ -16,5 +16,6 @@ int main() {
 
     Simulate("supersonic_wedge.json");
     //Simulate("riemann_sod.json");
+    //Simulate("pressure_bubbl.json");
     return 0;
 }
