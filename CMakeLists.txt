@@ -27,10 +27,3 @@ if(Boost_FOUND)
 endif()
 
 
-
-#find_package(PythonLibs REQUIRED)
-#include_directories(${PYTHON_INCLUDE_DIRS})
-#add_subdirectory(pybind11)
-#pybind11_add_module(fluid_solver_py main.cpp)
-#pybind11_add_module(module_name main.cpp)
-#target_link_libraries(FSIproject ${PYTHON_LIBRARIES})
