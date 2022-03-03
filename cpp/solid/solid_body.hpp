@@ -15,6 +15,17 @@ namespace solid {
 
     enum class SolidBodyType{Static, Dynamic};
 
+    struct Segment{
+        //Holds the ghost points, intercepts, normal vector, etc for each segment
+
+        std::vector<Point> intercepts;
+        Point n;
+        bool n_is_set;
+        //void sort_intercepts(int p, int q); //to be used for pressure integration
+        Segment() : n_is_set{false}{}
+    };
+
+
     class SolidBody {
         std::vector<Cell> solid_cells;
         //A map from ghost cells to intercepts. Key is the ghost cell, 1st value is the intercept, 2nd value is the normal
@@ -23,14 +34,20 @@ namespace solid {
         int ni, nj;
         double dx, dy;
 
+        //Variables used for interpolation
+        Eigen::Matrix4d A;
+        Eigen::Matrix4d A_inv_T;
     public:
-        std::map<Cell, std::pair<Point, Point>> intercepts;
+        //std::map<Cell, GP_info> intercepts; //[Cell GP, {Point BI, Point n}]
+        Segment *segments;
+        std::map<Cell, std::pair<Point, Point>> cell2intercept; //key = Cell GP, value = {Point BI, Point n}
         Point *boundary; //A polygon defining the boundary
-        const unsigned int n_bound;
+        Point *F_boundary; //Lumped force on each boundary node at current timestep;
+        const int n_bound;
         const SolidBodyType type;
 
 
-        SolidBody(fluid::FVM_Solver &fvm, std::vector<Point>&& boundary_in, SolidBodyType type);
+        SolidBody(fluid::FVM_Solver &fvm, std::vector<Point> &&boundary_in, SolidBodyType type);
 
         void find_solid_cells();
 
@@ -38,11 +55,28 @@ namespace solid {
 
         void find_ghost_cells();
 
-        void find_intercepts();
+        void set_segments();
 
-        void interpolate_invicid_wall(fluid::vec4 *U_in);
+        void interpolate_solid(fluid::vec4 *U_in);
 
-        Point integrate_pressure(fluid::vec4* U_in);//Integrates the pressure over the surface and returns {F_x,F_y}
+        void interpolate_GP(Cell GP, Point BI, Point n, fluid::vec4* U_in);
+
+        double interpolate_dirichlet(const Eigen::Vector4d& alpha_dir, std::vector<double>&& phi,
+                                     std::vector<double>&& phi_BI ,const std::vector<fluid::CellStatus>& cs);
+
+        double interpolate_neumann(const Eigen::Vector4d& alpha_neu, std::vector<double>&& phi,
+                            std::vector<double>&& phi_BI_derivative ,
+                            const std::vector<fluid::CellStatus>& cs, double Delta_l=0);
+        double interpolate_dirichlet_zero_value(const Eigen::Vector4d& alpha_dir, std::vector<double>&& phi,
+                                                const std::vector<fluid::CellStatus>& cs);
+
+        double interpolate_neumann_zero_gradient(const Eigen::Vector4d& alpha_neu, std::vector<double>&& phi,
+                                   const std::vector<fluid::CellStatus>& cs);
+        virtual void bundary_vel_and_acc(Point BI, Point& v_wall, Point& a_wall) const;
+
+        void reset_containers();
+
+        update_lumped_forces(fluid::vec4 *U_in);//Integrates the pressure over the surface and returns {F_x,F_y} and tau
 
     private:
         bool point_inside(Point p) const; //Check wether a poins is inside the solid boundary
@@ -57,15 +91,38 @@ namespace solid {
         ~SolidBody();
     };
 
-
-
-
+    typedef Eigen::Matrix<double,1,6> Vector6d;
 
     class DynamicRigid : public SolidBody {
-        
+        double M;
+        double I;
+        Vector6d y; //state vector of the rigid body: y = [x_CM, y_CM, u_CM, v_CM, theta, omega]^T
+        Vector6d k1,k2,k3,k4;
+        //const static inline int n_state{6};
+        Point F_fluid; //Total force from the fluid. Only updated once per timestep
+        Point F_solid;
+        double tau_fluid; //Total moment from the fluid. Only updated once per timestep
+        double tay_solid;
+    public:
+        DynamicRigid(fluid::FVM_Solver &fvm, std::vector<Point>&& boundary_in, Point CM, double M, double I);
+
+    private:
+        std::pair<Point,double> eval_solid_forces_and_moment();
+        Vector6d evaluate_f(Vector6d y_in);
+        Vector6d RK4_step(double dt);
+
+        void bundary_vel_and_acc(Point BI, Point& v_wall, Point& a_wall) const final;
     };
-
-
+    void DynamicRigid::bundary_vel_and_acc(Point BI, Point& v_wall, Point& a_wall) const{
+        Point r = {BI.x - y[0], BI.y - y[1]};
+        double omega = y[5];
+        //v = v_CM + omega x r
+        v_wall = {y[2] - omega*r.y, y[3] + omega*r.y};
+        Point a_CM = (F_fluid + F_solid)*(1/M);
+        double alpha = (tau_fluid + tay_solid)*(1/I);
+        //a = a_CM + omega x (omega x r) + alpha x r
+        a_wall = {a_CM.x - omega*omega*r.x - alpha*r.y, a_CM.y - omega*omega*r.y + alpha*r.x};
+    }
 }
 
 #endif //FSIPROJECT_SolidBody_HPP

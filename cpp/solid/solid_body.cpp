@@ -6,14 +6,23 @@
 
 namespace solid {
 
+    using namespace Eigen;
+
     SolidBody::SolidBody(fluid::FVM_Solver &fvm, std::vector<Point>&& boundary_in, SolidBodyType type)
-            : fvm{fvm}, n_bound{static_cast<unsigned int>(boundary_in.size())}, ni{fvm.ni}, nj{fvm.nj},
+            : fvm{fvm}, n_bound{(int)boundary_in.size()}, ni{fvm.ni}, nj{fvm.nj},
               dx{fvm.L_x / ni}, dy{fvm.L_y / nj}, type{type}{
         boundary = new Point[n_bound];
+        F_boundary = new Point[n_bound];
         for (int i{0}; i < boundary_in.size(); i++) {
             boundary[i] = boundary_in[i];
         }
         Cell::nj = nj;
+
+        A << 1, 0, 0, 0,
+                1, dx, 0, 0,
+                1, dx, dy, dx * dy,
+                1, 0, dy, 0;
+        A_inv_T = A.transpose().inverse();
     }
 
     void SolidBody::find_solid_cells() {
@@ -61,11 +70,11 @@ namespace solid {
             }
             if (ghost){
                 fvm.cell_status[IX(i,j)] = fluid::CellStatus::Ghost;
-                intercepts[c]; //assigning the key so that the ghost cells are known
+                intercepts[c];
             }
         }
     }
-
+    /*
     void SolidBody::find_intercepts() {
         using namespace std;
         Point r1;
@@ -75,16 +84,16 @@ namespace solid {
         Point q;
         Point p;
         Point d;
-        unsigned int lp;
+        int ip;
         double curr_dist;
         double prev_dist;
         for (auto& e : intercepts){
             GP = ind2point(e.first.i, e.first.j);
             prev_dist = INF;
-            for (unsigned int l{0}; l < n_bound; l++) {
-                lp = (l + 1) % n_bound;
-                p = boundary[l];
-                q = boundary[lp];
+            for (int i{0}; i < n_bound; i++) {
+                ip = (i + 1) % n_bound;
+                p = boundary[i];
+                q = boundary[ip];
                 r1 = q - GP;
                 r2 = p - GP;
                 n = {q.y - p.y, -(q.x - p.x)};
@@ -95,8 +104,53 @@ namespace solid {
                     curr_dist = d.norm();
                     //cout << "curr_dist = "<<curr_dist<<endl;
                     if (curr_dist < prev_dist) {
-                        e.second.first = GP + d;
-                        e.second.second = n;
+                        e.second.BI = GP + d;
+                        e.second.n = n;
+                        e.second.boundary_ind = i;
+                        prev_dist = curr_dist;
+                    }
+
+                }
+            }
+        }
+    }
+*/
+    void SolidBody::set_segments() {
+        using namespace std;
+        find_ghost_cells();
+        Point r1;
+        Point r2;
+        Point n;
+        Point GP;
+        Point q;
+        Point p;
+        Point d;
+        int jp;
+        double curr_dist;
+        double prev_dist;
+        for (auto& e : intercepts){
+            GP = ind2point(e.first.i,e.first.j);
+            prev_dist = INF;
+            for (int j{0}; j < n_bound; j++) {
+                jp = (j + 1) % n_bound;
+                p = boundary[j];
+                q = boundary[jp];
+                r1 = q - GP;
+                r2 = p - GP;
+                n = {q.y - p.y, -(q.x - p.x)};
+                n.normalize();
+                // cout << "c1 "<<n.cross(r1)<<", c2 "<< r2.cross(n) <<endl;
+                if (n.cross(r1) >= 0 && r2.cross(n) >= 0) { //intersection is on the line segment
+                    d = n * r1.dot(n);
+                    curr_dist = d.norm();
+                    //cout << "curr_dist = "<<curr_dist<<endl;
+                    if (curr_dist < prev_dist) {
+                        segments[j].BIs.push_back(GP + d);
+                        e.second = GP + d;
+                        if (~segments[j].n_is_set){
+                            segments[j].n = n;
+                            segments[j].n_is_set = true;
+                        }
                         prev_dist = curr_dist;
                     }
 
@@ -105,6 +159,175 @@ namespace solid {
         }
     }
 
+    void SolidBody::interpolate_solid(fluid::vec4* U_in) {
+        using namespace Eigen;
+        using namespace std;
+        //Handle fresh points
+
+        for (const auto& e : cell2intercept){
+            interpolate_GP(e.first, e.second.first, e.second.second, U_in);
+        }
+    }
+
+
+    void SolidBody::interpolate_GP(Cell GP, Point BI, Point n, fluid::vec4* U_in) {
+        std::vector<fluid::CellStatus> cs(4);
+        Matrix4d A_dir = A;
+        Matrix4d A_neu = A;
+        Point IP = BI * 2 - ind2point(GP.i, GP.j);
+        double Delta_l = (IP - BI).norm();
+        Cell bottom_left_ind = point2ind(IP.x, IP.y);
+        int i_bl = bottom_left_ind.i;
+        int j_bl = bottom_left_ind.j;
+        Point bottom_left_point = ind2point(i_bl, j_bl);
+        double DX = IP.x - bottom_left_point.x;
+        double DY = IP.y - bottom_left_point.y;
+        Vector4d A_IP{1, DX, DY, DX * DY};
+
+        std::vector<double> rho(4);
+        std::vector<double> u_n(4);
+        std::vector<double> u_t(4);
+        std::vector<double> p(4);
+
+        std::vector<double> u_n_BI(4);
+        std::vector<double> p_BI_derivative(4);
+
+        Point u_wall, a_wall;
+        if (type == SolidBodyType::Dynamic){
+            //Only estimating one vel and acc for interpolation
+            bundary_vel_and_acc(BI, u_wall, a_wall);
+        }
+        double rho_approx{0};
+        bool rho_approx_set{false};
+        bool all_fluid{true};
+        for (int ii{0}; ii < 2; ii++) {
+            for (int jj{0}; jj < 2; jj++) {
+                int ind = ii+2*jj;
+                cs[ind] = fvm.cell_status[IX(i_bl + ii, j_bl + jj)];
+
+                if (cs[ind] == fluid::CellStatus::Fluid){
+                    fluid::vec4 V = fluid::FVM_Solver::conserved2primitive(U_in[IX(i_bl + ii, j_bl + jj)]);
+                    u_n[ind] = -(V.u2 * n.x + V.u3 * n.y);
+                    u_t[ind] = -V.u2 * n.y + V.u3 * n.x;
+                    rho[ind] = V.u1;
+                    p[ind] = V.u4;
+                }
+                else if (cs[ii + 2 * jj] == fluid::CellStatus::Ghost) {
+                    all_fluid = false;
+                    std::pair<Point, Point> BI_pair_adj = cell2intercept[{i_bl + ii, j_bl + jj}];
+                    Point BI_adj = BI_pair_adj.first;
+                    Point n_adj = BI_pair_adj.second;
+                    DX = BI_adj.x - bottom_left_point.x;
+                    DY = BI_adj.y - bottom_left_point.y;
+                    A_dir.block<1, 4>(ii + 2 * jj, 0) << 1, DX, DY, DX * DY;
+                    A_dir.block<1, 4>(ii + 2 * jj, 0) << 0, n_adj.x, n_adj.y, DY * n_adj.x + DX * n_adj.y;
+                    if (type == SolidBodyType::Dynamic){
+                        u_n_BI[ind] = u_wall.x*n_adj.x + u_wall.y * n_adj.y;
+                        int counter{0};
+                        //Approximating the density by an average of surrounding fluid nodes. For pressure gradient calculation
+                        if (~rho_approx_set){
+                            for (int iii{0};iii<2;iii++){
+                                for(int jjj{0};jjj<2;jjj++){
+                                    if (cs[iii+2*jjj] == fluid::CellStatus::Fluid){
+                                        rho_approx += U_in[IX(i_bl + iii, j_bl + jjj)].u1;
+                                        counter++;
+                                    }
+                                }
+                            }
+                            rho_approx/=counter;
+                            rho_approx_set = true;
+                        }
+                        p_BI_derivative[ind] = -rho_approx*(a_wall.x*n_adj.x + a_wall.y*n_adj.y);
+                    }
+                }
+                else {
+                    std::cerr << "Solid point in bilinear interpolation stencil detected\n"; exit(1);
+                }
+            }
+        }
+
+        Vector4d alpha_dir;
+        Vector4d alpha_neu;
+        if (~all_fluid){
+            A_dir.transposeInPlace();
+            A_neu.transposeInPlace();
+            alpha_dir = A_dir.partialPivLu().solve(A_IP);
+            alpha_neu = A_neu.partialPivLu().solve(A_IP);
+        }else{
+            alpha_dir = A_inv_T*A_IP;
+            alpha_neu = alpha_dir;
+        }
+
+        fluid::vec4 V_GP;
+        double u_n_GP{0};
+        double u_t_GP{0};
+        u_t_GP = interpolate_neumann_zero_gradient(alpha_neu, std::move(u_t), cs);
+        if (type == SolidBodyType::Static) {
+            V_GP.u1 = interpolate_neumann_zero_gradient(alpha_neu, std::move(rho), cs);
+            u_n_GP = interpolate_dirichlet_zero_value(alpha_dir, std::move(u_n), cs);
+            V_GP.u4 = interpolate_neumann_zero_gradient(alpha_neu, std::move(p), cs);
+        }
+        else if (type == SolidBodyType::Dynamic){
+            u_n_GP = interpolate_dirichlet(alpha_dir, std::move(u_n), std::move(u_n_BI), cs);
+            double p_BI_derivative0 = p_BI_derivative[0];
+            V_GP.u4 = interpolate_neumann(alpha_neu, std::move(p), std::move(p_BI_derivative), cs, Delta_l);
+            V_GP.u1 = interpolate_neumann_zero_gradient(alpha_neu, std::move(rho), cs);
+            V_GP.u1*=(1-Delta_l*p_BI_derivative0);
+        } else{
+            std::cerr << "Solid type is neither Static, nor Dynamic\n"; exit(1);
+        }
+
+        V_GP.u2 = n.x * u_n_GP - n.y * u_t_GP;
+        V_GP.u3 = n.y * u_n_GP + n.x * u_t_GP;
+        U_in[IX(GP.i, GP.j)] = fluid::FVM_Solver::primitive2conserved(V_GP);
+    }
+
+    double SolidBody::interpolate_dirichlet(const Vector4d& alpha_dir, std::vector<double>&& phi,
+                                            std::vector<double>&& phi_BI ,const std::vector<fluid::CellStatus>& cs) {
+        double phi_GP = phi_BI[0];
+        for (int i{0}; i < 4;i++){
+            if (cs[i] == fluid::CellStatus::Fluid){
+                phi_GP -= alpha_dir[i] * phi[i];
+            }else{ //Ghost
+                phi_GP -= alpha_dir[i] * phi_BI[i];
+            }
+        }
+        return phi_GP;
+    }
+    double SolidBody::interpolate_neumann(const Vector4d& alpha_neu, std::vector<double>&& phi,
+                                          std::vector<double>&& phi_BI_derivative ,
+                                          const std::vector<fluid::CellStatus>& cs, double Delta_l) {
+        double phi_GP = -Delta_l * phi_BI_derivative[0];
+        for (int i{0}; i < 4; i++) {
+            if (cs[i] == fluid::CellStatus::Fluid) {
+                phi_GP += alpha_neu[i] * phi[i];
+            } else { //Ghost
+                phi_GP += alpha_neu[i] * phi_BI_derivative[i];
+            }
+        }
+        return phi_GP;
+    };
+    double SolidBody::interpolate_dirichlet_zero_value(const Eigen::Vector4d& alpha_dir, std::vector<double>&& phi,
+                                            const std::vector<fluid::CellStatus>& cs){
+        double phi_GP{0};
+        for (int i{0}; i < 4;i++){
+            if (cs[i] == fluid::CellStatus::Fluid) phi_GP -= alpha_dir[i] * phi[i];
+        }
+        return phi_GP;
+    }
+
+    double SolidBody::interpolate_neumann_zero_gradient(const Eigen::Vector4d& alpha_neu, std::vector<double>&& phi,
+                                             const std::vector<fluid::CellStatus>& cs){
+        double phi_GP{0};
+        for (int i{0}; i < 4; i++) {
+            if (cs[i] == fluid::CellStatus::Fluid) {
+                phi_GP += alpha_neu[i] * phi[i];
+            }
+        }
+        return phi_GP;
+    }
+
+    /*
     void SolidBody::interpolate_invicid_wall(fluid::vec4* U_in) {
         using namespace Eigen;
         using namespace std;
@@ -131,11 +354,11 @@ namespace solid {
         double u_n, u_t, u_n_GP, u_t_GP; //normal and tangential velocity components
         Point BI_neighbor;
         Point n;
-        std::pair<Point, Point> BI_normal_pair;
+        GP_info this_GP_info;
         for (auto &e: intercepts) {
             //cout << "i = "<<e.first.i << "j = "<<e.first.j<<endl;
             //finding the image point, by using that IP = GP + 2*(BI - GP) = 2*BI - GP
-            Point IP = e.second.first * 2 - ind2point(e.first.i, e.first.j);
+            Point IP = e.second.BI * 2 - ind2point(e.first.i, e.first.j);
             bottom_left_ind = point2ind(IP.x, IP.y);
             i = bottom_left_ind.i;
             j = bottom_left_ind.j;
@@ -158,7 +381,7 @@ namespace solid {
                 //All interpolation points are fluid cells
                 alpha = VM_inv_T * VM_IP;
                 V_IP = alpha(0) * V1 + alpha(1) * V2 + alpha(2) * V3 + alpha(3) * V4;
-                n = e.second.second;
+                n = e.second.n;
                 //Dirichlet: u_n_BI = 0 -> u_n_GP = -u_n_IP
                 u_n_GP = -(V_IP.u2 * n.x + V_IP.u3 * n.y);
                 //Neumann: du_t/dn = 0, d_rho/dn = 0 and dp/dn = 0: u_t_GP = u_t_IP, rho_GP = rho_IP, p_GP = p_IP
@@ -170,41 +393,41 @@ namespace solid {
                 if (S1 == CS::Solid || S2 == CS::Solid || S3 == CS::Solid || S4 == CS::Solid) {
                     std::cerr << "Solid point in bilinear interpolation stencil detected\n";
                 }
-                //Ghost cells are part of the interpolation stencil. Dirichlet and Neumann onditions at body interface
+                //Ghost cells are part of the interpolation stencil. Dirichlet and Neumann conditions at body interface
                 //is used in the interpolation
                 VM_dirichlet = VM;
                 VM_neumann = VM;
                 if (S1 == CS::Ghost) {
-                    BI_normal_pair = intercepts[Cell{i, j}];
-                    BI_neighbor = BI_normal_pair.first;
-                    n = BI_normal_pair.second;
+                    this_GP_info = intercepts[Cell{i, j}];
+                    BI_neighbor = this_GP_info.BI;
+                    n = this_GP_info.n;
                     DX = BI_neighbor.x - bottom_left_point.x;
                     DY = BI_neighbor.y - bottom_left_point.y;
                     VM_dirichlet.block<1, 4>(0, 0) << 1, DX, DY, DX * DY;
                     VM_neumann.block<1, 4>(0, 0) << 0, n.x, n.y, DY * n.x + DX * n.y;
                 }
                 if (S2 == CS::Ghost) {
-                    BI_normal_pair = intercepts[Cell{i + 1, j}];
-                    BI_neighbor = BI_normal_pair.first;
-                    n = BI_normal_pair.second;
+                    this_GP_info = intercepts[Cell{i + 1, j}];
+                    BI_neighbor = this_GP_info.BI;
+                    n = this_GP_info.n;
                     DX = BI_neighbor.x - bottom_left_point.x;
                     DY = BI_neighbor.y - bottom_left_point.y;
                     VM_dirichlet.block<1, 4>(1, 0) << 1, DX, DY, DX * DY;
                     VM_neumann.block<1, 4>(1, 0) << 0, n.x, n.y, DY * n.x + DX * n.y;
                 }
                 if (S3 == CS::Ghost) {
-                    BI_normal_pair = intercepts[Cell{i + 1, j + 1}];
-                    BI_neighbor = BI_normal_pair.first;
-                    n = BI_normal_pair.second;
+                    this_GP_info = intercepts[Cell{i + 1, j + 1}];
+                    BI_neighbor = this_GP_info.BI;
+                    n = this_GP_info.n;
                     DX = BI_neighbor.x - bottom_left_point.x;
                     DY = BI_neighbor.y - bottom_left_point.y;
                     VM_dirichlet.block<1, 4>(2, 0) << 1, DX, DY, DX * DY;
                     VM_neumann.block<1, 4>(2, 0) << 0, n.x, n.y, DY * n.x + DX * n.y;
                 }
                 if (S4 == CS::Ghost) {
-                    BI_normal_pair = intercepts[Cell{i, j + 1}];
-                    BI_neighbor = BI_normal_pair.first;
-                    n = BI_normal_pair.second;
+                    this_GP_info = intercepts[Cell{i, j + 1}];
+                    BI_neighbor = this_GP_info.BI;
+                    n = this_GP_info.n;
                     DX = BI_neighbor.x - bottom_left_point.x;
                     DY = BI_neighbor.y - bottom_left_point.y;
                     VM_dirichlet.block<1, 4>(3, 0) << 1, DX, DY, DX * DY;
@@ -218,7 +441,7 @@ namespace solid {
                 u_n_GP = 0;
                 u_t_GP = 0;
                 V_GP *= 0;
-                n = e.second.second;
+                n = e.second.n;
                 if (S1 == CS::Fluid) {
                     u_n_GP -= alpha_dirichlet(0) * (V1.u2 * n.x + V1.u3 * n.y);
                     u_t_GP += alpha_neumann(0) * (-V1.u2 * n.y + V1.u3 * n.x);
@@ -253,10 +476,15 @@ namespace solid {
         }
 
     }
+     */
 
-    Point SolidBody::integrate_pressure(fluid::vec4* U_in){
+    void SolidBody::update_lumped_forces(fluid::vec4* U_in){
+        unsigned int ip;
+        double ds;
+        double xi;
         for (int i{0}; i < n_bound;i++){
-
+            ip = (i+1)%n_bound;
+            xi =
         }
     }
 
@@ -278,7 +506,58 @@ namespace solid {
         return count % 2 == 1; //If number of intersections are odd, return true, else return false
     }
 
+    void SolidBody::reset_containers(){
+        //Call before every timestep to clear containers of variable size
+        for (int i{0}; i < n_bound; i++){
+            segments[i].intercepts.clear();
+            segments[i].n_is_set = false;
+            F_boundary[i] = {0,0};
+        }
+    }
+
     SolidBody::~SolidBody() {
         delete[] boundary;
+        delete[] F_boundary;
     }
+
+    DynamicRigid::DynamicRigid(fluid::FVM_Solver &fvm, std::vector<Point>&& boundary_in,Point CM, double M, double I)
+    : SolidBody(fvm,std::move(boundary_in),SolidBodyType::Dynamic){
+        y[0] = CM.x;
+        y[1] = CM.y;
+        y[2] = 0;
+        y[3] = 0;
+        y[4] = 0;
+        y[5] = 0;
+    }
+
+    std::pair<Point,double> DynamicRigid::eval_solid_forces_and_moment(){
+        return {{0,0},0}; //TBD
+    }
+
+    Vector6d DynamicRigid::evaluate_f(Vector6d y_in){
+        //rhs of the state vector derivative dy/dt = f = [u_CM, v_CM, Fx/M, Fy/M, omega, tau/I]^T
+        Vector6d f;
+        //std::pair<Point,double> F_S_tau_S{eval_solid_forces_and_moment()};
+        f[0] = y_in[2];
+        f[1] = y_in[3];
+        f[2] = (F_fluid.x + F_S_tau_S.first.x)/M;
+        f[3] = (F_fluid.y + F_S_tau_S.first.y)/M;
+        f[4] = y_in[5];
+        f[5] = (tau_fluid + F_S_tau_S.second)/I;
+        return f;
+    }
+
+
+    Vector6d DynamicRigid::RK4_step(double dt){
+        k1 = dt * evaluate_f(y);
+        k2 = dt * evaluate_f(y + k1/2);
+        k3 = dt * evaluate_f(y + k2/2);
+        k4 = dt * evaluate_f(y + k3);
+        return y + (k1 + 2*(k2+k3) + k4)/6;
+    }
+
+
+
+
+
 }
