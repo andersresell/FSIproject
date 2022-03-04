@@ -27,7 +27,9 @@ namespace solid {
 
 
     class SolidBody {
-        std::vector<Cell> solid_cells;
+        //set and vector have their own pros and cons here, trying to use both for different tasks for performance
+        std::set<Cell> solid_cells;
+        bool first_timestep;
         //A map from ghost cells to intercepts. Key is the ghost cell, 1st value is the intercept, 2nd value is the normal
         inline const static double INF = 1e6; //A large number used as inf in the calculation of points inside Boundary.
         fluid::FVM_Solver &fvm;
@@ -55,24 +57,30 @@ namespace solid {
 
         void find_ghost_cells();
 
-        void set_segments();
+        void find_intercepts();
+
+        double segment_length(int p) const {return (boundary[(p+1)%n_bound] - boundary[p]).norm();}
+
+        void interpolate_fresh_points(fluid::vec4* U_in);
 
         void interpolate_solid(fluid::vec4 *U_in);
 
-        void interpolate_GP(Cell GP, Point BI, Point n, fluid::vec4* U_in);
+        void interpolate_cell(Cell GP, Point BI, Point n, fluid::vec4* U_in);
 
         double interpolate_dirichlet(const Eigen::Vector4d& alpha_dir, std::vector<double>&& phi,
                                      std::vector<double>&& phi_BI ,const std::vector<fluid::CellStatus>& cs);
 
         double interpolate_neumann(const Eigen::Vector4d& alpha_neu, std::vector<double>&& phi,
                             std::vector<double>&& phi_BI_derivative ,
-                            const std::vector<fluid::CellStatus>& cs, double Delta_l=0);
+                            const std::vector<fluid::CellStatus>& cs, double Delta_l);
         double interpolate_dirichlet_zero_value(const Eigen::Vector4d& alpha_dir, std::vector<double>&& phi,
                                                 const std::vector<fluid::CellStatus>& cs);
 
         double interpolate_neumann_zero_gradient(const Eigen::Vector4d& alpha_neu, std::vector<double>&& phi,
                                    const std::vector<fluid::CellStatus>& cs);
         virtual void bundary_vel_and_acc(Point BI, Point& v_wall, Point& a_wall) const;
+
+        bool cell_within_grid(int i, int j){ return i >=2  && i<ni+2 && j>=2 && j< nj+2;}
 
         void reset_containers();
 
@@ -102,7 +110,7 @@ namespace solid {
         Point F_fluid; //Total force from the fluid. Only updated once per timestep
         Point F_solid;
         double tau_fluid; //Total moment from the fluid. Only updated once per timestep
-        double tay_solid;
+        double tau_solid;
     public:
         DynamicRigid(fluid::FVM_Solver &fvm, std::vector<Point>&& boundary_in, Point CM, double M, double I);
 

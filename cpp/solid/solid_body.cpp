@@ -10,7 +10,7 @@ namespace solid {
 
     SolidBody::SolidBody(fluid::FVM_Solver &fvm, std::vector<Point>&& boundary_in, SolidBodyType type)
             : fvm{fvm}, n_bound{(int)boundary_in.size()}, ni{fvm.ni}, nj{fvm.nj},
-              dx{fvm.L_x / ni}, dy{fvm.L_y / nj}, type{type}{
+              dx{fvm.L_x / ni}, dy{fvm.L_y / nj}, type{type}, first_timestep{true}{
         boundary = new Point[n_bound];
         F_boundary = new Point[n_bound];
         for (int i{0}; i < boundary_in.size(); i++) {
@@ -26,19 +26,51 @@ namespace solid {
     }
 
     void SolidBody::find_solid_cells() {
-        Point p;
-        for (int i{2}; i < ni + 2; i++) {
-            for (int j{2}; j < nj + 2; j++) {
-                p = ind2point(i, j);
-                if (point_inside(p)) {
-                    solid_cells.push_back(Cell{i,j});
-                    fvm.cell_status[IX(i, j)] = fluid::CellStatus::Solid;
-                }
-                else if (~fvm.is_static[IX(i,j)] && fvm.solids_initialized){
-                    //If the cell is not a static solid cell the cell is set back to fluid in case it has moved
-                    fvm.cell_status[IX(i, j)] = fluid::CellStatus::Fluid;
+        Point p{};
+        if (first_timestep) {
+            //The first timestep all cells has to be detected
+            first_timestep = false;
+
+            for (int i{2}; i < ni + 2; i++) {
+                for (int j{2}; j < nj + 2; j++) {
+                    p = ind2point(i, j);
+                    if (point_inside(p)) {
+                        //solid_cells.push_back(Cell{i, j});
+                        solid_cells.emplace(Cell{i,j});
+                        fvm.cell_status[IX(i, j)] = fluid::CellStatus::Solid;
+                    } /*else if (~fvm.is_static[IX(i, j)] && fvm.solids_initialized) {
+                        //If the cell is not a static solid cell the cell is set back to fluid in case it has moved
+                        fvm.cell_status[IX(i, j)] = fluid::CellStatus::Fluid;
+                    }*/
                 }
             }
+        } else if (type == SolidBodyType::Dynamic){
+            for (const auto & e: cell2intercept){
+                //The cells in the old GP's are set to fluid
+                fvm.cell_status[IX(e.first.i, e.first.j)] = fluid::CellStatus::Fluid;
+            }
+            //Exploiting that the CFL condition only allows the boundary to travel one cell to find the new solid cells
+            int i,j;
+            for (const auto & e: cell2intercept){
+                for (int ii{-1};ii<=1;ii++){
+                    for (int jj{-1};jj<=1;jj++){
+                        i = e.first.i;
+                        j = e.first.j;
+                        //Continuing if the indices are outside the computational domain or if the cell is allready set
+                        if (~cell_within_grid(i+ii,j+jj) || fvm.cell_status[IX(i+ii, j+jj)] == fluid::CellStatus::Solid)
+                            continue;
+                        p = ind2point(i+ii,j+jj);
+                        if (point_inside(p)){
+                            fvm.cell_status[IX(i+ii, j+jj)] = fluid::CellStatus::Solid;
+                        }else{
+                            solid_cells.erase({i+ii,j+jj});
+                        }
+                    }
+                }
+            }
+        }else{
+            std::cerr << "Attempting to find solid cells for a non dynamic body after the first timestep. "
+                         "<<Unnecessary operation\n"; exit(1);
         }
     }
 
@@ -48,29 +80,35 @@ namespace solid {
         }
     }
 
-    void SolidBody::find_ghost_cells(){
+    void SolidBody::find_ghost_cells() {
         //Checks if predetermined solid cells are ghost cells, by checking if nearby cells are fluid cells
+
+        //Copying all elements to a vector since it loops faster.
+        std::vector<Cell> solid_cells_copy;
+        solid_cells_copy.reserve(solid_cells.size());
+        std::copy(solid_cells.begin(), solid_cells.end(), solid_cells_copy.begin());
+
         bool ghost;
         int i, j;
-        for (Cell& c : solid_cells) {
+        for (Cell c: solid_cells_copy) {
             i = c.i;
             j = c.j;
             ghost = false;
             for (int ii{i - 2}; ii <= i + 2; ii++) {
-                if (fvm.cell_status[IX(ii,j)] == fluid::CellStatus::Fluid){
+                if (fvm.cell_status[IX(ii, j)] == fluid::CellStatus::Fluid) {
                     ghost = true;
                     break;
                 }
             }
             for (int jj{j - 2}; jj <= j + 2; jj++) {
-                if (fvm.cell_status[IX(i,jj)] == fluid::CellStatus::Fluid) {
+                if (fvm.cell_status[IX(i, jj)] == fluid::CellStatus::Fluid) {
                     ghost = true;
                     break;
                 }
             }
-            if (ghost){
-                fvm.cell_status[IX(i,j)] = fluid::CellStatus::Ghost;
-                intercepts[c];
+            if (ghost) {
+                fvm.cell_status[IX(i, j)] = fluid::CellStatus::Ghost;
+                cell2intercept[c];
             }
         }
     }
@@ -115,7 +153,7 @@ namespace solid {
         }
     }
 */
-    void SolidBody::set_segments() {
+    void SolidBody::find_intercepts() {
         using namespace std;
         find_ghost_cells();
         Point r1;
@@ -128,10 +166,15 @@ namespace solid {
         int jp;
         double curr_dist;
         double prev_dist;
-        for (auto& e : intercepts){
+        for (auto& e : cell2intercept){
             GP = ind2point(e.first.i,e.first.j);
             prev_dist = INF;
             for (int j{0}; j < n_bound; j++) {
+                //A different idea is to store the length from the previous iteration and use this as an estimate.
+                segments[j].intercepts.clear(); //Maybe unneccessary
+                int n_GPs_estimate = (int)(2* segment_length(j)/std::min(dx,dy));
+                segments[j].intercepts.reserve(n_GPs_estimate); //Will remove all of this if it doesn't give any performance gain
+
                 jp = (j + 1) % n_bound;
                 p = boundary[j];
                 q = boundary[jp];
@@ -145,8 +188,8 @@ namespace solid {
                     curr_dist = d.norm();
                     //cout << "curr_dist = "<<curr_dist<<endl;
                     if (curr_dist < prev_dist) {
-                        segments[j].BIs.push_back(GP + d);
-                        e.second = GP + d;
+                        segments[j].intercepts.push_back(GP + d);
+                        e.second.first = GP + d;
                         if (~segments[j].n_is_set){
                             segments[j].n = n;
                             segments[j].n_is_set = true;
@@ -159,18 +202,31 @@ namespace solid {
         }
     }
 
+    void SolidBody::interpolate_fresh_points(fluid::vec4* U_in) {
+        //Checks if the old ghost points are outside the boundary. If so they are flagged as fresh points
+        //The interpolation will use the values of the old fluid points and boudnary normals,
+        // but the body intercept properties (boundary velocity and acceleration from the new fluid points), since this
+        //procedure creates no additional computations
+        for (auto& e : cell2intercept){
+            if (~point_inside(ind2point(e.first.i,e.first.j))){
+                interpolate_cell(e.first, e.second.first, e.second.second, U_in);
+            }
+        }
+    }
+
+
     void SolidBody::interpolate_solid(fluid::vec4* U_in) {
         using namespace Eigen;
         using namespace std;
         //Handle fresh points
 
         for (const auto& e : cell2intercept){
-            interpolate_GP(e.first, e.second.first, e.second.second, U_in);
+            interpolate_cell(e.first, e.second.first, e.second.second, U_in);
         }
     }
 
 
-    void SolidBody::interpolate_GP(Cell GP, Point BI, Point n, fluid::vec4* U_in) {
+    void SolidBody::interpolate_cell(Cell GP, Point BI, Point n, fluid::vec4* U_in) {
         std::vector<fluid::CellStatus> cs(4);
         Matrix4d A_dir = A;
         Matrix4d A_neu = A;
@@ -184,15 +240,15 @@ namespace solid {
         double DY = IP.y - bottom_left_point.y;
         Vector4d A_IP{1, DX, DY, DX * DY};
 
-        std::vector<double> rho(4);
-        std::vector<double> u_n(4);
-        std::vector<double> u_t(4);
-        std::vector<double> p(4);
+        std::vector<double> rho; rho.reserve(4);
+        std::vector<double> u_n; u_n.reserve(4);
+        std::vector<double> u_t; u_t.reserve(4);
+        std::vector<double> p; p.reserve(4);
 
-        std::vector<double> u_n_BI(4);
-        std::vector<double> p_BI_derivative(4);
+        std::vector<double> u_n_BI; u_n_BI.reserve(4);
+        std::vector<double> p_BI_derivative; p_BI_derivative.reserve(4);
 
-        Point u_wall, a_wall;
+        Point u_wall{}; Point a_wall{};
         if (type == SolidBodyType::Dynamic){
             //Only estimating one vel and acc for interpolation
             bundary_vel_and_acc(BI, u_wall, a_wall);
@@ -258,7 +314,7 @@ namespace solid {
             alpha_neu = alpha_dir;
         }
 
-        fluid::vec4 V_GP;
+        fluid::vec4 V_GP{};
         double u_n_GP{0};
         double u_t_GP{0};
         u_t_GP = interpolate_neumann_zero_gradient(alpha_neu, std::move(u_t), cs);
@@ -479,7 +535,7 @@ namespace solid {
      */
 
     void SolidBody::update_lumped_forces(fluid::vec4* U_in){
-        unsigned int ip;
+        int ip;
         double ds;
         double xi;
         for (int i{0}; i < n_bound;i++){
@@ -540,10 +596,10 @@ namespace solid {
         //std::pair<Point,double> F_S_tau_S{eval_solid_forces_and_moment()};
         f[0] = y_in[2];
         f[1] = y_in[3];
-        f[2] = (F_fluid.x + F_S_tau_S.first.x)/M;
-        f[3] = (F_fluid.y + F_S_tau_S.first.y)/M;
+        f[2] = (F_fluid.x + F_solid.x)/M;
+        f[3] = (F_fluid.y + F_solid.y)/M;
         f[4] = y_in[5];
-        f[5] = (tau_fluid + F_S_tau_S.second)/I;
+        f[5] = (tau_fluid + tau_solid)/I;
         return f;
     }
 

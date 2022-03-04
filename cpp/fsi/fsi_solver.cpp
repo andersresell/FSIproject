@@ -198,7 +198,7 @@ void FSI_Solver::write_solid_debug_files(){
     if (!ost2) std::cerr << "error, couldn't open solid debug intercepts csv file\n";
     ost2 << "#x_i,y_i\n";
     for (auto& s: solid_bodies) {
-        for(auto&e : s->intercepts){
+        for(auto&e : s->cell2intercept){
             ost2 << e.second.first.x << ',' <<e.second.first.y << '\n';
         }
     }
