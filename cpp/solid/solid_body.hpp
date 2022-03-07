@@ -15,14 +15,29 @@ namespace solid {
 
     enum class SolidBodyType{Static, Dynamic};
 
+    struct Segment_data{
+        //Stores a body intercept and its  length s from the previous boundary node
+        Segment_data(Cell GP, double s) : GP{GP}, s{s} {}
+        Cell GP;
+        double s;
+        bool operator<(const Segment_data& rhs) const {return s < rhs.s;}
+    };
+
     struct Segment{
         //Holds the ghost points, intercepts, normal vector, etc for each segment
 
-        std::vector<Point> intercepts;
+        std::vector<Segment_data> segment_data_vec;
         Point n;
         bool n_is_set;
+        void sort_intercepts(){std::sort(segment_data_vec.begin(), segment_data_vec.end());}
         //void sort_intercepts(int p, int q); //to be used for pressure integration
         Segment() : n_is_set{false}{}
+    };
+
+    struct GP_data{
+        Point BI;
+        Point n;
+        double p;
     };
 
 
@@ -42,7 +57,7 @@ namespace solid {
     public:
         //std::map<Cell, GP_info> intercepts; //[Cell GP, {Point BI, Point n}]
         Segment *segments;
-        std::map<Cell, std::pair<Point, Point>> cell2intercept; //key = Cell GP, value = {Point BI, Point n}
+        std::map<Cell, GP_data> cell2intercept; //key = Cell GP, value = {Point BI, Point n, double p}
         Point *boundary; //A polygon defining the boundary
         Point *F_boundary; //Lumped force on each boundary node at current timestep;
         const int n_bound;
@@ -50,6 +65,8 @@ namespace solid {
 
 
         SolidBody(fluid::FVM_Solver &fvm, std::vector<Point> &&boundary_in, SolidBodyType type);
+
+        void update(fluid::vec4 *U_in);
 
         void find_solid_cells();
 
@@ -65,7 +82,7 @@ namespace solid {
 
         void interpolate_solid(fluid::vec4 *U_in);
 
-        void interpolate_cell(Cell GP, Point BI, Point n, fluid::vec4* U_in);
+        void interpolate_cell(Cell GP, Point BI, Point n, fluid::vec4* U_in, bool fresh_point=false);
 
         double interpolate_dirichlet(const Eigen::Vector4d& alpha_dir, std::vector<double>&& phi,
                                      std::vector<double>&& phi_BI ,const std::vector<fluid::CellStatus>& cs);
@@ -84,7 +101,7 @@ namespace solid {
 
         void reset_containers();
 
-        update_lumped_forces(fluid::vec4 *U_in);//Integrates the pressure over the surface and returns {F_x,F_y} and tau
+        void update_lumped_forces(fluid::vec4 *U_in);//Integrates the pressure over each segment and lumps the resultant force in each node
 
     private:
         bool point_inside(Point p) const; //Check wether a poins is inside the solid boundary
@@ -115,19 +132,21 @@ namespace solid {
         DynamicRigid(fluid::FVM_Solver &fvm, std::vector<Point>&& boundary_in, Point CM, double M, double I);
 
     private:
-        std::pair<Point,double> eval_solid_forces_and_moment();
+        void update_total_fluid_force_and_moment();
         Vector6d evaluate_f(Vector6d y_in);
         Vector6d RK4_step(double dt);
 
         void bundary_vel_and_acc(Point BI, Point& v_wall, Point& a_wall) const final;
     };
+
+
     void DynamicRigid::bundary_vel_and_acc(Point BI, Point& v_wall, Point& a_wall) const{
         Point r = {BI.x - y[0], BI.y - y[1]};
         double omega = y[5];
         //v = v_CM + omega x r
         v_wall = {y[2] - omega*r.y, y[3] + omega*r.y};
         Point a_CM = (F_fluid + F_solid)*(1/M);
-        double alpha = (tau_fluid + tay_solid)*(1/I);
+        double alpha = (tau_fluid + tau_solid)*(1/I);
         //a = a_CM + omega x (omega x r) + alpha x r
         a_wall = {a_CM.x - omega*omega*r.x - alpha*r.y, a_CM.y - omega*omega*r.y + alpha*r.x};
     }

@@ -16,6 +16,11 @@ namespace solid {
 
         Point operator+(Point rhs) const { return {x + rhs.x, y + rhs.y}; }
 
+        Point operator+=(Point rhs) {
+            x += rhs.x;
+            y += rhs.y;
+        }
+
         Point operator-(Point rhs) const { return {x - rhs.x, y - rhs.y}; }
 
         Point operator*(double rhs) const { return {x * rhs, y * rhs}; }
@@ -32,7 +37,7 @@ namespace solid {
 
         double dot(Point rhs) const { return x * rhs.x + y * rhs.y; }
 
-        friend std::ostream& operator<<(std::ostream& ost, const Point& rhs){
+        friend std::ostream &operator<<(std::ostream &ost, const Point &rhs) {
             return ost << '(' << rhs.x << ',' << rhs.y << ')';
         }
     };

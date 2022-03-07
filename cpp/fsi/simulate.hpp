@@ -15,6 +15,6 @@ struct Simulate{
     fluid::BC_Type bc_type_from_str(std::string&& bc_type);
 };
 
-void bullshit();
+
 
 #endif //FSIPROJECT_SIMULATE_HPP
