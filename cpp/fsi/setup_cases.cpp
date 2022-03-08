@@ -95,8 +95,8 @@ namespace fluid {
         double x, y;
         double dx = L_x/ni;
         double dy = L_y/nj;
-        double x_c = L_x/2;
-        double y_c = L_y/2;
+        double x_c = L_x/4;
+        double y_c = L_y/4;
         for (int i{0}; i < ni + 4; i++) {
             for (int j{0}; j < nj + 4; j++) {
                 x = dx*(i-1.5);

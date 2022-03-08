@@ -11,7 +11,7 @@ namespace fluid {
     FVM_Solver::FVM_Solver(int ni, int nj, double L_x, double L_y, double CFL, OdeScheme ode_scheme,
                            FluxScheme flux_scheme, const ExternalBCs& external_bcs)
             : ni{ni}, nj{nj}, L_x{L_x}, L_y{L_y}, dx{L_x / ni}, dy{L_y / nj}, CFL{CFL}, ode_scheme{ode_scheme},
-              flux_scheme{flux_scheme}, external_bcs{external_bcs}, solids_initialized{false}{
+              flux_scheme{flux_scheme}, external_bcs{external_bcs}{
         U = new vec4[(ni + 4) * (nj + 4)];
         V = new vec4[(ni + 4) * (nj + 4)];
         U_left = new vec4[(ni + 2) * nj];
@@ -28,6 +28,7 @@ namespace fluid {
         }
         cell_status = new CellStatus[(ni + 4) * (nj + 4)];
         is_static = new bool[(ni + 4) * (nj + 4)];
+        initialize_solids();
     }
 
     void FVM_Solver::write_fvm_output(const std::string& output_folder, int n) {
@@ -76,7 +77,7 @@ namespace fluid {
                 is_static[IX(i, j)] = false;
             }
         }
-
+    /*
         for (auto &sb_ptr: solid_bodies) {
             if (sb_ptr->type == solid::SolidBodyType::Static) {
                 sb_ptr->find_solid_cells();
@@ -86,23 +87,27 @@ namespace fluid {
             }
         }
         solids_initialized = true;
+        */
     }
 
-    void FVM_Solver::set_solid_BCs(vec4* U_in){
+    void FVM_Solver::step_solids(vec4* U_in, double dt, bool update_solid_pos){
         for (auto& sb_ptr : solid_bodies){
-            if (sb_ptr->type != solid::SolidBodyType::Static){
-                sb_ptr->find_solid_cells();
-                sb_ptr->find_ghost_cells();
-                sb_ptr->find_intercepts();
-            }
-            sb_ptr->interpolate_invicid_wall(U_in);
+            sb_ptr->step(U_in,dt,update_solid_pos);
         }
     }
 
-    double FVM_Solver::ode_step() {
-        external_bcs.set_BCs(U); //External bc's are only applied once per timestep regardless of ode scheme for now
-        set_solid_BCs(U);
-        double dt = calc_timestep();
+    double FVM_Solver::calc_solid_timestep(){
+        double dt_solid{0};
+        for (auto &sb_ptr: solid_bodies) {
+            dt_solid = std::min(dt_solid, sb_ptr->calc_timestep());
+        }
+        return dt_solid;
+    }
+
+    double FVM_Solver::ode_step(double dt_old) {
+        external_bcs.set_BCs(U);
+        step_solids(U,dt_old,true);
+        double dt = std::min(calc_timestep(),calc_solid_timestep());
         switch (ode_scheme) {
             case OdeScheme::ExplicitEuler: {
                 eval_RHS(U);
@@ -121,7 +126,7 @@ namespace fluid {
                     }
                 }
                 external_bcs.set_BCs(U_tmp);
-                set_solid_BCs(U_tmp);
+                step_solids(U_tmp,dt, false);
                 eval_RHS(U_tmp);
                 for (int i{2}; i < ni + 2; i++) {
                     for (int j{2}; j < nj + 2; j++) {
@@ -130,7 +135,7 @@ namespace fluid {
                     }
                 }
                 external_bcs.set_BCs(U_tmp);
-                set_solid_BCs(U_tmp);
+                step_solids(U_tmp,dt, false);
                 eval_RHS(U_tmp);
                 for (int i{2}; i < ni + 2; i++) {
                     for (int j{2}; j < nj + 2; j++) {

@@ -20,8 +20,7 @@ int FSI_Solver::solve() {
     auto start_time{std::chrono::high_resolution_clock::now()}; //Start timing
     int n{0};
     double t{0};
-    double dt;
-    fvm.initialize_solids();
+    double dt{0};
     write_static_solid_boundaries();
     write_solid_debug_files();
     bool breaker{false};
@@ -36,7 +35,7 @@ int FSI_Solver::solve() {
             set_rho_old();
         }
 
-        dt = fvm.ode_step(); //Time stepping the fvm simulation
+        dt = fvm.ode_step(dt); //Time stepping the fvm simulation
         std::cout << "dt = " << dt << '\n';
 
         if (n == 0) {
@@ -199,7 +198,7 @@ void FSI_Solver::write_solid_debug_files(){
     ost2 << "#x_i,y_i\n";
     for (auto& s: solid_bodies) {
         for(auto&e : s->cell2intercept){
-            ost2 << e.second.first.x << ',' <<e.second.first.y << '\n';
+            ost2 << e.second.BI.x << ',' <<e.second.BI.y << '\n';
         }
     }
 }

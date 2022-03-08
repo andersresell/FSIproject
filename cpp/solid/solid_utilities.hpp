@@ -16,7 +16,7 @@ namespace solid {
 
         Point operator+(Point rhs) const { return {x + rhs.x, y + rhs.y}; }
 
-        Point operator+=(Point rhs) {
+        void operator+=(Point rhs) {
             x += rhs.x;
             y += rhs.y;
         }

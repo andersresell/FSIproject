@@ -42,6 +42,7 @@ namespace solid {
 
 
     class SolidBody {
+    protected:
         //set and vector have their own pros and cons here, trying to use both for different tasks for performance
         std::set<Cell> solid_cells;
         bool first_timestep;
@@ -66,7 +67,7 @@ namespace solid {
 
         SolidBody(fluid::FVM_Solver &fvm, std::vector<Point> &&boundary_in, SolidBodyType type);
 
-        void update(fluid::vec4 *U_in);
+        void step(fluid::vec4 *U_in, double dt, bool update_solid_pos);
 
         void find_solid_cells();
 
@@ -97,6 +98,10 @@ namespace solid {
                                    const std::vector<fluid::CellStatus>& cs);
         virtual void bundary_vel_and_acc(Point BI, Point& v_wall, Point& a_wall) const;
 
+        virtual double calc_timestep() const;
+
+        virtual void step_solid_body(double dt);
+
         bool cell_within_grid(int i, int j){ return i >=2  && i<ni+2 && j>=2 && j< nj+2;}
 
         void reset_containers();
@@ -123,6 +128,8 @@ namespace solid {
         double I;
         Vector6d y; //state vector of the rigid body: y = [x_CM, y_CM, u_CM, v_CM, theta, omega]^T
         Vector6d k1,k2,k3,k4;
+        Vector6d f;
+        Point *r0; // The radius from CM to each boundary node at t=0
         //const static inline int n_state{6};
         Point F_fluid; //Total force from the fluid. Only updated once per timestep
         Point F_solid;
@@ -131,16 +138,21 @@ namespace solid {
     public:
         DynamicRigid(fluid::FVM_Solver &fvm, std::vector<Point>&& boundary_in, Point CM, double M, double I);
 
+        void step_solid_body(double dt) final;
+
+        double calc_timestep() const final;
+
     private:
         void update_total_fluid_force_and_moment();
         Vector6d evaluate_f(Vector6d y_in);
-        Vector6d RK4_step(double dt);
+        void RK4_step(double dt);
+        void update_boundary();
 
         void bundary_vel_and_acc(Point BI, Point& v_wall, Point& a_wall) const final;
     };
 
 
-    void DynamicRigid::bundary_vel_and_acc(Point BI, Point& v_wall, Point& a_wall) const{
+    inline void DynamicRigid::bundary_vel_and_acc(Point BI, Point& v_wall, Point& a_wall) const{
         Point r = {BI.x - y[0], BI.y - y[1]};
         double omega = y[5];
         //v = v_CM + omega x r

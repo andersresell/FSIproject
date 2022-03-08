@@ -27,26 +27,31 @@ namespace solid {
     }
 
 
-    void SolidBody::update(fluid::vec4* U_in){
-        if (type == SolidBodyType::Static){
-            if (first_timestep){
-                find_solid_cells();
-                flag_static();
-                find_ghost_cells();
-                find_intercepts();
-            }
-            interpolate_solid(U_in);
-        }else if (type == SolidBodyType::Dynamic){
-            if(~first_timestep){
-                //Step solid(dt)
-            }
+    void SolidBody::step(fluid::vec4* U_in, double dt, bool update_solid_pos){
+        if (type == SolidBodyType::Static && first_timestep) {
             find_solid_cells();
+            flag_static();
             find_ghost_cells();
             find_intercepts();
-            interpolate_fresh_points(U_in);
-            interpolate_solid(U_in);
-            //Clean up containers
         }
+        else if (type == SolidBodyType::Dynamic){
+            if (first_timestep){
+                find_solid_cells();
+                find_ghost_cells();
+                find_intercepts();
+            }else{
+                if (update_solid_pos) {
+                    update_lumped_forces(U_in);
+                    step_solid_body(dt);
+                    //Clean up containers
+                    find_solid_cells();
+                    find_ghost_cells();
+                    find_intercepts();
+                    interpolate_fresh_points(U_in);
+                }
+            }
+        }
+        interpolate_solid(U_in);
         first_timestep = false;
     }
 
@@ -61,10 +66,7 @@ namespace solid {
                         //solid_cells.push_back(Cell{i, j});
                         solid_cells.emplace(Cell{i,j});
                         fvm.cell_status[IX(i, j)] = fluid::CellStatus::Solid;
-                    } /*else if (~fvm.is_static[IX(i, j)] && fvm.solids_initialized) {
-                        //If the cell is not a static solid cell the cell is set back to fluid in case it has moved
-                        fvm.cell_status[IX(i, j)] = fluid::CellStatus::Fluid;
-                    }*/
+                    }
                 }
             }
         } else if (type == SolidBodyType::Dynamic){
@@ -623,6 +625,30 @@ namespace solid {
         y[3] = 0;
         y[4] = 0;
         y[5] = 0;
+        F_solid = {0,0}; //Change later
+        for (int i{0};i<n_bound;i++){
+            r0[i] = boundary[i] - CM;
+        }
+    }
+
+    double DynamicRigid::calc_timestep() const{
+        double lengthscale = std::min(dx,dy);
+        double dt{0};
+        double v_norm;
+        double omega = y[5];
+        for (int i{0}; i<n_bound;i++){
+            Point r = {boundary[i].x - y[0], boundary[i].y - y[1]};
+            //v = v_CM + omega x r
+            v_norm = sqrt(squared(y[2] - omega*r.y) + squared(y[3] + omega*r.y));
+            dt = std::max(dt,lengthscale/v_norm);
+        }
+        return dt;
+    }
+
+    void DynamicRigid::step_solid_body(double dt) {
+        update_total_fluid_force_and_moment();
+        RK4_step(dt);
+        update_boundary();
     }
 
     void DynamicRigid::update_total_fluid_force_and_moment(){
@@ -639,7 +665,6 @@ namespace solid {
 
     Vector6d DynamicRigid::evaluate_f(Vector6d y_in){
         //rhs of the state vector derivative dy/dt = f = [u_CM, v_CM, Fx/M, Fy/M, omega, tau/I]^T
-        Vector6d f;
         //std::pair<Point,double> F_S_tau_S{eval_solid_forces_and_moment()};
         f[0] = y_in[2];
         f[1] = y_in[3];
@@ -651,13 +676,24 @@ namespace solid {
     }
 
 
-    Vector6d DynamicRigid::RK4_step(double dt){
+    void DynamicRigid::RK4_step(double dt){
         k1 = dt * evaluate_f(y);
         k2 = dt * evaluate_f(y + k1/2);
         k3 = dt * evaluate_f(y + k2/2);
         k4 = dt * evaluate_f(y + k3);
-        return y + (k1 + 2*(k2+k3) + k4)/6;
+        y += (k1 + 2*(k2+k3) + k4)/6;
     }
+
+    void DynamicRigid::update_boundary(){
+        double c{cos(y[4])};
+        double s{sin(y[4])};
+        for (int i{0};i<n_bound;i++){
+            //boundary_i(t) = CM(t) + R(t)*r0
+            boundary[i].x = y[0] + c*r0[i].x - s*r0[i].y;
+            boundary[i].y = y[1] + s*r0[i].x + c*r0[i].y;
+        }
+    }
+
 
 
 

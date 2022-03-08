@@ -66,6 +66,8 @@ Simulate::Simulate(const std::string& input_file) {
         fluid::set_constant_horizontal_flow_cond(fvm.U,ni,nj,M_inf);
     }else if (initial_cond == "pressure_bubble"){
         fluid::set_initial_cond_pressure_bubble(fvm.U,ni,nj,L_x,L_y);
+    }else if (initial_cond == "initial_cond1"){
+        fluid::set_initial_cond1(fvm.U,ni,nj);
     }
     else{
         std::cerr << "Invalid initial cond \"" + initial_cond + "\" in " + input_file + '\n';
@@ -89,8 +91,20 @@ Simulate::Simulate(const std::string& input_file) {
     for (pt::ptree::value_type &solid : root.get_child("solids")){
         //Definately better ways to do this, this is mainly because I'm bad at json
         string solid_str = "solids." + solid.first;
-        auto is_static = root.get<bool>(solid_str+".static");
-        solid::SolidBodyType solid_body_type = is_static ? solid::SolidBodyType::Static : solid::SolidBodyType::Dynamic;
+        auto is_static = root.get<bool>(solid_str+".case");
+        solid::SolidBodyType solid_body_type;
+        double M, I;
+        solid::Point CM{};
+        if (is_static){
+            solid_body_type = solid::SolidBodyType::Static;
+        }else{
+            solid_body_type = solid::SolidBodyType::Dynamic;
+            M = root.get<double>(solid_str+".M");
+            I = root.get<double>(solid_str+".I");
+            CM.x = root.get<double>(solid_str+".CM_x");
+            CM.y = root.get<double>(solid_str+".CM_y");
+        }
+
         string geom_str = solid_str + ".geometry";
         vector<solid::Point> boundary;
         if (root.get<string>(geom_str+".case") == "circle"){
@@ -111,7 +125,12 @@ Simulate::Simulate(const std::string& input_file) {
             std::cerr << "Invalid solid geometry in solid " + solid.first + " from " + input_file + '\n';
             exit(1);
         }
-        fsi.add_solid(std::move(std::make_shared<solid::SolidBody>(fvm,std::move(boundary),solid_body_type)));
+        if (is_static){
+            fsi.add_solid(std::move(std::make_shared<solid::SolidBody>(fvm,std::move(boundary),solid_body_type)));
+        } else{
+            fsi.add_solid(std::move(std::make_shared<solid::DynamicRigid>(fvm,std::move(boundary),CM,M,I)));
+        }
+
     }
 
     std::cout << "Setup complete\n";

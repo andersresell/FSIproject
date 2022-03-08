@@ -36,7 +36,8 @@ namespace fluid {
         std::vector<std::shared_ptr<solid::SolidBody>> solid_bodies;
         CellStatus* cell_status;
         bool* is_static;
-        bool solids_initialized;
+        //bool first_timestep;
+        //bool solids_initialized;
         vec4 *U;
     private:
         vec4 *U_tmp, *V, *Res, *U_left, *U_right, *U_down, *U_up, *F_f, *G_f;
@@ -48,7 +49,7 @@ namespace fluid {
         void write_fvm_output(const std::string& output_folder, int n);
         void write_fvm_header(const std::string& output_folder, int write_stride, int n_last, double t_end) const;
 
-        double ode_step();
+        double ode_step(double dt_old);
 
         static vec4 conserved2primitive(const vec4 &U_in);
 
@@ -57,7 +58,9 @@ namespace fluid {
         void initialize_solids();
     private:
 
-        void set_solid_BCs(vec4* U_in);
+        void step_solids(vec4* U_in, double dt, bool update_solid_pos); //Enforces fluid bc's and updates solid positions
+
+        double calc_solid_timestep();
 
         double calc_timestep() const;
 
