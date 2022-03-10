@@ -97,11 +97,11 @@ namespace fluid {
     }
 
     double FVM_Solver::calc_solid_timestep(){
-        double dt_solid{0};
+        double v_norm_max{0};
         for (auto &sb_ptr: solid_bodies) {
-            dt_solid = std::min(dt_solid, sb_ptr->calc_timestep());
+            v_norm_max = std::max(v_norm_max, sb_ptr->max_boundary_speed());
         }
-        return dt_solid;
+        return std::min(dx,dy)/v_norm_max; //Could perhaps use the CFL condition here additionally
     }
 
     double FVM_Solver::ode_step(double dt_old) {

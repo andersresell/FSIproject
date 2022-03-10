@@ -91,7 +91,7 @@ Simulate::Simulate(const std::string& input_file) {
     for (pt::ptree::value_type &solid : root.get_child("solids")){
         //Definately better ways to do this, this is mainly because I'm bad at json
         string solid_str = "solids." + solid.first;
-        auto is_static = root.get<bool>(solid_str+".case");
+        auto is_static = root.get<bool>(solid_str+".is_static");
         solid::SolidBodyType solid_body_type;
         double M, I;
         solid::Point CM{};

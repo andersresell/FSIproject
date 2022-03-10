@@ -1,7 +1,7 @@
 {
   "output_folder": "output_fsi_test",
-  "ni": 50,
-  "nj": 50,
+  "ni": 30,
+  "nj": 30,
   "L_x": 10,
   "L_y": 10,
   "CFL": 0.6,
@@ -10,7 +10,7 @@
   "fvm_write_stride": 1,
   "stopping_crit": {
     "type": "Timesteps",
-    "value": 10
+    "value": 15
   },
 
   "west_bc": {
@@ -36,7 +36,7 @@
       "is_static": false,
       "geometry": {
         "case": "wedge",
-        "l": 2,
+        "l": 1.9999999,
         "half_angle_deg": 20,
         "x_center": 7,
         "y_center": 5

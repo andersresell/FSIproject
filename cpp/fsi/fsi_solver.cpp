@@ -22,7 +22,6 @@ int FSI_Solver::solve() {
     double t{0};
     double dt{0};
     write_static_solid_boundaries();
-    write_solid_debug_files();
     bool breaker{false};
     double res_norm, res_norm0;
     while (true) {
@@ -39,6 +38,7 @@ int FSI_Solver::solve() {
         std::cout << "dt = " << dt << '\n';
 
         if (n == 0) {
+            write_solid_debug_files();
             res_norm0 = calc_density_L2_norm();
             convergence_history.push_back(res_norm0);
         } else if (n % fvm_write_stride == 0) {

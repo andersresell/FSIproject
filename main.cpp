@@ -14,8 +14,9 @@
 int main() {
     using namespace std;
 
-    Simulate("supersonic_wedge.json");
+    //Simulate("supersonic_wedge.json");
     //Simulate("riemann_sod.json");
     //Simulate("pressure_bubbl.json");
+    Simulate("fsi_test.json");
     return 0;
 }

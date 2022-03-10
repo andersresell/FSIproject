@@ -14,7 +14,7 @@ output_folder = "wedge_verification_detached"
 p = Plotter(output_folder)
 #p.debug_points()
 p.plot_steady_state("M")
-p.animate("p")
+p.animate("M")
 print(p.probe("M",2,5))
 print(p.probe("M",5,6))
 print(p.probe("M",3.8,5.58))

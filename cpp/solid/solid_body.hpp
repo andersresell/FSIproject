@@ -47,7 +47,7 @@ namespace solid {
         std::set<Cell> solid_cells;
         bool first_timestep;
         //A map from ghost cells to intercepts. Key is the ghost cell, 1st value is the intercept, 2nd value is the normal
-        inline const static double INF = 1e6; //A large number used as inf in the calculation of points inside Boundary.
+        inline const static double INF = 1e6; //A large number used as infinity
         fluid::FVM_Solver &fvm;
         int ni, nj;
         double dx, dy;
@@ -59,6 +59,7 @@ namespace solid {
         //std::map<Cell, GP_info> intercepts; //[Cell GP, {Point BI, Point n}]
         Segment *segments;
         std::map<Cell, GP_data> cell2intercept; //key = Cell GP, value = {Point BI, Point n, double p}
+        std::map<Cell, GP_data> cell2intercept_FP;
         Point *boundary; //A polygon defining the boundary
         Point *F_boundary; //Lumped force on each boundary node at current timestep;
         const int n_bound;
@@ -75,15 +76,16 @@ namespace solid {
 
         void find_ghost_cells();
 
-        void find_intercepts();
+        void find_intercepts(std::map<Cell, GP_data>& intercept_map, bool fresh_point=false);
 
         double segment_length(int p) const {return (boundary[(p+1)%n_bound] - boundary[p]).norm();}
 
         void interpolate_fresh_points(fluid::vec4* U_in);
 
         void interpolate_solid(fluid::vec4 *U_in);
+        //void interpolate_solid_old(fluid::vec4 *U_in);
 
-        void interpolate_cell(Cell GP, Point BI, Point n, fluid::vec4* U_in, bool fresh_point=false);
+        void interpolate_cell(Cell point, std::map<Cell, GP_data>& intercept_map, fluid::vec4* U_in, bool fresh_point=false);
 
         double interpolate_dirichlet(const Eigen::Vector4d& alpha_dir, std::vector<double>&& phi,
                                      std::vector<double>&& phi_BI ,const std::vector<fluid::CellStatus>& cs);
@@ -96,11 +98,13 @@ namespace solid {
 
         double interpolate_neumann_zero_gradient(const Eigen::Vector4d& alpha_neu, std::vector<double>&& phi,
                                    const std::vector<fluid::CellStatus>& cs);
-        virtual void bundary_vel_and_acc(Point BI, Point& v_wall, Point& a_wall) const;
 
-        virtual double calc_timestep() const;
+        //The virtual functions needed definitions to avoid vtable error, even though they are not used in the base class
+        virtual void bundary_vel_and_acc(Point BI, Point& v_wall, Point& a_wall) const {};
 
-        virtual void step_solid_body(double dt);
+        virtual double max_boundary_speed() const  { return 0; }
+
+        virtual void step_solid_body(double dt) {};
 
         bool cell_within_grid(int i, int j){ return i >=2  && i<ni+2 && j>=2 && j< nj+2;}
 
@@ -118,7 +122,7 @@ namespace solid {
         }
 
     public:
-        ~SolidBody();
+       virtual ~SolidBody();
     };
 
     typedef Eigen::Matrix<double,1,6> Vector6d;
@@ -140,7 +144,7 @@ namespace solid {
 
         void step_solid_body(double dt) final;
 
-        double calc_timestep() const final;
+        double max_boundary_speed() const final;
 
     private:
         void update_total_fluid_force_and_moment();
@@ -149,6 +153,9 @@ namespace solid {
         void update_boundary();
 
         void bundary_vel_and_acc(Point BI, Point& v_wall, Point& a_wall) const final;
+
+    public:
+        virtual ~DynamicRigid();
     };
 
 
