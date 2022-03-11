@@ -45,7 +45,7 @@ public:
     void write_fsi_header();
     void write_static_solid_boundaries();
     void write_movable_solid_boundaries(int n);
-    void write_solid_debug_files();
+    void write_solid_debug_files(int n);
 
     ~FSI_Solver();
 };

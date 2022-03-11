@@ -48,7 +48,7 @@ Simulate::Simulate(const std::string& input_file) {
     north_bc = bc_type_from_str(std::move(root.get<std::string>("north_bc.type")));
     fluid::ExternalBCs bcs{ni,nj,west_bc,east_bc,south_bc,north_bc,M_inf};
 
-    fluid::FVM_Solver fvm{ni,nj,L_x,L_y,CFL,ode_scheme,flux_scheme,bcs};
+    fluid::FVM_Solver fvm{ni,nj,L_x,L_y,CFL,ode_scheme,flux_scheme,bcs,output_folder};
 
     auto initial_cond = root.get<std::string>("initial_cond.case");
     if (initial_cond == "riemann_problem") {
@@ -68,6 +68,9 @@ Simulate::Simulate(const std::string& input_file) {
         fluid::set_initial_cond_pressure_bubble(fvm.U,ni,nj,L_x,L_y);
     }else if (initial_cond == "initial_cond1"){
         fluid::set_initial_cond1(fvm.U,ni,nj);
+    }
+    else if (initial_cond == "initial_cond2"){
+        fluid::set_initial_cond2(fvm.U,ni,nj);
     }
     else{
         std::cerr << "Invalid initial cond \"" + initial_cond + "\" in " + input_file + '\n';

@@ -10,34 +10,32 @@
 #include "../fluid/fvm_solver.hpp"
 
 
-
 namespace solid {
 
     enum class SolidBodyType{Static, Dynamic};
-
+/*
     struct Segment_data{
         //Stores a body intercept and its  length s from the previous boundary node
         Segment_data(Cell GP, double s) : GP{GP}, s{s} {}
         Cell GP;
         double s;
         bool operator<(const Segment_data& rhs) const {return s < rhs.s;}
-    };
-
+    };*/
+/*
     struct Segment{
         //Holds the ghost points, intercepts, normal vector, etc for each segment
-
         std::vector<Segment_data> segment_data_vec;
         Point n;
         bool n_is_set;
         void sort_intercepts(){std::sort(segment_data_vec.begin(), segment_data_vec.end());}
         //void sort_intercepts(int p, int q); //to be used for pressure integration
         Segment() : n_is_set{false}{}
-    };
+    };*/
 
     struct GP_data{
         Point BI;
         Point n;
-        double p;
+        //double p;
     };
 
 
@@ -51,13 +49,14 @@ namespace solid {
         fluid::FVM_Solver &fvm;
         int ni, nj;
         double dx, dy;
+        int timestep;
 
         //Variables used for interpolation
         Eigen::Matrix4d A;
         Eigen::Matrix4d A_inv_T;
     public:
         //std::map<Cell, GP_info> intercepts; //[Cell GP, {Point BI, Point n}]
-        Segment *segments;
+        //Segment *segments;
         std::map<Cell, GP_data> cell2intercept; //key = Cell GP, value = {Point BI, Point n, double p}
         std::map<Cell, GP_data> cell2intercept_FP;
         Point *boundary; //A polygon defining the boundary
@@ -88,16 +87,15 @@ namespace solid {
         void interpolate_cell(Cell point, std::map<Cell, GP_data>& intercept_map, fluid::vec4* U_in, bool fresh_point=false);
 
         double interpolate_dirichlet(const Eigen::Vector4d& alpha_dir, std::vector<double>&& phi,
-                                     std::vector<double>&& phi_BI ,const std::vector<fluid::CellStatus>& cs);
+                                     const std::vector<fluid::CellStatus>& cs, std::vector<double>&& phi_BI_adj={0,0,0,0});
 
-        double interpolate_neumann(const Eigen::Vector4d& alpha_neu, std::vector<double>&& phi,
-                            std::vector<double>&& phi_BI_derivative ,
-                            const std::vector<fluid::CellStatus>& cs, double Delta_l);
-        double interpolate_dirichlet_zero_value(const Eigen::Vector4d& alpha_dir, std::vector<double>&& phi,
+        double interpolate_neumann(const Eigen::Vector4d& alpha_neu, std::vector<double>&& phi, const std::vector<fluid::CellStatus>& cs,
+                                   std::vector<double>&& phi_derivative_BI_adj={0,0,0,0});
+        /*double interpolate_dirichlet_zero_value(const Eigen::Vector4d& alpha_dir, std::vector<double>&& phi,
                                                 const std::vector<fluid::CellStatus>& cs);
 
         double interpolate_neumann_zero_gradient(const Eigen::Vector4d& alpha_neu, std::vector<double>&& phi,
-                                   const std::vector<fluid::CellStatus>& cs);
+                                   const std::vector<fluid::CellStatus>& cs);*/
 
         //The virtual functions needed definitions to avoid vtable error, even though they are not used in the base class
         virtual void bundary_vel_and_acc(Point BI, Point& v_wall, Point& a_wall) const {};
@@ -112,6 +110,7 @@ namespace solid {
 
         void update_lumped_forces(fluid::vec4 *U_in);//Integrates the pressure over each segment and lumps the resultant force in each node
 
+        void write_fresh_points(int n) const;
     private:
         bool point_inside(Point p) const; //Check wether a poins is inside the solid boundary
 
@@ -160,6 +159,7 @@ namespace solid {
 
 
     inline void DynamicRigid::bundary_vel_and_acc(Point BI, Point& v_wall, Point& a_wall) const{
+        using namespace std;
         Point r = {BI.x - y[0], BI.y - y[1]};
         double omega = y[5];
         //v = v_CM + omega x r
@@ -168,6 +168,11 @@ namespace solid {
         double alpha = (tau_fluid + tau_solid)*(1/I);
         //a = a_CM + omega x (omega x r) + alpha x r
         a_wall = {a_CM.x - omega*omega*r.x - alpha*r.y, a_CM.y - omega*omega*r.y + alpha*r.x};
+        a_wall = {0,0};
+        //cout << "y = ";
+        for (int i{0};i<6;i++){
+            //cout << y[i] <<",";
+        }//cout << endl;
     }
 }
 

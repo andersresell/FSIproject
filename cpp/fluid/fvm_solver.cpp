@@ -9,9 +9,9 @@ namespace fluid {
     using namespace std;
 
     FVM_Solver::FVM_Solver(int ni, int nj, double L_x, double L_y, double CFL, OdeScheme ode_scheme,
-                           FluxScheme flux_scheme, const ExternalBCs& external_bcs)
+                           FluxScheme flux_scheme, const ExternalBCs& external_bcs,std::string output_folder)
             : ni{ni}, nj{nj}, L_x{L_x}, L_y{L_y}, dx{L_x / ni}, dy{L_y / nj}, CFL{CFL}, ode_scheme{ode_scheme},
-              flux_scheme{flux_scheme}, external_bcs{external_bcs}{
+              flux_scheme{flux_scheme}, external_bcs{external_bcs}, output_folder{std::move(output_folder)}{
         U = new vec4[(ni + 4) * (nj + 4)];
         V = new vec4[(ni + 4) * (nj + 4)];
         U_left = new vec4[(ni + 2) * nj];

@@ -7,10 +7,10 @@
   "CFL": 0.5,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
-  "fvm_write_stride": 10,
+  "fvm_write_stride": 100,
   "stopping_crit": {
-    "type": "Timesteps",
-    "value": 300
+    "type": "Convergence",
+    "value": 1e-6
   },
 
 

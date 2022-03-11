@@ -12,7 +12,7 @@ output_folder = "output_fsi_test"
 
 
 p = Plotter(output_folder)
-p.debug_points()
+#p.debug_animation()
 #p.plot_steady_state("p")
 p.animate("p")
 plt.show()

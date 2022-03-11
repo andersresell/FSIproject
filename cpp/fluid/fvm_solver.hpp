@@ -36,6 +36,7 @@ namespace fluid {
         std::vector<std::shared_ptr<solid::SolidBody>> solid_bodies;
         CellStatus* cell_status;
         bool* is_static;
+        const std::string output_folder;
         //bool first_timestep;
         //bool solids_initialized;
         vec4 *U;
@@ -44,7 +45,7 @@ namespace fluid {
 
     public:
         FVM_Solver(int ni, int nj, double L_x, double L_y, double CFL, OdeScheme ode_scheme, FluxScheme flux_scheme,
-                   const ExternalBCs& external_bcs);
+                   const ExternalBCs& external_bcs, std::string output_folder);
 
         void write_fvm_output(const std::string& output_folder, int n);
         void write_fvm_header(const std::string& output_folder, int write_stride, int n_last, double t_end) const;
@@ -54,6 +55,8 @@ namespace fluid {
         static vec4 conserved2primitive(const vec4 &U_in);
 
         static vec4 primitive2conserved(const vec4 &V_in);
+
+        static double calc_P(const vec4 &U_in);
 
         void initialize_solids();
     private:
@@ -77,8 +80,6 @@ namespace fluid {
         static vec4 F_f_HLLC(const vec4& U_L,const vec4& U_R); //Computes the HLLC flux F_{i+1/2,j}
 
         static vec4 G_f_HLLC(const vec4& U_D,const vec4& U_U); //Computes the HLLC flux G_{i,j+1/2}
-
-        static double calc_P(const vec4 &U_in);
 
         static vec4 calc_F(const vec4 &U_in);
 

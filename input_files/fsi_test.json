@@ -1,16 +1,16 @@
 {
   "output_folder": "output_fsi_test",
-  "ni": 30,
-  "nj": 30,
+  "ni": 100,
+  "nj": 100,
   "L_x": 10,
   "L_y": 10,
   "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
-  "fvm_write_stride": 1,
+  "fvm_write_stride": 30,
   "stopping_crit": {
     "type": "Timesteps",
-    "value": 15
+    "value": 2000
   },
 
   "west_bc": {
@@ -28,7 +28,7 @@
   },
 
   "initial_cond": {
-    "case": "initial_cond1"
+    "case": "initial_cond2"
   },
 
   "solids": {
@@ -43,8 +43,8 @@
       },
       "CM_x": 7,
       "CM_y": 5,
-      "M": 3141,
-      "I": 1570
+      "M": 30,
+      "I": 15
     }
   }
 

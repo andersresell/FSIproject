@@ -31,6 +31,7 @@ int FSI_Solver::solve() {
             std::cout << "Writing output\n";
             fvm.write_fvm_output(output_folder, n);
             write_movable_solid_boundaries(n);
+            write_solid_debug_files(n);
             set_rho_old();
         }
 
@@ -38,7 +39,6 @@ int FSI_Solver::solve() {
         std::cout << "dt = " << dt << '\n';
 
         if (n == 0) {
-            write_solid_debug_files();
             res_norm0 = calc_density_L2_norm();
             convergence_history.push_back(res_norm0);
         } else if (n % fvm_write_stride == 0) {
@@ -181,10 +181,10 @@ void FSI_Solver::write_movable_solid_boundaries(int n) {
         }
     }
 }
-void FSI_Solver::write_solid_debug_files(){
+void FSI_Solver::write_solid_debug_files(int n){
     //Writes the status of the solid bodies. One file for the node cell status and one for the intercepts
     int nj = fvm.nj;
-    std::ofstream ost1{"python/output_folders/" + output_folder + "/debug_nodes.csv"};
+    std::ofstream ost1{"python/output_folders/" + output_folder + "/debug_nodes_t" + std::to_string(n) + ".csv"};
     if (!ost1) std::cerr << "error, couldn't open node debug csv file\n";
     ost1 << "#type,x,y\n";
     for (int i{0}; i < fvm.ni + 4; i++) {
@@ -193,7 +193,8 @@ void FSI_Solver::write_solid_debug_files(){
             ost1 << static_cast<int>(fvm.cell_status[IX(i, j)]) << ',' << p.x << ',' << p.y << '\n';
         }
     }
-    std::ofstream ost2{"python/output_folders/"+output_folder+"/debug_intercepts.csv"};
+
+    std::ofstream ost2{"python/output_folders/"+output_folder+"/debug_intercepts_t" + std::to_string(n) + ".csv"};
     if (!ost2) std::cerr << "error, couldn't open solid debug intercepts csv file\n";
     ost2 << "#x_i,y_i\n";
     for (auto& s: solid_bodies) {
@@ -201,6 +202,9 @@ void FSI_Solver::write_solid_debug_files(){
             ost2 << e.second.BI.x << ',' <<e.second.BI.y << '\n';
         }
     }
+
+
+
 }
 
 FSI_Solver::~FSI_Solver(){

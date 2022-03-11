@@ -3,6 +3,8 @@
 //
 
 #include "solid_body.hpp"
+#include "../../includes.hpp"
+//#include "../fluid/fvm_solver.hpp"
 
 namespace solid {
 
@@ -26,6 +28,7 @@ namespace solid {
                 1, dx, dy, dx * dy,
                 1, 0, dy, 0;
         A_inv_T = A.transpose().inverse();
+        timestep = 0;
     }
 
 
@@ -44,12 +47,14 @@ namespace solid {
             }else{
                 if (update_solid_pos) {
                     update_lumped_forces(U_in);
-                    step_solid_body(dt);
-                    for (int i{0};i<n_bound;i++){
+                    step_solid_body(dt); //cout << "stepping solid\n";
+                    /*for (int i{0};i<n_bound;i++){
                         cout << "B_i: "<<boundary[i]<<endl;
                     }
-                    cout <<endl;
-                    interpolate_fresh_points(U_in);//Shady, some containers should maybe be reset before
+                    cout << "dx = "<<fvm.dx<<", u_b*dt = "<< 200*dt<<endl;
+                    cout <<endl;*/
+                    interpolate_fresh_points(U_in);
+                    write_fresh_points(++timestep);
                     reset_containers();
                     find_solid_cells();
                     find_ghost_cells();
@@ -59,12 +64,13 @@ namespace solid {
         }
         //interpolate_solid_old(U_in);
         interpolate_solid(U_in);
+        cout << endl;
         first_timestep = false;
     }
 
     void SolidBody::find_solid_cells() {
         //DEBUGGING
-        Point p;
+        Point p{};
         for (int i{2}; i < ni + 2; i++) {
             for (int j{2}; j < nj + 2; j++) {
                 p = ind2point(i, j);
@@ -202,7 +208,7 @@ namespace solid {
                         e.second.n = n;
                         if (!fresh_point) { //Ghost point
                             segments[j].segment_data_vec.emplace_back(e.first, (BI - boundary[j]).norm());
-                            if (~segments[j].n_is_set) {
+                            if (!segments[j].n_is_set) {
                                 segments[j].n = n;
                                 segments[j].n_is_set = true;
                             }
@@ -223,13 +229,14 @@ namespace solid {
         // but the body intercept properties (boundary velocity and acceleration from the new fluid points), since this
         //procedure creates no additional computations
         for (auto& e : cell2intercept){
-            if (~point_inside(ind2point(e.first.i,e.first.j))){
+            if (!point_inside(ind2point(e.first.i,e.first.j))){
                 cell2intercept_FP[e.first]; //Detecting the fresh pointsm, by checking which old GP's are now outside the boundary
             }
         }
         find_intercepts(cell2intercept_FP,true);
         for (auto& e : cell2intercept_FP) {
-
+            //cout << "FP"<<e.first<<endl;
+            interpolate_cell(e.first, cell2intercept_FP, U_in,true);
         }
 
         //interpolate_cell(e.first, e.second.BI, e.second.n, U_in, true);
@@ -254,14 +261,24 @@ namespace solid {
         Point n = intercept_map[point].n;
         std::vector<fluid::CellStatus> cs(4);
         Matrix4d A_dir = A;
-        Matrix4d A_neu = A;
+        Matrix4d A_neu = A;;
         Point IP = BI * 2 - ind2point(point.i, point.j);
-        double Delta_l = (IP - BI).norm()*2;
         Cell bottom_left_ind = point2ind(IP.x, IP.y);
+        //cout << "bl_pre "<<bottom_left_ind<<endl;
+        if (fresh_point) {
+            bottom_left_ind = point;
+            IP = ind2point(point.i, point.j); //IP denotes the fresh point
+            if (n.x < 0) bottom_left_ind.i--;
+            if (n.y < 0) bottom_left_ind.j--;
+        }
         //cout <<"Fresh point: "<<fresh_point<< ", GP: "<<GP<<"BI: "<<BI<<"n: "<<n <<", bl " << bottom_left_ind<<endl;
         int i_bl = bottom_left_ind.i;
         int j_bl = bottom_left_ind.j;
         Point bottom_left_point = ind2point(i_bl, j_bl);
+        //cout <<"FP "<<fresh_point<< ", BI "<<BI<<", n"<<n;
+
+        //cout << " IP "<<IP<< " point "<<point << " bl"<<bottom_left_ind<<endl;
+        double Delta_l = (IP - BI).norm() * 2;
         double DX = IP.x - bottom_left_point.x;
         double DY = IP.y - bottom_left_point.y;
         Vector4d A_IP{1, DX, DY, DX * DY};
@@ -272,17 +289,30 @@ namespace solid {
         std::vector<double> p(4);
         std::vector<double> u_n_BI_adj(4);
         std::vector<double> p_derivative_BI_adj(4);
-        double rho_BI_derivative, u_n_BI, p_derivative_BI;
+        double u_n_BI, p_derivative_BI;
+        double rho_approx{0};
 
 
-
-        Point u_wall{}; Point a_wall{};
-        if (type == SolidBodyType::Dynamic){
+        Point u_wall{};
+        Point a_wall{};
+        if (type == SolidBodyType::Dynamic) {
             //Only estimating one vel and acc for interpolation
             bundary_vel_and_acc(BI, u_wall, a_wall);
+            int counter{0};
+            //Approximating the density by an average of surrounding fluid nodes. For pressure gradient calculation
+            for (int ii{0}; ii < 2; ii++) {
+                for (int jj{0}; jj < 2; jj++) {
+                    if (cs[ii + 3 * jj - 2 * ii * jj] == fluid::CellStatus::Fluid) {
+                        rho_approx += U_in[IX(i_bl + ii, j_bl + jj)].u1;
+                        counter++;
+                    }
+                }
+            }
+            rho_approx /= counter;
+            u_n_BI = u_wall.x * n.x + u_wall.y * n.y;
+            p_derivative_BI = -rho_approx * (a_wall.x * n.x + a_wall.y * n.y);
+            //cout << "a_wall "<<a_wall<<"u_wall "<<u_wall<<", rho_approx = "<<rho_approx<<endl;
         }
-        double rho_approx{0};
-        bool rho_approx_set{false};
         bool all_fluid{true};
         for (int jj{0}; jj < 2; jj++) {
             for (int ii{0}; ii < 2; ii++) {
@@ -292,6 +322,7 @@ namespace solid {
                 //cout << ", S: " <<(int)cs[ind] << ", ind: "<<IX(i_bl + ii, j_bl + jj)<<endl;
                 if (cs[ind] == fluid::CellStatus::Fluid){
                     fluid::vec4 V = fluid::FVM_Solver::conserved2primitive(U_in[IX(i_bl + ii, j_bl + jj)]);
+                    //cout << "V "<<ind<<" "<<V<<endl;
                     u_n[ind] = V.u2 * n.x + V.u3 * n.y;
                     u_t[ind] = -V.u2 * n.y + V.u3 * n.x;
                     /*cout << "tull = "<<-V.u2 * n.y + V.u3 * n.x<<endl;
@@ -305,36 +336,27 @@ namespace solid {
                     all_fluid = false;
                     Point BI_adj = cell2intercept[{i_bl + ii, j_bl + jj}].BI;
                     Point n_adj = cell2intercept[{i_bl + ii, j_bl + jj}].n;
-                    double DX_BI = BI_adj.x - bottom_left_point.x;
-                    double DY_BI = BI_adj.y - bottom_left_point.y;
-                    A_dir.block<1, 4>(ind, 0) << 1, DX_BI, DY_BI, DX_BI * DY_BI;
-                    A_neu.block<1, 4>(ind, 0) << 0, n_adj.x, n_adj.y, DY_BI * n_adj.x + DX_BI * n_adj.y;
+                    double DX_BI_adj = BI_adj.x - bottom_left_point.x;
+                    double DY_BI_adj = BI_adj.y - bottom_left_point.y;
+                    A_dir.block<1, 4>(ind, 0) << 1, DX_BI_adj, DY_BI_adj, DX_BI_adj * DY_BI_adj;
+                    A_neu.block<1, 4>(ind, 0) << 0, n_adj.x, n_adj.y, DY_BI_adj * n_adj.x + DX_BI_adj * n_adj.y;
                     if (type == SolidBodyType::Dynamic){
                         u_n_BI_adj[ind] = u_wall.x*n_adj.x + u_wall.y * n_adj.y;
-                        int counter{0};
-                        //Approximating the density by an average of surrounding fluid nodes. For pressure gradient calculation
-                        if (~rho_approx_set){
-                            for (int iii{0};iii<2;iii++){
-                                for(int jjj{0};jjj<2;jjj++){
-                                    if (cs[iii+2*jjj] == fluid::CellStatus::Fluid){
-                                        rho_approx += U_in[IX(i_bl + iii, j_bl + jjj)].u1;
-                                        counter++;
-                                    }
-                                }
-                            }
-                            rho_approx/=counter;
-                            rho_approx_set = true;
-                        }
                         p_derivative_BI_adj[ind] = -rho_approx*(a_wall.x*n_adj.x + a_wall.y*n_adj.y);
                     }
                 }
                 else if (cs[ind] == fluid::CellStatus::Solid){
-                    std::cerr << "Solid point in bilinear interpolation stencil detected\n"; exit(1);
+                    std::cerr << "Solid point in bilinear interpolation stencil detected\n"; //exit(1);
                 } else{
-                    std::cerr << "Unidentified point in bilinear interpolation stencil detected\n"; exit(1);
+                    std::cerr << "Unidentified point in bilinear interpolation stencil detected\n"; //exit(1);
                 }
+               // cout << "u_n_adj "<<u_n[ind]<<", u_t_adj "<<u_t[ind]<<endl;
             }
         }
+        //for (int i{0};i<4;i++) cout << "CS = "<<(int)cs[i]<<endl;
+        /*cout << "A_dir " << A_dir<<endl;
+        cout << "A_neu" << A_neu<<endl;
+        cout << "A_IP "<<A_IP<<endl;*/
       //  cout << "all fluid: "<<all_fluid;
         //cout << endl;
         Vector4d alpha_dir;
@@ -354,67 +376,72 @@ namespace solid {
             //cout << "all fluid\n";
             //cout << "alpha = " << alpha_dir << endl<<endl;
         }
+        //cout << "alpha_dir = " << alpha_dir << endl;
+        //cout << "alpha_neu = " << alpha_neu << endl<<endl;
 
-
-        double p_BI_derivative0 = p_derivative_adj[0];
         fluid::vec4 V_point{};
         double u_n_point{0};
         double u_t_point{0};
-        //cout << "alpha_neu = "<<alpha_neu;
-        //cout << "u_t = ";
-        //for (int r{0};r<4;r++) cout << u_t.at(r)<< ",";
-        //cout <<endl;
-        u_t_point = interpolate_neumann_zero_gradient(alpha_neu, std::move(u_t), cs);
-        //cout << "u_t_GP= "<<u_t_GP<<endl;
-        if (type == SolidBodyType::Static) {
-            V_point.u1 = interpolate_neumann_zero_gradient(alpha_neu, std::move(rho), cs);
-            u_n_point = interpolate_dirichlet_zero_value(alpha_dir, std::move(u_n), cs);
-            V_point.u4 = interpolate_neumann_zero_gradient(alpha_neu, std::move(p), cs);
+
+        if (fresh_point){
+            u_t_point = interpolate_neumann(alpha_neu, std::move(u_t), cs);
+            u_n_point = interpolate_dirichlet(alpha_dir, std::move(u_n), cs, std::move(u_n_BI_adj));
+            V_point.u4 = interpolate_neumann(alpha_neu, std::move(p), cs, std::move(p_derivative_BI_adj));
+            V_point.u1 = interpolate_neumann(alpha_neu, std::move(rho), cs); //should maybe try to calc rho_derivative_BI
+        }else{
+            u_t_point = interpolate_neumann(alpha_neu, std::move(u_t), cs);
+            if (type == SolidBodyType::Static) {
+                V_point.u1 = interpolate_neumann(alpha_neu, std::move(rho), cs);
+                u_n_point = - interpolate_dirichlet(alpha_dir, std::move(u_n), cs);
+                V_point.u4 = interpolate_neumann(alpha_neu, std::move(p), cs);
+            }
+            else if (type == SolidBodyType::Dynamic){
+                u_n_point = 2*u_n_BI - interpolate_dirichlet(alpha_dir, std::move(u_n), cs, std::move(u_n_BI_adj));
+                V_point.u4 = - Delta_l*p_derivative_BI + interpolate_neumann(alpha_neu, std::move(p), cs, std::move(p_derivative_BI_adj));
+                V_point.u1 = interpolate_neumann(alpha_neu, std::move(rho), cs); //should maybe try to calc rho_derivative_BI
+                V_point.u1*=(1-Delta_l*p_derivative_BI);
+            } else{
+                std::cerr << "Solid type is neither Static, nor Dynamic\n"; //exit(1);
+            }
         }
-        else if (type == SolidBodyType::Dynamic){
-            u_n_point = interpolate_dirichlet(alpha_dir, std::move(u_n), std::move(u_n_BI_adj), cs);
-            V_point.u4 = interpolate_neumann(alpha_neu, std::move(p), std::move(p_derivative_BI_adj), cs, Delta_l);
-            V_point.u1 = interpolate_neumann_zero_gradient(alpha_neu, std::move(rho), cs);
-            V_point.u1*=(1-Delta_l*p_BI_derivative0);
-        } else{
-            std::cerr << "Solid type is neither Static, nor Dynamic\n"; exit(1);
-        }
+        //cout << "u_n_point << "<<u_n_point<<", u_t_point "<<u_t_point<<endl;
 
         V_point.u2 = n.x * u_n_point - n.y * u_t_point;
         V_point.u3 = n.y * u_n_point + n.x * u_t_point;
         U_in[IX(point.i, point.j)] = fluid::FVM_Solver::primitive2conserved(V_point);
-        if (!fresh_point) cell2intercept[point].p = V_point.u4 + 0.5*Delta_l*p_BI_derivative0;
+        if (!fresh_point) cell2intercept[point].p = V_point.u4 + 0.5*Delta_l*p_derivative_BI;
+        //if (fresh_point) cout << "FP: V_point "<<V_point<<endl;
+        //else cout << "GP: V_point "<<V_point<<endl;
+        if (isnan(V_point.u1))exit(1);
     }
 
     double SolidBody::interpolate_dirichlet(const Vector4d& alpha_dir, std::vector<double>&& phi,
-                            std::vector<double>&& phi_BI ,const std::vector<fluid::CellStatus>& cs, bool fresh_point) {
-        if (!fresh_point) {
-            double phi_GP = phi_BI[0];
-            for (int i{0}; i < 4; i++) {
-                if (cs[i] == fluid::CellStatus::Fluid) {
-                    phi_GP -= alpha_dir[i] * phi[i];
-                } else { //Ghost
-                    phi_GP -= alpha_dir[i] * phi_BI[i];
-                }
-            }
-            return phi_GP;
-        }else{
+                                        const std::vector<fluid::CellStatus>& cs, std::vector<double>&& phi_BI_adj) {
 
-        }
-    }
-    double SolidBody::interpolate_neumann(const Vector4d& alpha_neu, std::vector<double>&& phi,
-                                          std::vector<double>&& phi_BI_derivative ,
-                                          const std::vector<fluid::CellStatus>& cs, double Delta_l, bool fresh_point) {
-        double phi_GP = -Delta_l * phi_BI_derivative[0];
+        double phi_point{0};
         for (int i{0}; i < 4; i++) {
             if (cs[i] == fluid::CellStatus::Fluid) {
-                phi_GP += alpha_neu[i] * phi[i];
+                phi_point += alpha_dir[i] * phi[i];
             } else { //Ghost
-                phi_GP += alpha_neu[i] * phi_BI_derivative[i];
+                phi_point += alpha_dir[i] * phi_BI_adj[i];
             }
         }
-        return phi_GP;
+        return phi_point;
+    }
+    double SolidBody::interpolate_neumann(const Eigen::Vector4d& alpha_neu, std::vector<double>&& phi,
+                                          const std::vector<fluid::CellStatus>& cs,
+                                          std::vector<double>&& phi_derivative_BI_adj){
+        double phi_point{0};
+        for (int i{0}; i < 4; i++) {
+            if (cs[i] == fluid::CellStatus::Fluid) {
+                phi_point += alpha_neu[i] * phi[i];
+            } else { //Ghost
+                phi_point += alpha_neu[i] * phi_derivative_BI_adj[i];
+            }
+        }
+        return phi_point;
     };
+    /*
     double SolidBody::interpolate_dirichlet_zero_value(const Eigen::Vector4d& alpha_dir, std::vector<double>&& phi,
                                             const std::vector<fluid::CellStatus>& cs){
         double phi_GP{0};
@@ -437,7 +464,7 @@ namespace solid {
         }else{
 
         }
-    }
+    }*/
 
     bool SolidBody::point_inside(Point p) const{
         //using namespace std;
@@ -456,7 +483,7 @@ namespace solid {
         }
         return count % 2 == 1; //If number of intersections are odd, return true, else return false
     }
-
+/*
     void SolidBody::update_lumped_forces(fluid::vec4* U_in) {
         int ip;
         double ds;
@@ -469,22 +496,85 @@ namespace solid {
             double segment_length_inverse = 1 / (boundary[ip] - boundary[i]).norm();
             segments[i].sort_intercepts();
             std::vector<Segment_data> &v{segments[i].segment_data_vec};
-            for (int j{0}; j < v.size() - 1; j++) {
+            for (size_t j{0}; j < v.size() - 1; j++) {
+                //cout << "v_size "<<v.size()<<", i "<<i<<",j "<<j<<endl;
                 ds = v[j + 1].s - v[j].s;
                 xi = (v[j].s + 0.5 * ds) * segment_length_inverse;
                 p_j = cell2intercept[v[j].GP].p;
                 p_jp = cell2intercept[v[j].GP].p;
-                F1 += 0.5 * (p_jp + p_j) * ds * (1 - xi);
-                F2 += 0.5 * (p_jp + p_j) * ds * xi;
+                F1 -= 0.5 * (p_jp + p_j) * ds * (1 - xi);
+                F2 -= 0.5 * (p_jp + p_j) * ds * xi;
             }
             F_boundary[i] += segments[i].n * F1;
             F_boundary[ip] += segments[ip].n * F2;
         }
         for (int  i{0};i<n_bound;i++) cout<< "force b_i = "<<F_boundary[i]<<endl;
+    }*/
+    void SolidBody::update_lumped_forces(fluid::vec4* U_in) {
+        double xi;
+        size_t ip;
+        double ds{std::min(dx, dy)};
+        double dF;
+        Vector4d alpha, P;
+        double DX, DY;
+        for (size_t i{0}; i < n_bound; i++) {
+            ip = (i + 1) % n_bound;
+            Point p = boundary[i];
+            Point q = boundary[ip];
+            double F_p{0};
+            double F_q{0};
+            double seg_length = (q - p).norm();
+            Point n = {q.y - p.y, -(q.x - p.x)};
+            n.normalize();
+            Point t = {-n.y, n.x};
+            auto n_ds = static_cast<size_t>(seg_length / ds) + 1;
+            ds = seg_length / (double) n_ds;
+            for (size_t j{0}; j < n_ds; j++) {
+                double s = ds*(0.5 + (double) j);
+                Point point = boundary[i] + t * s;
+                xi = s / seg_length;
+                Cell bl = point2ind(point.x, point.y);
+                Point bl_point = ind2point(bl.i, bl.j);
+                //cout << "U_00 "<< U_in[IX(bl.i, bl.j)]<<endl;
+                //cout << "U_10 "<< U_in[IX(bl.i+1, bl.j)]<<endl;
+                //cout << "U_11 "<< U_in[IX(bl.i+1, bl.j+1)]<<endl;
+                //cout << "U_01 "<< U_in[IX(bl.i, bl.j+1)]<<endl;
+
+                P[0] = fluid::FVM_Solver::calc_P(U_in[IX(bl.i, bl.j)]);
+                P[1] = fluid::FVM_Solver::calc_P(U_in[IX(bl.i + 1, bl.j)]);
+                P[2] = fluid::FVM_Solver::calc_P(U_in[IX(bl.i + 1, bl.j + 1)]);
+                P[3] = fluid::FVM_Solver::calc_P(U_in[IX(bl.i, bl.j + 1)]);
+                DX = point.x - bl_point.x;
+                DY = point.y - bl_point.y;
+                Vector4d A_point = {1, DX, DY, DX * DY};
+                alpha = A_inv_T * A_point;
+                double P_point = alpha.dot(P);
+                //for (int k{0};k<4;k++) cout << "P_k "<< P[k] <<endl;
+                cout <<"P_point "<< P_point<<endl;
+                dF = -ds * P_point;
+                F_p += dF * (1 - xi);
+                F_q += dF * xi;
+            }
+            F_boundary[i] += n * F_p;
+            F_boundary[ip] += n * F_q;
+        }
+        for (int i{0};i<n_bound;i++)cout << "b_i "<<boundary[i]<< ", F_b "<<F_boundary[i]<<endl;
+    }
+
+    void SolidBody::write_fresh_points(int n) const{
+        std::ofstream ost{"python/output_folders/"+fvm.output_folder+"/debug_fresh_points_t" + std::to_string(n) + ".csv"};
+        if (!ost) std::cerr << "error, couldn't open solid debug fresh points csv file\n";
+        ost << "#x_i,y_i\n";
+        for (const auto& e: cell2intercept_FP){
+            solid::Point p = {(e.first.i - 1.5) * fvm.dx, (e.first.j - 1.5) * fvm.dy};
+            ost << p.x << ',' << p.y << '\n';
+        }
     }
 
     void SolidBody::reset_containers(){
         //Call before every timestep to clear containers of variable size
+        cout << "clearing containers\n";
+        solid_cells.clear();
         cell2intercept.clear();
         cell2intercept_FP.clear();
         for (int i{0}; i < n_bound; i++){
@@ -504,7 +594,7 @@ namespace solid {
     : SolidBody(fvm,std::move(boundary_in),SolidBodyType::Dynamic), M{M}, I{I}{
         y[0] = CM.x;
         y[1] = CM.y;
-        y[2] = 0;
+        y[2] = 0;//-200;//REMOVE LATER
         y[3] = 0;
         y[4] = 0;
         y[5] = 0;
@@ -543,7 +633,7 @@ namespace solid {
             r = {boundary[i].x- y[0], boundary[i].y - y[1]};
             tau_fluid += r.cross(F_boundary[i]);
         }
-        cout << "F_fluid: "<<F_fluid<<", tau_fluid"<<tau_fluid<<endl;
+        cout << "F_fluid: "<<F_fluid<<", tau_fluid "<<tau_fluid<<endl;
         //F_fluid={-1000000,0};
         //tau_fluid=0;
     }
@@ -560,6 +650,7 @@ namespace solid {
         f[4] = y_in[5];
         f[5] = (tau_fluid + tau_solid)/I;
         //cout << "f="<<f<<endl;
+        //f << -200,0,0,0,0,0;
         return f;
     }
 

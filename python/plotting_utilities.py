@@ -26,11 +26,13 @@ class Plotter:
 
     def animate(self,datatype):
         plt.figure()
+        levels = np.linspace(6e4,8e5,100)
+
         for n in range(0,self.n_timesteps+1):
             if n % self.write_stride == 0:
                 data = self.extract_data(datatype,n)
                 plt.clf()
-                cs = plt.contourf(self.x,self.y,data, 100, cmap=plt.get_cmap('hot'))
+                cs = plt.contourf(self.x,self.y,data, levels=levels, cmap=plt.get_cmap('hot'))
                 cb = plt.colorbar(cs)
                 if datatype == "M":
                     cb.set_label("Mach number")
@@ -127,10 +129,17 @@ class Plotter:
         plt.xlabel("x")
         plt.ylabel("Pressure")
 
-    def debug_points(self):
+    def debug_animation(self):
         plt.figure()
+        for n in range(0,self.n_timesteps):
+            if n % self.write_stride == 0:
+                plt.clf()
+                self.debug_points(n)
+                plt.pause(0.1)
+
+    def debug_points(self, n):
         #plotting points
-        data = genfromtxt("output_folders/"+self.output_folder+"/debug_nodes.csv",comments = "#", delimiter=',')
+        data = genfromtxt("output_folders/"+self.output_folder+"/debug_nodes_t"+str(n)+".csv",comments = "#", delimiter=',')
         cell_type = data[:,0]
         x = data[:,1]
         y = data[:,2]
@@ -149,17 +158,26 @@ class Plotter:
             if i < self.n_static_solids:
                 data = genfromtxt("output_folders/"+self.output_folder+"/static_boundary"+str(i)+".csv",comments = "#", delimiter=',')
             else:
-                data = genfromtxt("output_folders/"+self.output_folder+"/movable_boundary"+str(i-self.n_static_solids)+"_t0.csv",comments = "#", delimiter=',')
+                data = genfromtxt("output_folders/"+self.output_folder+"/movable_boundary"+str(i-self.n_static_solids)+"_t"+str(n)+".csv",comments = "#", delimiter=',')
             x_b = data[:,0]
             y_b = data[:,1]
             plt.plot(x_b,y_b,'.-k')
             plt.plot(np.array([x_b[-1],x_b[0]]),np.array([y_b[-1],y_b[0]]),'.-k')
         #plotting intercepts
-        data = genfromtxt("output_folders/"+self.output_folder+"/debug_intercepts.csv",comments = "#", delimiter=',')
-        x_i = data[:,0]
-        y_i = data[:,1]
-        plt.plot(x_i,y_i,'y*')
-        plt.axis('equal')
+        data = genfromtxt("output_folders/"+self.output_folder+"/debug_intercepts_t"+str(n)+".csv",comments = "#", delimiter=',')
+        if not data.size == 0:
+            x_i = data[:,0]
+            y_i = data[:,1]
+            plt.plot(x_i,y_i,'y*')
+            plt.axis('equal')
+        #plotting fresh points
+        if n != 0:
+            data = genfromtxt("output_folders/"+self.output_folder+"/debug_fresh_points_t"+str(n)+".csv",comments = "#", delimiter=',')
+            if data.size > 0:
+                x_i = data[:,0]
+                y_i = data[:,1]
+                plt.plot(x_i,y_i,'kx')
+                plt.axis('equal')
 
     def probe(self,datatype,x_point,y_point):
         data = self.extract_data(datatype,self.n_timesteps)
