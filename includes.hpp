@@ -8,6 +8,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <array>
 #include <set>
 #include <iostream>
 #include <fstream>

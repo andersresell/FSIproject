@@ -1,16 +1,16 @@
 {
   "output_folder": "output_fsi_test",
-  "ni": 100,
-  "nj": 100,
+  "ni": 200,
+  "nj": 200,
   "L_x": 10,
   "L_y": 10,
   "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
-  "fvm_write_stride": 30,
+  "fvm_write_stride": 50,
   "stopping_crit": {
     "type": "Timesteps",
-    "value": 2000
+    "value": 3000
   },
 
   "west_bc": {

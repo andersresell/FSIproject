@@ -9,6 +9,7 @@
 #include "../fluid/fvm_solver.hpp"
 #include "../fluid/fvm_utilities.hpp"
 #include "../solid/solid_body.hpp"
+#include "../solid/dynamic_rigid.hpp"
 #include "setup_cases.hpp"
 
 enum class StoppingCrit{Time=0, Timesteps, Convergence};

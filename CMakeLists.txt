@@ -12,7 +12,7 @@ add_executable(FSIproject
         cpp/fsi/fsi_solver.cpp cpp/fsi/fsi_solver.hpp
         includes.hpp
         cpp/fluid/HLLC.cpp
-        cpp/solid/solid_utilities.cpp cpp/solid/solid_utilities.hpp cpp/solid/solid_body.cpp cpp/solid/solid_body.hpp cpp/fsi/simulate.hpp cpp/fsi/setup_cases.cpp cpp/fsi/setup_cases.hpp cpp/fsi/simulate.cpp)
+        cpp/solid/solid_utilities.cpp cpp/solid/solid_utilities.hpp cpp/solid/solid_body.cpp cpp/solid/solid_body.hpp cpp/fsi/simulate.hpp cpp/fsi/setup_cases.cpp cpp/fsi/setup_cases.hpp cpp/fsi/simulate.cpp cpp/solid/dynamic_rigid.cpp cpp/solid/dynamic_rigid.hpp)
 
 SET( EIGEN3_INCLUDE_DIR "$ENV{EIGEN3_INCLUDE_DIR}" )
 SET( CMAKE_MODULE_PATH "$ENV{EIGEN3_DIR}" )
