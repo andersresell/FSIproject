@@ -52,6 +52,7 @@ namespace solid {
                     reset_containers();
                     find_ghost_cells();
                     find_intercepts(cell2intercept);
+
                 }
             }
         }
@@ -164,7 +165,7 @@ namespace solid {
         }
     }
 
-    void SolidBody::find_intercepts(std::map<Cell, GP_data>& intercept_map, bool fresh_point) {
+    void SolidBody::find_intercepts(std::map<Cell, GP_data>& intercept_map) {
         using namespace std;
         Point r_p;
         Point r_q;
@@ -225,10 +226,10 @@ namespace solid {
         //procedure creates no additional computations
         for (auto& e : cell2intercept){
             if (!point_inside(ind2point(e.first.i,e.first.j))){
-                cell2intercept_FP[e.first]; //Detecting the fresh pointsm, by checking which old GP's are now outside the boundary
+                cell2intercept_FP[e.first]; //Detecting the fresh points, by checking which old GP's are now outside the boundary
             }
         }
-        find_intercepts(cell2intercept_FP,true);
+        find_intercepts(cell2intercept_FP);
         for (auto& e : cell2intercept_FP) {
             //cout << "FP"<<e.first<<endl;
             interpolate_cell(e.first, cell2intercept_FP, U_in,true);
@@ -239,10 +240,6 @@ namespace solid {
 
 
     void SolidBody::interpolate_solid(fluid::vec4* U_in) {
-        using namespace Eigen;
-        using namespace std;
-        //Handle fresh points
-
         for (auto& e : cell2intercept){
             interpolate_cell(e.first, cell2intercept, U_in);
         }
@@ -258,6 +255,7 @@ namespace solid {
         Matrix4d A_dir = A;
         Matrix4d A_neu = A;;
         Point IP = BI * 2 - ind2point(point.i, point.j);
+        //cout << "IP = "<<IP<<", point "<<point<<", BI "<<BI<<endl;
         Cell bottom_left_ind = point2ind(IP.x, IP.y);
         if (fresh_point) {
             bottom_left_ind = point;
@@ -291,6 +289,7 @@ namespace solid {
             //Approximating the density by an average of surrounding fluid nodes. For pressure gradient calculation
             for (int ii{0}; ii < 2; ii++) {
                 for (int jj{0}; jj < 2; jj++) {
+                    cs[ii + 3 * jj - 2 * ii * jj] = fvm.cell_status[IX(i_bl + ii, j_bl + jj)];
                     if (cs[ii + 3 * jj - 2 * ii * jj] == fluid::CellStatus::Fluid) {
                         rho_approx += U_in[IX(i_bl + ii, j_bl + jj)].u1;
                         counter++;
@@ -306,9 +305,9 @@ namespace solid {
         for (int jj{0}; jj < 2; jj++) {
             for (int ii{0}; ii < 2; ii++) {
                 int ind = ii + 3*jj - 2*ii*jj;
-                cs[ind] = fvm.cell_status[IX(i_bl + ii, j_bl + jj)];
-                if (cs[ind] == fluid::CellStatus::Fluid){
+                if (cs[ind] == fluid::CellStatus::Fluid){// || !cell_within_grid(i_bl+ii,j_bl+jj)){
                     fluid::vec4 V = fluid::FVM_Solver::conserved2primitive(U_in[IX(i_bl + ii, j_bl + jj)]);
+                    //if (!cell_within_grid(i_bl+ii,j_bl+jj)) cout << i_bl+ii<<","<<j_bl+jj<<"point "<<point<<", BI "<<BI<<", n "<<n<<endl;
                     u_n[ind] = V.u2 * n.x + V.u3 * n.y;
                     u_t[ind] = -V.u2 * n.y + V.u3 * n.x;
                     rho[ind] = V.u1;
@@ -316,8 +315,10 @@ namespace solid {
                 }
                 else if (cs[ind] == fluid::CellStatus::Ghost) {
                     all_fluid = false;
-                    Point BI_adj = cell2intercept[{i_bl + ii, j_bl + jj}].BI;
-                    Point n_adj = cell2intercept[{i_bl + ii, j_bl + jj}].n;
+                    Point BI_adj = intercept_map[{i_bl + ii, j_bl + jj}].BI;
+                    Point n_adj = intercept_map[{i_bl + ii, j_bl + jj}].n;
+                    //Point BI_adj = cell2intercept[{i_bl + ii, j_bl + jj}].BI;
+                    //Point n_adj = cell2intercept[{i_bl + ii, j_bl + jj}].n;
                     double DX_BI_adj = BI_adj.x - bottom_left_point.x;
                     double DY_BI_adj = BI_adj.y - bottom_left_point.y;
                     A_dir.block<1, 4>(ind, 0) << 1, DX_BI_adj, DY_BI_adj, DX_BI_adj * DY_BI_adj;
@@ -330,6 +331,7 @@ namespace solid {
                 else if (cs[ind] == fluid::CellStatus::Solid){
                     std::cerr << "Solid point in bilinear interpolation stencil detected\n"; //exit(1);
                 } else{
+
                     std::cerr << "Unidentified point in bilinear interpolation stencil detected\n"; //exit(1);
                 }
             }
@@ -351,21 +353,21 @@ namespace solid {
         double u_t_point{0};
 
         if (fresh_point){
-            u_t_point = interpolate_neumann(alpha_neu, std::move(u_t), cs);
-            u_n_point = interpolate_dirichlet(alpha_dir, std::move(u_n), cs, std::move(u_n_BI_adj));
-            V_point.u4 = interpolate_neumann(alpha_neu, std::move(p), cs, std::move(p_derivative_BI_adj));
-            V_point.u1 = interpolate_neumann(alpha_neu, std::move(rho), cs); //should maybe try to calc rho_derivative_BI
+            u_t_point = interpolate_neumann(alpha_neu, u_t, cs);
+            u_n_point = interpolate_dirichlet(alpha_dir, u_n, cs, u_n_BI_adj);
+            V_point.u4 = interpolate_neumann(alpha_neu, p, cs, p_derivative_BI_adj);
+            V_point.u1 = interpolate_neumann(alpha_neu, rho, cs); //should maybe try to calc rho_derivative_BI
         }else{
-            u_t_point = interpolate_neumann(alpha_neu, std::move(u_t), cs);
+            u_t_point = interpolate_neumann(alpha_neu, u_t, cs);
             if (type == SolidBodyType::Static) {
-                V_point.u1 = interpolate_neumann(alpha_neu, std::move(rho), cs);
-                u_n_point = - interpolate_dirichlet(alpha_dir, std::move(u_n), cs);
-                V_point.u4 = interpolate_neumann(alpha_neu, std::move(p), cs);
+                V_point.u1 = interpolate_neumann(alpha_neu, rho, cs);
+                u_n_point = - interpolate_dirichlet(alpha_dir, u_n, cs);
+                V_point.u4 = interpolate_neumann(alpha_neu, p, cs);
             }
             else if (type == SolidBodyType::Dynamic){
-                u_n_point = 2*u_n_BI - interpolate_dirichlet(alpha_dir, std::move(u_n), cs, std::move(u_n_BI_adj));
-                V_point.u4 = - Delta_l*p_derivative_BI + interpolate_neumann(alpha_neu, std::move(p), cs, std::move(p_derivative_BI_adj));
-                V_point.u1 = interpolate_neumann(alpha_neu, std::move(rho), cs); //should maybe try to calc rho_derivative_BI
+                u_n_point = 2*u_n_BI - interpolate_dirichlet(alpha_dir, u_n, cs, u_n_BI_adj);
+                V_point.u4 = - Delta_l*p_derivative_BI + interpolate_neumann(alpha_neu, p, cs, p_derivative_BI_adj);
+                V_point.u1 = interpolate_neumann(alpha_neu, rho, cs); //should maybe try to calc rho_derivative_BI
                 V_point.u1*=(1-Delta_l*p_derivative_BI);
             } else{
                 std::cerr << "Solid type is neither Static, nor Dynamic\n"; //exit(1);
@@ -377,8 +379,8 @@ namespace solid {
         //if (isnan(V_point.u1))exit(1);
     }
 
-    double SolidBody::interpolate_dirichlet(const Vector4d& alpha_dir, std::array<double,4>&& phi,
-                                        const std::array<fluid::CellStatus,4>& cs, std::array<double,4>&& phi_BI_adj) {
+    double SolidBody::interpolate_dirichlet(const Vector4d& alpha_dir, std::array<double,4> phi,
+                                        std::array<fluid::CellStatus,4> cs, std::array<double,4> phi_BI_adj) {
 
         double phi_point{0};
         for (int i{0}; i < 4; i++) {
@@ -390,9 +392,9 @@ namespace solid {
         }
         return phi_point;
     }
-    double SolidBody::interpolate_neumann(const Eigen::Vector4d& alpha_neu, std::array<double,4>&& phi,
-                                          const std::array<fluid::CellStatus,4>& cs,
-                                          std::array<double,4>&& phi_derivative_BI_adj){
+    double SolidBody::interpolate_neumann(const Eigen::Vector4d& alpha_neu, std::array<double,4> phi,
+                                          std::array<fluid::CellStatus,4> cs,
+                                          std::array<double,4> phi_derivative_BI_adj){
         double phi_point{0};
         for (int i{0}; i < 4; i++) {
             if (cs[i] == fluid::CellStatus::Fluid) {

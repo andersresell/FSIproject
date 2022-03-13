@@ -78,7 +78,7 @@ namespace solid {
 
         void find_ghost_cells();
 
-        void find_intercepts(std::map<Cell, GP_data> &intercept_map, bool fresh_point = false);
+        void find_intercepts(std::map<Cell, GP_data> &intercept_map);
 
         double segment_length(int p) const { return (boundary[(p + 1) % n_bound] - boundary[p]).norm(); }
 
@@ -90,13 +90,13 @@ namespace solid {
         void interpolate_cell(Cell point, std::map<Cell, GP_data> &intercept_map, fluid::vec4 *U_in,
                               bool fresh_point = false);
 
-        double interpolate_dirichlet(const Eigen::Vector4d &alpha_dir, std::array<double,4> &&phi,
-                                     const std::array<fluid::CellStatus,4> &cs,
-                                     std::array<double,4> &&phi_BI_adj = {0, 0, 0, 0});
+        double interpolate_dirichlet(const Eigen::Vector4d &alpha_dir, std::array<double,4> phi,
+                                     std::array<fluid::CellStatus,4> cs,
+                                     std::array<double,4> phi_BI_adj = {0, 0, 0, 0});
 
-        double interpolate_neumann(const Eigen::Vector4d &alpha_neu, std::array<double,4> &&phi,
-                                   const std::array<fluid::CellStatus,4> &cs,
-                                   std::array<double,4> &&phi_derivative_BI_adj = {0, 0, 0, 0});
+        double interpolate_neumann(const Eigen::Vector4d &alpha_neu, std::array<double,4> phi,
+                                   std::array<fluid::CellStatus,4> cs,
+                                   std::array<double,4> phi_derivative_BI_adj = {0, 0, 0, 0});
         /*double interpolate_dirichlet_zero_value(const Eigen::Vector4d& alpha_dir, std::vector<double>&& phi,
                                                 const std::vector<fluid::CellStatus>& cs);
 

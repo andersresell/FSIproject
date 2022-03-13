@@ -18,7 +18,6 @@ namespace solid {
         Vector6d k1, k2, k3, k4;
         Vector6d f;
         Point *r0; // The radius from CM to each boundary node at t=0
-        //const static inline int n_state{6};
         Point F_fluid; //Total force from the fluid. Only updated once per timestep
         Point F_solid;
         double tau_fluid; //Total moment from the fluid. Only updated once per timestep
@@ -57,10 +56,6 @@ namespace solid {
         //a = a_CM + omega x (omega x r) + alpha x r
         a_wall = {a_CM.x - omega * omega * r.x - alpha * r.y, a_CM.y - omega * omega * r.y + alpha * r.x};
         a_wall = {0, 0};
-        //cout << "y = ";
-        for (int i{0}; i < 6; i++) {
-            //cout << y[i] <<",";
-        }//cout << endl;
     }
 
 }

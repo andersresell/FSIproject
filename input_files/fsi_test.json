@@ -7,10 +7,10 @@
   "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
-  "fvm_write_stride": 50,
+  "fvm_write_stride": 10,
   "stopping_crit": {
     "type": "Timesteps",
-    "value": 3000
+    "value": 1000
   },
 
   "west_bc": {
@@ -28,7 +28,7 @@
   },
 
   "initial_cond": {
-    "case": "initial_cond2"
+    "case": "initial_cond1"
   },
 
   "solids": {
@@ -36,15 +36,12 @@
       "is_static": false,
       "geometry": {
         "case": "wedge",
-        "l": 1.9999999,
+        "l": 2,
         "half_angle_deg": 20,
         "x_center": 7,
         "y_center": 5
       },
-      "CM_x": 7,
-      "CM_y": 5,
-      "M": 30,
-      "I": 15
+      "rho": 300
     }
   }
 

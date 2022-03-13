@@ -25,7 +25,11 @@ namespace fluid{
 namespace solid {
     std::vector<solid::Point>
     generate_wedge(double l, double half_angle_deg, double x_center, double y_center);
+
     std::vector<solid::Point> generate_circle(double R, int n_nodes, double x_center, double y_center);
+
+    std::vector<solid::Point>
+    generate_rectangle(double W, double H, double rotation_angle_deg, double x_center, double y_center);
 }
 
 

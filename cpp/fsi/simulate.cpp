@@ -52,7 +52,7 @@ Simulate::Simulate(const std::string& input_file) {
 
     auto initial_cond = root.get<std::string>("initial_cond.case");
     if (initial_cond == "riemann_problem") {
-        fluid::vec4 V_l, V_r;
+        fluid::vec4 V_l{}, V_r{};
         V_l.u1 = root.get<double>("initial_cond.rho_l");
         V_l.u2 = root.get<double>("initial_cond.u_l");
         V_l.u3 = root.get<double>("initial_cond.v_l");
@@ -96,16 +96,14 @@ Simulate::Simulate(const std::string& input_file) {
         string solid_str = "solids." + solid.first;
         auto is_static = root.get<bool>(solid_str+".is_static");
         solid::SolidBodyType solid_body_type;
+        double rho;
         double M, I;
         solid::Point CM{};
         if (is_static){
             solid_body_type = solid::SolidBodyType::Static;
         }else{
             solid_body_type = solid::SolidBodyType::Dynamic;
-            M = root.get<double>(solid_str+".M");
-            I = root.get<double>(solid_str+".I");
-            CM.x = root.get<double>(solid_str+".CM_x");
-            CM.y = root.get<double>(solid_str+".CM_y");
+            rho = root.get<double>(solid_str+".rho");
         }
 
         string geom_str = solid_str + ".geometry";
@@ -116,6 +114,11 @@ Simulate::Simulate(const std::string& input_file) {
             auto x_center = root.get<double>(geom_str+".x_center");
             auto y_center = root.get<double>(geom_str+".y_center");
             boundary = solid::generate_circle(R,n_nodes,x_center,y_center);
+            if (solid_body_type == solid::SolidBodyType::Dynamic) {
+                M = M_PI * squared(R) * rho;
+                I = 0.5 * M * squared(R);
+                CM = {x_center, y_center};
+            }
         }
         else if (root.get<string>(geom_str+".case") == "wedge"){
             auto l = root.get<double>(geom_str+".l");
@@ -123,6 +126,26 @@ Simulate::Simulate(const std::string& input_file) {
             auto x_center = root.get<double>(geom_str+".x_center");
             auto y_center = root.get<double>(geom_str+".y_center");
             boundary = solid::generate_wedge(l,half_angle_deg,x_center,y_center);
+            if (solid_body_type == solid::SolidBodyType::Dynamic) {
+                double h = l * sin(half_angle_deg * M_PI / 180);
+                M = 2 * h * l * rho;
+                I = rho / 3 * h * l *
+                    (squared(h) + squared(l)); //Calculated by solving a double integral, might be wrong
+                CM = {x_center, y_center};
+            }
+        }
+        else if (root.get<string>(geom_str+".case") == "rectangle"){
+            auto W = root.get<double>(geom_str+".W");
+            auto H = root.get<double>(geom_str+".H");
+            auto rotation_angle_deg = root.get<double>(geom_str+".rotation_angle_deg");
+            auto x_center = root.get<double>(geom_str+".x_center");
+            auto y_center = root.get<double>(geom_str+".y_center");
+            boundary = solid::generate_rectangle(W, H, rotation_angle_deg, x_center, y_center);
+            if (solid_body_type == solid::SolidBodyType::Dynamic) {
+                M = W * H * rho;
+                I = M / 12 * (squared(W) + squared(H));
+                CM = {x_center, y_center};
+            }
         }
         else{
             std::cerr << "Invalid solid geometry in solid " + solid.first + " from " + input_file + '\n';

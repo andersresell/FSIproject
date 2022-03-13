@@ -17,6 +17,6 @@ int main() {
     //Simulate("supersonic_wedge.json");
     //Simulate("riemann_sod.json");
     //Simulate("pressure_bubbl.json");
-    Simulate("fsi_test.json");
+    Simulate("dynamic_rectangle.json");
     return 0;
 }

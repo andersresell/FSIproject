@@ -10,7 +10,7 @@ namespace fluid {
         //Sets the pressure in the bottom left part high and the pressure in the rest low
         double rho = 1.2;
         double p_low = 1e5;
-        double p_high = 10 * p_low;
+        double p_high = 100 * p_low;
         double u{0};
         double v{0};
 
@@ -115,19 +115,19 @@ namespace fluid {
     }
 }
 
-namespace solid{
+namespace solid {
     std::vector<solid::Point>
     generate_wedge(double l, double half_angle_deg, double x_center, double y_center) {
         std::vector<solid::Point> wedge;
-        double h = l * tan(half_angle_deg*M_PI / 180);
+        double h = l * tan(half_angle_deg * M_PI / 180);
         wedge.push_back(solid::Point{x_center - l, y_center});
-        wedge.push_back(solid::Point{x_center , y_center  - h});
-        wedge.push_back(solid::Point{x_center + l, y_center });
-        wedge.push_back(solid::Point{x_center, y_center  + h});
+        wedge.push_back(solid::Point{x_center, y_center - h});
+        wedge.push_back(solid::Point{x_center + l, y_center});
+        wedge.push_back(solid::Point{x_center, y_center + h});
         return wedge;
     }
 
-    std::vector<solid::Point> generate_circle(double R, int n_nodes, double x_center, double y_center){
+    std::vector<solid::Point> generate_circle(double R, int n_nodes, double x_center, double y_center) {
         std::vector<Point> circle;
         for (int i{0}; i < n_nodes; i++) {
             double theta = 2 * M_PI * i / n_nodes;
@@ -136,6 +136,23 @@ namespace solid{
         return circle;
     }
 
+    std::vector<solid::Point>
+    generate_rectangle(double W, double H, double rotation_angle_deg, double x_center, double y_center) {
+        std::vector<solid::Point> rectangle;
+        double theta = rotation_angle_deg * M_PI / 180;
+        double c = cos(theta);
+        double s = sin(theta);
+        rectangle.push_back({-W / 2, -H / 2});
+        rectangle.push_back({W / 2, -H / 2});
+        rectangle.push_back({W / 2, H / 2});
+        rectangle.push_back({-W / 2, H / 2});
+        for (auto &p: rectangle) { //rotating all points and tranlating by the center
+            double tmp_x = c * p.x - s * p.y;
+            double tmp_y = s * p.x + c * p.y;
+            p = {tmp_x + x_center, tmp_y + y_center};
+        }
+        return rectangle;
+    }
 
 
 }
