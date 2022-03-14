@@ -1,0 +1,48 @@
+{
+  "output_folder": "output_dynamic_rectangle",
+  "ni": 200,
+  "nj": 200,
+  "L_x": 10,
+  "L_y": 10,
+  "CFL": 0.6,
+  "flux_scheme": "HLLC",
+  "ode_scheme": "TVD_RK3",
+  "fvm_write_stride": 100,
+  "stopping_crit": {
+    "type": "Timesteps",
+    "value": 2000
+  },
+
+  "west_bc": {
+    "type": "InvicidWall",
+    "M_inf": false
+  },
+  "east_bc": {
+    "type": "InvicidWall"
+  },
+  "south_bc": {
+    "type": "InvicidWall"
+  },
+  "north_bc": {
+    "type": "InvicidWall"
+  },
+
+  "initial_cond": {
+    "case": "initial_cond1"
+  },
+
+  "solids": {
+    "s1": {
+      "is_static": false,
+      "geometry": {
+        "case": "circle",
+        "R": 1,
+        "n_nodes": 100,
+        "x_center": 5,
+        "y_center": 5
+      },
+      "rho": 30
+    }
+  }
+
+}

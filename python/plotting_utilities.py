@@ -26,7 +26,7 @@ class Plotter:
 
     def animate(self,datatype):
         plt.figure()
-        levels = np.linspace(6e4,8e5,100)
+        levels = np.linspace(6e4,10e5,100)
 
         for n in range(0,self.n_timesteps+1):
             if n % self.write_stride == 0:
@@ -171,13 +171,19 @@ class Plotter:
             plt.plot(x_i,y_i,'y*')
             plt.axis('equal')
         #plotting fresh points
-        if n != 0:
-            data = genfromtxt("output_folders/"+self.output_folder+"/debug_fresh_points_t"+str(n)+".csv",comments = "#", delimiter=',')
-            if data.size > 0:
-                x_i = data[:,0]
-                y_i = data[:,1]
-                plt.plot(x_i,y_i,'kx')
-                plt.axis('equal')
+        #if n != 0:
+         #   data = genfromtxt("output_folders/"+self.output_folder+"/debug_fresh_points_t"+str(n)+".csv",comments = "#", delimiter=',')
+
+          #  if data.size == 1:
+           #     x_i = data[0]
+            #    y_i = data[1]
+            #elif data.size(0) > 1:
+            #    x_i = data[:,0]
+            #    y_i = data[:,1]
+            #if data.size(0) > 0:
+            #    plt.plot(x_i,y_i,'kx')
+            #    plt.axis('equal')
+
 
     def probe(self,datatype,x_point,y_point):
         data = self.extract_data(datatype,self.n_timesteps)

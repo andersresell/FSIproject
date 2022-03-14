@@ -12,7 +12,7 @@ output_folder = "output_dynamic_rectangle"
 
 
 p = Plotter(output_folder)
-#p.debug_points(0)
+p.debug_points(500)
 #p.debug_animation()
 #p.plot_steady_state("p")
 p.animate("p")

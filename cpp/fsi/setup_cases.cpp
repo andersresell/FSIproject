@@ -10,7 +10,7 @@ namespace fluid {
         //Sets the pressure in the bottom left part high and the pressure in the rest low
         double rho = 1.2;
         double p_low = 1e5;
-        double p_high = 100 * p_low;
+        double p_high = 10 * p_low;
         double u{0};
         double v{0};
 
