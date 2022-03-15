@@ -24,15 +24,22 @@ class Plotter:
         self.n_static_solids = int(data[0])
         self.n_movable_solids = int(data[1])
 
-    def animate(self,datatype):
+    def animate(self,datatype,bottom_level=0, top_level=0) :
         plt.figure()
-        levels = np.linspace(6e4,10e5,100)
+        if (bottom_level == 0 and top_level == 0):
+            auto_level = True
+        else:
+            auto_level = False
+            levels = np.linspace(bottom_level,top_level,100)
 
         for n in range(0,self.n_timesteps+1):
             if n % self.write_stride == 0:
                 data = self.extract_data(datatype,n)
                 plt.clf()
-                cs = plt.contourf(self.x,self.y,data, levels=levels, cmap=plt.get_cmap('hot'))
+                if auto_level:
+                    cs = plt.contourf(self.x,self.y,data,100,cmap=plt.get_cmap('hot'))
+                else:
+                    cs = plt.contourf(self.x,self.y,data, levels=levels, cmap=plt.get_cmap('hot'))
                 cb = plt.colorbar(cs)
                 if datatype == "M":
                     cb.set_label("Mach number")
@@ -129,13 +136,17 @@ class Plotter:
         plt.xlabel("x")
         plt.ylabel("Pressure")
 
-    def debug_animation(self):
+    def debug_points_animation(self):
         plt.figure()
         for n in range(0,self.n_timesteps):
             if n % self.write_stride == 0:
                 plt.clf()
                 self.debug_points(n)
                 plt.pause(0.1)
+
+    def debug_points_last(self):
+        plt.figure()
+        self.debug_points(self.n_timesteps)
 
     def debug_points(self, n):
         #plotting points

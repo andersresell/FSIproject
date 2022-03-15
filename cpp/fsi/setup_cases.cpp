@@ -6,6 +6,18 @@
 
 namespace fluid {
 
+
+    void set_initial_cond_ambient(vec4* U, int ni, int nj){
+        double rho = 1.2;
+        double p = 1e5;
+        for (int i{0}; i < ni + 4; i++) {
+            for (int j{0}; j < nj + 4; j++) {
+                U[IX(i, j)] = fluid::FVM_Solver::primitive2conserved({rho,0,0,p});
+            }
+        }
+        std::cout << "Initial condition ambient set\n";
+    }
+
     void set_initial_cond1(vec4 *U, int ni, int nj) {
         //Sets the pressure in the bottom left part high and the pressure in the rest low
         double rho = 1.2;

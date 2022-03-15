@@ -1,16 +1,16 @@
 {
   "output_folder": "output_dynamic_rectangle",
-  "ni": 100,
-  "nj": 100,
+  "ni": 300,
+  "nj": 300,
   "L_x": 10,
   "L_y": 10,
   "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
-  "fvm_write_stride": 10,
+  "fvm_write_stride": 30,
   "stopping_crit": {
-    "type": "Timesteps",
-    "value": 500
+    "type": "Time",
+    "value": 0.025
   },
 
   "west_bc": {
@@ -28,7 +28,7 @@
   },
 
   "initial_cond": {
-    "case": "initial_cond2"
+    "case": "ambient"
   },
 
   "solids": {
@@ -36,13 +36,19 @@
       "is_static": false,
       "geometry": {
         "case": "rectangle",
-        "W": 5,
-        "H": 5,
+        "W": 2,
+        "H": 11,
         "rotation_angle_deg": 0,
-        "x_center": 5,
+        "x_center": 7,
         "y_center": 5
       },
-      "rho": 30
+      "rho": 30,
+      "is_constrained": true,
+      "constraints": {
+        "type": "PrescribedVelocity",
+        "vel": -200
+      }
+
     }
   }
 

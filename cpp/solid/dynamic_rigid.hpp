@@ -11,6 +11,20 @@ namespace solid {
 
     typedef Eigen::Matrix<double, 1, 6> Vector6d;
 
+    enum class MaterialModel {None, ViscoElastic};
+
+    struct RigidConstraints{
+        bool constrained; //removes the y and theta dofs
+        std::pair<bool,double> prescribed_velocity;
+        MaterialModel material_model;
+        double K; //spring stiffnes
+        double C; //Viscous damping
+        RigidConstraints();
+        void setup_prescribed_velocity(double velocity_x);
+        void setup_viscoelastic(double K, double C);
+        Point calc_F_solid(double deflection, double velocity) const;
+    };
+
     class DynamicRigid : public SolidBody {
         double M;
         double I;
@@ -18,11 +32,15 @@ namespace solid {
         Vector6d k1, k2, k3, k4;
         Vector6d f;
         Point *r0; // The radius from CM to each boundary node at t=0
+        const Point CM0; //CM at t=0
         Point F_fluid; //Total force from the fluid. Only updated once per timestep
         Point F_solid;
         double tau_fluid; //Total moment from the fluid. Only updated once per timestep
         double tau_solid;
+
     public:
+        RigidConstraints rigid_constraints;
+
         DynamicRigid(fluid::FVM_Solver &fvm, std::vector<Point> &&boundary_in, Point CM, double M, double I);
 
         void step_solid_body(double dt) final;

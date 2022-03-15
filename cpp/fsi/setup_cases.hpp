@@ -11,6 +11,8 @@
 
 namespace fluid{
 
+    void set_initial_cond_ambient(vec4* U, int ni, int nj);
+
     void set_initial_cond1(vec4* U, int ni, int nj);
 
     void set_initial_cond2(vec4* U, int ni, int nj);

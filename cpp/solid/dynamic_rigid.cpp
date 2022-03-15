@@ -8,15 +8,45 @@ using namespace std;
 
 namespace solid {
 
+    RigidConstraints::RigidConstraints()
+    : constrained{false}, prescribed_velocity{false,0}, material_model{MaterialModel::None}, K{0}, C{0}
+    {
+    }
+
+    void RigidConstraints::setup_prescribed_velocity(double velocity_x){
+        constrained = true;
+        prescribed_velocity = {true, velocity_x};
+        material_model = MaterialModel::None;
+    }
+
+    void RigidConstraints::setup_viscoelastic(double spring_stiffness, double damping_coefficient){
+        constrained = true;
+        prescribed_velocity.first = false;
+        material_model = MaterialModel::ViscoElastic;
+        K = spring_stiffness;
+        C = damping_coefficient;
+    }
+
+
+    Point RigidConstraints::calc_F_solid(double deflection, double velocity) const{
+        if (material_model == MaterialModel::None){
+            return {0,0};
+        }else if(material_model == MaterialModel::ViscoElastic){
+            return {-K*deflection -C*velocity, 0};
+        }else{
+            std::cerr << "Illegal material model in solid force calculation\n"; exit(1);
+        }
+    }
+
     DynamicRigid::DynamicRigid(fluid::FVM_Solver &fvm, std::vector<Point> &&boundary_in, Point CM, double M, double I)
-            : SolidBody(fvm, std::move(boundary_in), SolidBodyType::Dynamic), M{M}, I{I} {
+            : SolidBody(fvm, std::move(boundary_in), SolidBodyType::Dynamic), M{M}, I{I}, CM0{CM}, rigid_constraints{},
+            F_fluid{0,0}, F_solid{0,0}, tau_solid{0} {
         y[0] = CM.x;
         y[1] = CM.y;
-        y[2] = 0;//-200;//REMOVE LATER
+        y[2] = 0;
         y[3] = 0;
         y[4] = 0;
         y[5] = 0;
-        F_solid = {0, 0}; //Change later
         r0 = new Point[n_bound];
         for (int i{0}; i < n_bound; i++) {
             r0[i] = boundary[i] - CM;
@@ -37,7 +67,16 @@ namespace solid {
     }
 
     void DynamicRigid::step_solid_body(double dt) {
-        update_total_fluid_force_and_moment();
+
+        if (rigid_constraints.prescribed_velocity.first){
+            y[2] = rigid_constraints.prescribed_velocity.second;
+        }else{
+            update_total_fluid_force_and_moment();
+        }
+        if (rigid_constraints.constrained){
+            F_fluid.y = 0;
+            tau_fluid = 0;
+        }
         RK4_step(dt);
         update_boundary();
     }
@@ -51,24 +90,18 @@ namespace solid {
             r = {boundary[i].x - y[0], boundary[i].y - y[1]};
             tau_fluid += r.cross(F_boundary[i]);
         }
-        //cout << "F_fluid: "<<F_fluid<<", tau_fluid "<<tau_fluid<<endl;
-        //F_fluid={-1000000,0};
-        //tau_fluid=0;
     }
-
 
     Vector6d DynamicRigid::evaluate_f(Vector6d y_in) {
         //rhs of the state vector derivative dy/dt = f = [u_CM, v_CM, Fx/M, Fy/M, omega, tau/I]^T
-        //std::pair<Point,double> F_S_tau_S{eval_solid_forces_and_moment()};
-        //cout << "y= "<<y<<endl<<"M="<<M<<", I= "<<I<<endl;
+        F_solid = rigid_constraints.calc_F_solid(y_in[0]-CM0.x,y_in[2]);
         f[0] = y_in[2];
         f[1] = y_in[3];
         f[2] = (F_fluid.x + F_solid.x) / M;
         f[3] = (F_fluid.y + F_solid.y) / M;
         f[4] = y_in[5];
         f[5] = (tau_fluid + tau_solid) / I;
-        //cout << "f="<<f<<endl;
-        //f << -200,0,0,0,0,0;
+
         return f;
     }
 

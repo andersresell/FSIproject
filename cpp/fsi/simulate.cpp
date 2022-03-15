@@ -64,15 +64,16 @@ Simulate::Simulate(const std::string& input_file) {
         fluid::set_initial_cond_riemann(fvm.U,ni,nj,V_l,V_r);
     }else if (initial_cond == "constant_horizontal_flow") {
         fluid::set_constant_horizontal_flow_cond(fvm.U,ni,nj,M_inf);
-    }else if (initial_cond == "pressure_bubble"){
-        fluid::set_initial_cond_pressure_bubble(fvm.U,ni,nj,L_x,L_y);
+    }else if (initial_cond == "pressure_bubble") {
+        fluid::set_initial_cond_pressure_bubble(fvm.U, ni, nj, L_x, L_y);
+    }else if (initial_cond == "ambient"){
+        fluid::set_initial_cond_ambient(fvm.U,ni,nj);
     }else if (initial_cond == "initial_cond1"){
         fluid::set_initial_cond1(fvm.U,ni,nj);
     }
     else if (initial_cond == "initial_cond2"){
         fluid::set_initial_cond2(fvm.U,ni,nj);
-    }
-    else{
+    }else{
         std::cerr << "Invalid initial cond \"" + initial_cond + "\" in " + input_file + '\n';
         exit(1);
     }
@@ -91,41 +92,40 @@ Simulate::Simulate(const std::string& input_file) {
         std::cerr << "Illegal stopping criterion read from " + input_file + '\n';
     }
 
-    for (pt::ptree::value_type &solid : root.get_child("solids")){
+    for (pt::ptree::value_type &solid : root.get_child("solids")) {
         //Definately better ways to do this, this is mainly because I'm bad at json
         string solid_str = "solids." + solid.first;
-        auto is_static = root.get<bool>(solid_str+".is_static");
+        auto is_static = root.get<bool>(solid_str + ".is_static");
         solid::SolidBodyType solid_body_type;
         double rho;
         double M, I;
         solid::Point CM{};
-        if (is_static){
+        if (is_static) {
             solid_body_type = solid::SolidBodyType::Static;
-        }else{
+        } else {
             solid_body_type = solid::SolidBodyType::Dynamic;
-            rho = root.get<double>(solid_str+".rho");
+            rho = root.get<double>(solid_str + ".rho");
         }
 
         string geom_str = solid_str + ".geometry";
         vector<solid::Point> boundary;
-        if (root.get<string>(geom_str+".case") == "circle"){
-            auto R = root.get<double>(geom_str+".R");
-            auto n_nodes = root.get<int>(geom_str+".n_nodes");
-            auto x_center = root.get<double>(geom_str+".x_center");
-            auto y_center = root.get<double>(geom_str+".y_center");
-            boundary = solid::generate_circle(R,n_nodes,x_center,y_center);
+        if (root.get<string>(geom_str + ".case") == "circle") {
+            auto R = root.get<double>(geom_str + ".R");
+            auto n_nodes = root.get<int>(geom_str + ".n_nodes");
+            auto x_center = root.get<double>(geom_str + ".x_center");
+            auto y_center = root.get<double>(geom_str + ".y_center");
+            boundary = solid::generate_circle(R, n_nodes, x_center, y_center);
             if (solid_body_type == solid::SolidBodyType::Dynamic) {
                 M = M_PI * squared(R) * rho;
                 I = 0.5 * M * squared(R);
                 CM = {x_center, y_center};
             }
-        }
-        else if (root.get<string>(geom_str+".case") == "wedge"){
-            auto l = root.get<double>(geom_str+".l");
-            auto half_angle_deg = root.get<double>(geom_str+".half_angle_deg");
-            auto x_center = root.get<double>(geom_str+".x_center");
-            auto y_center = root.get<double>(geom_str+".y_center");
-            boundary = solid::generate_wedge(l,half_angle_deg,x_center,y_center);
+        } else if (root.get<string>(geom_str + ".case") == "wedge") {
+            auto l = root.get<double>(geom_str + ".l");
+            auto half_angle_deg = root.get<double>(geom_str + ".half_angle_deg");
+            auto x_center = root.get<double>(geom_str + ".x_center");
+            auto y_center = root.get<double>(geom_str + ".y_center");
+            boundary = solid::generate_wedge(l, half_angle_deg, x_center, y_center);
             if (solid_body_type == solid::SolidBodyType::Dynamic) {
                 double h = l * sin(half_angle_deg * M_PI / 180);
                 M = 2 * h * l * rho;
@@ -133,28 +133,40 @@ Simulate::Simulate(const std::string& input_file) {
                     (squared(h) + squared(l)); //Calculated by solving a double integral, might be wrong
                 CM = {x_center, y_center};
             }
-        }
-        else if (root.get<string>(geom_str+".case") == "rectangle"){
-            auto W = root.get<double>(geom_str+".W");
-            auto H = root.get<double>(geom_str+".H");
-            auto rotation_angle_deg = root.get<double>(geom_str+".rotation_angle_deg");
-            auto x_center = root.get<double>(geom_str+".x_center");
-            auto y_center = root.get<double>(geom_str+".y_center");
+        } else if (root.get<string>(geom_str + ".case") == "rectangle") {
+            auto W = root.get<double>(geom_str + ".W");
+            auto H = root.get<double>(geom_str + ".H");
+            auto rotation_angle_deg = root.get<double>(geom_str + ".rotation_angle_deg");
+            auto x_center = root.get<double>(geom_str + ".x_center");
+            auto y_center = root.get<double>(geom_str + ".y_center");
             boundary = solid::generate_rectangle(W, H, rotation_angle_deg, x_center, y_center);
             if (solid_body_type == solid::SolidBodyType::Dynamic) {
                 M = W * H * rho;
                 I = M / 12 * (squared(W) + squared(H));
                 CM = {x_center, y_center};
             }
-        }
-        else{
+        } else {
             std::cerr << "Invalid solid geometry in solid " + solid.first + " from " + input_file + '\n';
             exit(1);
         }
-        if (is_static){
-            fsi.add_solid(std::move(std::make_shared<solid::SolidBody>(fvm,std::move(boundary),solid_body_type)));
-        } else{
-            fsi.add_solid(std::move(std::make_shared<solid::DynamicRigid>(fvm,std::move(boundary),CM,M,I)));
+        if (is_static) {
+            fsi.add_solid(std::move(std::make_shared<solid::SolidBody>(fvm, std::move(boundary), solid_body_type)));
+        } else {
+            std::shared_ptr<solid::DynamicRigid> dynamic_rigid{
+                    std::make_shared<solid::DynamicRigid>(fvm, std::move(boundary), CM, M, I)};
+            auto is_constrained = root.get<bool>(solid_str + ".is_constrained");
+            if (is_constrained) {
+                string constraints_str = solid_str + ".constraints";
+                if (root.get<string>(constraints_str + ".type") == "ViscoElastic") {
+                    auto K = root.get<double>(constraints_str + ".K");
+                    auto C = root.get<double>(constraints_str + ".C");
+                    dynamic_rigid->rigid_constraints.setup_viscoelastic(K,C);
+                }else if(root.get<string>(constraints_str + ".type") == "PrescribedVelocity"){
+                    auto vel = root.get<double>(constraints_str + ".vel");
+                    dynamic_rigid->rigid_constraints.setup_prescribed_velocity(vel);
+                }
+            }
+            fsi.add_solid(std::move(dynamic_rigid));
         }
 
     }
