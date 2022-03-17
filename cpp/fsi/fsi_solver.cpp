@@ -74,6 +74,8 @@ int FSI_Solver::solve() {
             fvm.write_fvm_header(output_folder, fvm_write_stride, n, t);
             write_fsi_header();
             write_fvm_convergence_history();
+            write_movable_solid_boundaries(n);
+            write_solid_debug_files(n);
             break;
         }
         t += dt;

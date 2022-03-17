@@ -18,6 +18,7 @@ int main() {
     //Simulate("riemann_sod.json");
     //Simulate("pressure_bubbl.json");
     //Simulate("dynamic_rectangle.json");
-    Simulate("dynamic_circle.json");
+    //Simulate("dynamic_circle.json");
+    Simulate("tube.json");
     return 0;
 }

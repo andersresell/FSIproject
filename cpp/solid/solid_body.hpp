@@ -90,13 +90,13 @@ namespace solid {
         void interpolate_cell(Cell point, std::map<Cell, GP_data> &intercept_map, fluid::vec4 *U_in,
                               bool fresh_point = false);
 
-        double interpolate_dirichlet(const Eigen::Vector4d &alpha_dir, std::array<double,4> phi,
-                                     std::array<fluid::CellStatus,4> cs,
-                                     std::array<double,4> phi_BI_adj = {0, 0, 0, 0});
+        double interpolate_dirichlet(const Eigen::Vector4d &alpha_dir, std::array<double, 4> phi,
+                                     std::array<fluid::CellStatus, 4> cs,
+                                     std::array<double, 4> phi_BI_adj = {0, 0, 0, 0});
 
-        double interpolate_neumann(const Eigen::Vector4d &alpha_neu, std::array<double,4> phi,
-                                   std::array<fluid::CellStatus,4> cs,
-                                   std::array<double,4> phi_derivative_BI_adj = {0, 0, 0, 0});
+        double interpolate_neumann(const Eigen::Vector4d &alpha_neu, std::array<double, 4> phi,
+                                   std::array<fluid::CellStatus, 4> cs,
+                                   std::array<double, 4> phi_derivative_BI_adj = {0, 0, 0, 0});
         /*double interpolate_dirichlet_zero_value(const Eigen::Vector4d& alpha_dir, std::vector<double>&& phi,
                                                 const std::vector<fluid::CellStatus>& cs);
 
@@ -111,6 +111,10 @@ namespace solid {
         virtual void step_solid_body(double dt) {};
 
         bool cell_within_grid(int i, int j) { return i >= 2 && i < ni + 2 && j >= 2 && j < nj + 2; }
+
+        bool point_within_grid(Point p) {
+            return p.x >= 0.5 * dx && p.x <= (ni + 0.5) * dx && p.y >= 0.5 * dy && p.y <= (nj + 0.5) * dy;
+        }
 
         void reset_containers();
 

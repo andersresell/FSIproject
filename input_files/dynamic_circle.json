@@ -1,16 +1,16 @@
 {
   "output_folder": "output_dynamic_circle",
-  "ni": 300,
-  "nj": 300,
+  "ni": 100,
+  "nj": 100,
   "L_x": 10,
   "L_y": 10,
   "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
-  "fvm_write_stride": 100,
+  "fvm_write_stride": 50,
   "stopping_crit": {
     "type": "Timesteps",
-    "value": 6000
+    "value": 3000
   },
 
   "west_bc": {

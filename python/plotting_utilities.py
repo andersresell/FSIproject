@@ -32,13 +32,24 @@ class Plotter:
             auto_level = False
             levels = np.linspace(bottom_level,top_level,100)
 
+        n_datapoints = 300
+        if self.ni <= n_datapoints:
+            x_s = 1
+        else:
+            x_s = int(self.ni/n_datapoints)
+        if self.nj <= n_datapoints:
+            y_s = 1
+        else:
+            y_s = int(self.nj/n_datapoints)
         for n in range(0,self.n_timesteps+1):
             if n % self.write_stride == 0:
                 data = self.extract_data(datatype,n)
                 plt.clf()
                 if auto_level:
+                    cs = plt.contourf(self.x[0:self.ni:x_s],self.y[0:self.nj:y_s],data[0:self.nj:y_s,0:self.ni:x_s],100,cmap=plt.get_cmap('hot'))
                     cs = plt.contourf(self.x,self.y,data,100,cmap=plt.get_cmap('hot'))
                 else:
+                    #cs = plt.contourf(self.x[0:self.ni:x_s],self.y[0:self.nj:y_s],data[0:self.nj:y_s,0:self.ni:x_s], levels=levels, cmap=plt.get_cmap('hot'))
                     cs = plt.contourf(self.x,self.y,data, levels=levels, cmap=plt.get_cmap('hot'))
                 cb = plt.colorbar(cs)
                 if datatype == "M":

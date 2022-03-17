@@ -9,8 +9,8 @@
   "ode_scheme": "TVD_RK3",
   "fvm_write_stride": 100,
   "stopping_crit": {
-    "type": "Convergence",
-    "value": 1e-6
+    "type": "Timesteps",
+    "value": 500
   },
 
 
@@ -29,7 +29,7 @@
   },
 
   "initial_cond": {
-    "case": "constant_horizontal_flow"
+    "case": "ambient"
   },
 
   "solids": {
