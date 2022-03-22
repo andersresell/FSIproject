@@ -50,6 +50,12 @@ namespace fluid {
             return os << rhs.u1 << "," << rhs.u2 << "," << rhs.u3 << "," << rhs.u4;
         }
 
+        bool isnan(){ //for debugging purposes
+            return (std::isnan(u1) || std::isnan(u2) || std::isnan(u3) || std::isnan(u4));
+        }
+
+
+
     };
 
     enum class OdeScheme {

@@ -1,0 +1,49 @@
+{
+  "output_folder": "wedge_verification_detached",
+  "ni": 30,
+  "nj": 30,
+  "L_x": 10,
+  "L_y": 10,
+  "CFL": 0.8,
+  "flux_scheme": "HLLC",
+  "ode_scheme": "ExplicitEuler",
+  "fvm_write_stride": 100,
+  "stopping_crit": {
+    "type": "Timesteps",
+    "value": 5000
+  },
+
+
+  "west_bc": {
+    "type": "SupersonicInflow",
+    "M_inf": 2
+  },
+  "east_bc": {
+    "type": "NonreflectingOutflow"
+  },
+  "south_bc": {
+    "type": "NonreflectingOutflow"
+  },
+  "north_bc": {
+    "type": "NonreflectingOutflow"
+  },
+
+  "initial_cond": {
+    "case": "ambient"
+  },
+
+  "solids": {
+    "s1": {
+      "is_static": true,
+      "geometry": {
+        "case": "wedge",
+        "l": 3,
+        "half_angle_deg": 15,
+        "x_center": 5,
+        "y_center": 5
+      }
+    }
+  }
+}
+
+

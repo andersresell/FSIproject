@@ -1,7 +1,7 @@
 {
   "output_folder": "output_tube",
-  "ni": 100,
-  "nj": 1000,
+  "ni": 500,
+  "nj": 50,
   "L_x": 10,
   "L_y": 1,
   "CFL": 0.6,
@@ -9,8 +9,8 @@
   "ode_scheme": "TVD_RK3",
   "fvm_write_stride": 100,
   "stopping_crit": {
-    "type": "Convergence",
-    "value": 1e-4
+    "type": "Timesteps",
+    "value": 20000
   },
 
   "west_bc": {
@@ -32,16 +32,7 @@
   },
 
   "solids": {
-    "s1": {
-      "is_static": true,
-      "geometry": {
-        "case": "wedge",
-        "l": 1,
-        "half_angle_deg": 15,
-        "x_center": 5,
-        "y_center": 0.5
-      }
-    },
+
     "s2": {
         "is_static": true,
         "geometry": {

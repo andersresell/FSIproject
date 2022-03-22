@@ -15,10 +15,14 @@ int main() {
     using namespace std;
 
     //Simulate("supersonic_wedge.json");
+    //Simulate("supersonic_wedge_experimental.json");
     //Simulate("riemann_sod.json");
+    //Simulate("static_wall.json");
+    //Simulate("dynamic_unconstrained.json");
     //Simulate("pressure_bubbl.json");
-    //Simulate("dynamic_rectangle.json");
+    //Simulate("piston_prescribed.json");
+    Simulate("piston_fsi.json");
     //Simulate("dynamic_circle.json");
-    Simulate("tube.json");
+    //Simulate("tube.json");
     return 0;
 }

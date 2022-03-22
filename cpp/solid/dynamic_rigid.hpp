@@ -37,9 +37,14 @@ namespace solid {
         Point F_solid;
         double tau_fluid; //Total moment from the fluid. Only updated once per timestep
         double tau_solid;
-
-    public:
         RigidConstraints rigid_constraints;
+    public:
+
+        void add_rigid_constraints(RigidConstraints&& r_c){
+            using namespace std;
+            rigid_constraints = r_c;
+            y[2] = rigid_constraints.prescribed_velocity.first ? rigid_constraints.prescribed_velocity.second : 0;
+        }
 
         DynamicRigid(fluid::FVM_Solver &fvm, std::vector<Point> &&boundary_in, Point CM, double M, double I);
 
@@ -69,7 +74,7 @@ namespace solid {
         double omega = y[5];
         //v = v_CM + omega x r
         v_wall = {y[2] - omega * r.y, y[3] + omega * r.y};
-        Point a_CM = (F_fluid + F_solid) * (1 / M);
+        Point a_CM = (F_fluid + F_solid) * (1 / M); //Won't work for prescribed velocities
         double alpha = (tau_fluid + tau_solid) * (1 / I);
         //a = a_CM + omega x (omega x r) + alpha x r
         a_wall = {a_CM.x - omega * omega * r.x - alpha * r.y, a_CM.y - omega * omega * r.y + alpha * r.x};

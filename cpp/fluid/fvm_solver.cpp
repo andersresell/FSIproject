@@ -123,8 +123,10 @@ namespace fluid {
                 for (int i{2}; i < ni + 2; i++) {
                     for (int j{2}; j < nj + 2; j++) {
                         if (cell_status[IX(i,j)] == CellStatus::Fluid) U_tmp[IX(i, j)] = U[IX(i, j)] + dt * Res[IXR(i, j)];
+
                     }
                 }
+
                 external_bcs.set_BCs(U_tmp);
                 step_solids(U_tmp,dt, false);
                 eval_RHS(U_tmp);
@@ -134,6 +136,7 @@ namespace fluid {
                             U_tmp[IX(i, j)] = 3.0 / 4 * U[IX(i, j)] + 1.0 / 4 * U_tmp[IX(i, j)] + dt / 4 * Res[IXR(i, j)];
                     }
                 }
+
                 external_bcs.set_BCs(U_tmp);
                 step_solids(U_tmp,dt, false);
                 eval_RHS(U_tmp);
@@ -150,6 +153,7 @@ namespace fluid {
     }
 
     void FVM_Solver::eval_RHS(vec4 *U_in) {
+
         MUSCL_extrapolate(U_in); //eval U_left, U_right etc
         switch (flux_scheme) {
             case FluxScheme::Rusanov: {
@@ -173,7 +177,8 @@ namespace fluid {
     }
 
     void FVM_Solver::MUSCL_extrapolate(vec4 *U_in) {
-        vec4 Delta;
+        vec4 Delta{};
+
         conserved2primitive(U_in);
 
         for (int i{1}; i < ni + 3; i++) {
@@ -182,7 +187,7 @@ namespace fluid {
                     Delta = minmod(V[IX(i, j)] - V[IX(i - 1, j)], V[IX(i + 1, j)] - V[IX(i, j)]);
                     U_left[IXH(i, j)] = primitive2conserved(V[IX(i, j)] - 0.5 * Delta);
                     U_right[IXH(i, j)] = primitive2conserved(V[IX(i, j)] + 0.5 * Delta);
-                }
+              }
             }
         }
         for (int i{2}; i < ni + 2; i++) {
@@ -191,9 +196,11 @@ namespace fluid {
                     Delta = minmod(V[IX(i, j)] - V[IX(i, j - 1)], V[IX(i, j + 1)] - V[IX(i, j)]);
                     U_down[IXV(i, j)] = primitive2conserved(V[IX(i, j)] - 0.5 * Delta);
                     U_up[IXV(i, j)] = primitive2conserved(V[IX(i, j)] + 0.5 * Delta);
+
                 }
             }
         }
+
     }
 
     vec4 FVM_Solver::minmod(const vec4 &a, const vec4 &b) {

@@ -45,7 +45,7 @@ namespace fluid {
         double rho_high = rho_low*p_high/p_low;
         for (int i{0}; i < ni + 4; i++) {
             for (int j{0}; j < nj + 4; j++) {
-                if (i <= (ni + 3) / 4 ) {
+                if (i <= (ni + 3) / 10 ) {
                     U[IX(i, j)] = fluid::FVM_Solver::primitive2conserved({rho_high,0,0,p_high});
                 } else {
                     U[IX(i, j)] = fluid::FVM_Solver::primitive2conserved({rho_low,0,0,p_low});
@@ -116,6 +116,20 @@ namespace fluid {
         }
         std::cout << "Initial condition 2 set\n";
     }
+
+    void set_initial_cond_constant_data(vec4* U, int ni, int nj, vec4 V){
+        vec4 U_const = FVM_Solver::primitive2conserved(V);
+        for (int i{0}; i < ni + 4; i++) {
+            for (int j{0}; j < nj + 4; j++) {
+                U[IX(i, j)] = U_const;
+            }
+        }
+        std::cout << "Initial condition constant data set\n";
+    }
+
+
+
+
 }
 
 namespace solid {

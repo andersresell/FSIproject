@@ -5,6 +5,7 @@
 #include "fvm_utilities.hpp"
 
 namespace fluid {
+    using namespace std;
     void FVM_Solver::HLLC() {
 
         for (int i{1}; i < ni + 2; i++) {
@@ -33,6 +34,11 @@ namespace fluid {
         double v_R = U_R.u3 / U_R.u1;
         double c_L = sqrt(Gamma * p_L / rho_L);
         double c_R = sqrt(Gamma * p_R / rho_R);
+
+        /*if (rho_L<=0||rho_R<=0||p_L<=0||p_R<=0){
+            cout << U_L<<endl<<U_R<<endl;
+            cout <<"HOHJ";exit(1);
+        }*/
 
         //Step 1: Estimate wave speeds. A pressure based method estimate is chosen
 

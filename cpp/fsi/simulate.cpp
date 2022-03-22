@@ -70,10 +70,17 @@ Simulate::Simulate(const std::string& input_file) {
         fluid::set_initial_cond_ambient(fvm.U,ni,nj);
     }else if (initial_cond == "initial_cond1"){
         fluid::set_initial_cond1(fvm.U,ni,nj);
-    }
-    else if (initial_cond == "initial_cond2"){
+    }else if (initial_cond == "initial_cond2"){
         fluid::set_initial_cond2(fvm.U,ni,nj);
-    }else{
+    }else if (initial_cond == "constant_data"){
+        fluid::vec4 V{};
+        V.u1 = root.get<double>("initial_cond.rho");
+        V.u2 = root.get<double>("initial_cond.u");
+        V.u3 = root.get<double>("initial_cond.v");
+        V.u4 = root.get<double>("initial_cond.p");
+        fluid::set_initial_cond_constant_data(fvm.U,ni,nj,V);
+    }
+    else{
         std::cerr << "Invalid initial cond \"" + initial_cond + "\" in " + input_file + '\n';
         exit(1);
     }
@@ -156,15 +163,17 @@ Simulate::Simulate(const std::string& input_file) {
                     std::make_shared<solid::DynamicRigid>(fvm, std::move(boundary), CM, M, I)};
             auto is_constrained = root.get<bool>(solid_str + ".is_constrained");
             if (is_constrained) {
+                solid::RigidConstraints rigid_constraints{};
                 string constraints_str = solid_str + ".constraints";
                 if (root.get<string>(constraints_str + ".type") == "ViscoElastic") {
                     auto K = root.get<double>(constraints_str + ".K");
                     auto C = root.get<double>(constraints_str + ".C");
-                    dynamic_rigid->rigid_constraints.setup_viscoelastic(K,C);
+                    rigid_constraints.setup_viscoelastic(K,C);
                 }else if(root.get<string>(constraints_str + ".type") == "PrescribedVelocity"){
                     auto vel = root.get<double>(constraints_str + ".vel");
-                    dynamic_rigid->rigid_constraints.setup_prescribed_velocity(vel);
+                    rigid_constraints.setup_prescribed_velocity(vel);
                 }
+                dynamic_rigid->add_rigid_constraints(std::move(rigid_constraints));
             }
             fsi.add_solid(std::move(dynamic_rigid));
         }

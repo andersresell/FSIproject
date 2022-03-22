@@ -1,0 +1,43 @@
+{
+  "output_folder": "output_static_wall",
+  "ni": 100,
+  "nj": 10,
+  "L_x": 3,
+  "L_y": 0.3,
+  "CFL": 0.6,
+  "flux_scheme": "HLLC",
+  "ode_scheme": "TVD_RK3",
+  "fvm_write_stride": 10,
+  "stopping_crit": {
+    "type": "Time",
+    "value": 1
+  },
+
+  "west_bc": {
+    "type": "NonreflectingOutflow",
+    "M_inf": false
+  },
+  "east_bc": {
+    "type": "InvicidWall"
+  },
+  "south_bc": {
+    "type": "InvicidWall"
+  },
+  "north_bc": {
+    "type": "InvicidWall"
+  },
+
+  "initial_cond": {
+    "case": "constant_data",
+    "rho": 1.450638447387609,
+    "u": 0.4641116216606637,
+    "v": 0,
+    "p": 1.6933872138392398
+  },
+
+  "solids": {
+
+    }
+
+}
+

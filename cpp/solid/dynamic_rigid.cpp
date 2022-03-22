@@ -67,10 +67,9 @@ namespace solid {
     }
 
     void DynamicRigid::step_solid_body(double dt) {
-
         if (rigid_constraints.prescribed_velocity.first){
             y[2] = rigid_constraints.prescribed_velocity.second;
-        }else{
+        } else{
             update_total_fluid_force_and_moment();
         }
         if (rigid_constraints.constrained){

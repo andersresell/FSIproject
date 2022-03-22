@@ -1,7 +1,12 @@
 import numpy as np
 from numpy import genfromtxt
 import matplotlib.pyplot as plt
-from riemann_exact import *
+from analytical_solutions import *
+
+#plt.rcParams.update({
+ #   "text.usetex": True,
+  #  "font.family": "sans-serif",
+   # "font.sans-serif": ["Helvetica"]})
 
 class Plotter:
     def __init__(self, output_folder):
@@ -85,6 +90,12 @@ class Plotter:
         if (datatype == "M"):
             M = np.sqrt((data[:,1]**2 + data[:,2]**2)/(1.4*data[:,3]/data[:,0]))
             return np.transpose(M.reshape((self.ni,self.nj)))
+        elif (datatype == "rho"):
+            rho = data[:,0]
+            return np.transpose(rho.reshape((self.ni,self.nj)))
+        elif (datatype == "u"):
+            u = data[:,1]
+            return np.transpose(u.reshape((self.ni,self.nj)))
         elif (datatype == "p"):
             p = data[:,3]
             return np.transpose(p.reshape((self.ni,self.nj)))
@@ -97,6 +108,12 @@ class Plotter:
         plt.xlabel("n")
         plt.ylabel("L2 norm of density residual")
         plt.semilogy()
+
+        plt.figure()
+        plt.plot(data[:,0],data[:,2])
+        plt.xlabel("n")
+        plt.ylabel("total mass")
+
 
     def plot_solids(self, n):
         for i in range(0,self.n_static_solids+self.n_movable_solids):
@@ -124,28 +141,186 @@ class Plotter:
         p_l = p[int(self.nj/2),0]
         p_r = p[int(self.nj/2),self.ni-1]
 
-        rho_exact,u_exact,p_exact = riemann_exact(rho_l,u_l,p_l,rho_r,u_r,p_r,self.ni,self.L_x,self.t_end)
+        rho_exact,u_exact,p_exact = riemann_exact_solution(rho_l,u_l,p_l,rho_r,u_r,p_r,self.ni,self.L_x,self.t_end)
+
+        #plt.figure()
+        #s_exact = np.log(p_exact/rho_exact**1.4)
+        #plt.plot(self.x,s_exact)
 
         plt.figure()
-        plt.plot(self.x,rho[int(self.nj/2),:],'.')
-        plt.plot(self.x,rho_exact,"black")
+        plt.plot(self.x,rho[int(self.nj/2),:],'k.')
+        plt.plot(self.x,rho_exact,'--r')
+        plt.legend(['numerical','exact'])
         plt.xlabel("x")
         plt.ylabel("Density")
 
         plt.figure()
-        plt.plot(self.x,u[int(self.nj/2),:],'.')
-        plt.plot(self.x,u_exact,"black")
+        plt.plot(self.x,u[int(self.nj/2),:],'k.')
+        plt.plot(self.x,u_exact,'--r')
+        plt.legend(['numerical','exact'])
         plt.xlabel("x")
         plt.ylabel("Velocity")
 
         plt.figure()
-
         plt.plot(self.x,p[int(self.nj/2),:],'k.')
         plt.plot(self.x,p_exact,'--r')
         plt.legend(['numerical','exact'])
+        plt.xlabel("x")
+        plt.ylabel("p")
 
+    def animate_1D(self,datatype):
+
+        plt.figure()
+        for n in range(0,self.n_timesteps+1):
+            if n % self.write_stride == 0:
+                data = self.extract_data(datatype,n)
+                plt.clf()
+                plt.plot(self.x,data[(int(self.nj/2)),:])
+                plt.xlabel("x")
+                plt.ylabel(datatype)
+                plt.pause(0.1)
+
+    def plot_static_wall(self):
+        rho_l = self.extract_data("rho",0)
+        rho_l = rho_l[0,0]
+        u_l = self.extract_data("u",0)
+        u_l = u_l[0,0]
+        p_l = self.extract_data("p",0)
+        p_l = p_l[0,0]
+
+        rho = self.extract_data("rho",self.n_timesteps)
+        u = self.extract_data("u",self.n_timesteps)
+        p = self.extract_data("p",self.n_timesteps)
+
+        rho_l_star, p_star, s = static_wall_exact(rho_l,u_l,p_l)
+        x_s = self.L_x + s*self.t_end
+        ind = np.where(self.x >= x_s)
+        rho_exact = np.ones(self.x.shape)*rho_l
+        u_exact = np.ones(self.x.shape)*u_l
+        p_exact = np.ones(self.x.shape)*p_l
+        rho_exact[ind] = rho_l_star
+        u_exact[ind] = 0
+        p_exact[ind] = p_star
+
+        plt.figure()
+        plt.plot(self.x,rho[int(self.nj/2),:],'k.')
+        plt.plot(self.x,rho_exact,'--r')
+        plt.legend(['numerical','exact'])
+        plt.xlabel("x")
+        plt.ylabel("Density")
+
+        plt.figure()
+        plt.plot(self.x,u[int(self.nj/2),:],'k.')
+        plt.plot(self.x,u_exact,'--r')
+        plt.legend(['numerical','exact'])
+        plt.xlabel("x")
+        plt.ylabel("Velocity")
+
+        plt.figure()
+        plt.plot(self.x,p[int(self.nj/2),:],'k.')
+        plt.plot(self.x,p_exact,'--r')
+        plt.legend(['numerical','exact'])
         plt.xlabel("x")
         plt.ylabel("Pressure")
+
+    def plot_piston_prescribed(self,width,vel):
+        rho_c = self.extract_data("rho",0)
+        rho_c = rho_c[0,0]
+        u_c = self.extract_data("u",0)
+        u_c = u_c[0,0]
+        p_c = self.extract_data("p",0)
+        p_c = p_c[0,0]
+
+        a = 0.5*(self.L_x-width) + vel*self.t_end
+        b = 0.5*(self.L_x+width) + vel*self.t_end
+
+        def get_data(datatype):
+            ind = np.where(np.logical_and(self.x > a, self.x < b))
+            data = self.extract_data(datatype,self.n_timesteps)
+            data = data[int(self.nj/2),:]
+            data[ind] = float("nan")
+            return data
+
+        def visualize_piston(data):
+            MAX = max(data)
+            MIN = min(data)
+            x = np.array([a,a])
+            y = np.array([MIN,MAX])
+            plt.plot(x,y,'b')
+            x = np.array([b,b])
+            y = np.array([MIN,MAX])
+            plt.plot(x,y,'b')
+
+        rho_exact,u_exact,p_exact = piston_exact(rho_c,p_c,rho_c,p_c,vel,self.ni,self.L_x,width,self.t_end)
+
+        rho = get_data("rho")
+        plt.figure()
+        plt.plot(self.x,rho,'k.')
+        visualize_piston(rho)
+        plt.plot(self.x,rho_exact,'--r')
+        plt.legend(['numerical','exact'])
+        plt.xlabel("x")
+        plt.ylabel("rho")
+
+        u = get_data("u")
+        plt.figure()
+        plt.plot(self.x,u,'k.')
+        visualize_piston(u)
+        plt.plot(self.x,u_exact,'--r')
+        plt.legend(['numerical','exact'])
+        plt.xlabel("x")
+        plt.ylabel("u")
+
+        p = get_data("p")
+        plt.figure()
+        plt.plot(self.x,p,'k.')
+        visualize_piston(p)
+        plt.plot(self.x,p_exact,'--r')
+        plt.legend(['numerical','exact'])
+        plt.xlabel("x")
+        plt.ylabel("p")
+
+    def animate_piston_fsi(self,datatype,bottom_level=0, top_level=0):
+        plt.figure()
+        for n in range(0,self.n_timesteps+1):
+            if n % self.write_stride == 0:
+                plt.clf()
+                self.plot_piston_fsi(datatype,n,bottom_level,top_level)
+                plt.pause(0.1)
+
+    def plot_piston_fsi(self,datatype,n,bottom_level=0,top_level=0):
+        autolevel = False
+        if bottom_level==0 and top_level==0:
+            autolevel = True
+        piston = genfromtxt("output_folders/"+self.output_folder+"/movable_boundary0_t"+str(n)+".csv",comments = "#", delimiter=',')
+        a = piston[0,0]
+        b = piston[1,0]
+        def get_data(datatype):
+            ind = np.where(np.logical_and(self.x > a, self.x < b))
+            data = self.extract_data(datatype,n)
+            data = data[int(self.nj/2),:]
+            data[ind] = float("nan")
+            return data
+
+        def visualize_piston(data):
+            x = np.array([a,a])
+            if autolevel:
+                y = np.array([max(data),min(data)])
+            else:
+                y = np.array([bottom_level,top_level])
+            plt.plot(x,y,'b')
+            x = np.array([b,b])
+            plt.plot(x,y,'b')
+
+        data = get_data(datatype)
+        plt.plot(self.x,data,'k.')
+        visualize_piston(data)
+        plt.xlabel("x")
+        plt.ylabel(datatype)
+
+
+
+
 
     def debug_points_animation(self):
         plt.figure()

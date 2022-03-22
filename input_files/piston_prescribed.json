@@ -1,0 +1,59 @@
+{
+  "output_folder": "output_piston_prescribed",
+  "ni": 200,
+  "nj": 10,
+  "L_x": 20,
+  "L_y": 1,
+  "CFL": 0.6,
+  "flux_scheme": "HLLC",
+  "ode_scheme": "TVD_RK3",
+  "fvm_write_stride": 1,
+  "stopping_crit": {
+    "type": "Time",
+    "value": 0.018
+  },
+
+  "west_bc": {
+    "type": "InvicidWall",
+    "M_inf": false
+  },
+  "east_bc": {
+    "type": "InvicidWall"
+  },
+  "south_bc": {
+    "type": "InvicidWall"
+  },
+  "north_bc": {
+    "type": "InvicidWall"
+  },
+
+  "initial_cond": {
+    "case": "constant_data",
+    "rho": 1.2,
+    "u": 0,
+    "v": 0,
+    "p": 100000
+  },
+
+  "solids": {
+    "s1": {
+      "is_static": false,
+      "geometry": {
+        "case": "rectangle",
+        "W": 1,
+        "H": 1.3,
+        "rotation_angle_deg": 0,
+        "x_center": 10,
+        "y_center": 0.5
+      },
+      "rho": 30,
+      "is_constrained": true,
+      "constraints": {
+        "type": "PrescribedVelocity",
+        "vel": 100
+      }
+
+    }
+  }
+
+}

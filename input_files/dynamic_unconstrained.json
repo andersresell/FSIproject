@@ -1,16 +1,16 @@
 {
   "output_folder": "output_dynamic_unconstrained",
-  "ni": 1000,
+  "ni": 100,
   "nj": 100,
   "L_x": 10,
-  "L_y": 1,
+  "L_y": 10,
   "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
   "fvm_write_stride": 100,
   "stopping_crit": {
     "type": "Timesteps",
-    "value": 5966
+    "value": 500
   },
 
   "west_bc": {
@@ -18,7 +18,7 @@
     "M_inf": false
   },
   "east_bc": {
-    "type": "NonreflectingOutflow"
+    "type": "InvicidWall"
   },
   "south_bc": {
     "type": "InvicidWall"
@@ -36,38 +36,17 @@
       "is_static": false,
       "geometry": {
         "case": "rectangle",
-        "W": 0.04,
-        "H": 0.8,
+        "W": 0.4,
+        "H": 6,
         "rotation_angle_deg": 0,
-        "x_center": 6,
-        "y_center": 0.5
+        "x_center": 5,
+        "y_center": 5
       },
       "rho": 2700,
       "is_constrained": false,
       "constraints": {
       }
-    },
-    "s2": {
-        "is_static": true,
-        "geometry": {
-          "case": "wedge",
-          "l": 1,
-          "half_angle_deg": 15,
-          "x_center": 4,
-          "y_center": 0
-        }
-      },
-      "s3": {
-        "is_static": true,
-        "geometry": {
-          "case": "wedge",
-          "l": 1,
-          "half_angle_deg": 15,
-          "x_center": 4,
-          "y_center": 1
-        }
-      }
-
+    }
     }
 }
 

@@ -22,6 +22,8 @@ namespace fluid{
     void set_initial_cond_riemann(vec4* U, int ni, int nj,const vec4& V_l, const vec4& V_r);
 
     void set_initial_cond_pressure_bubble(vec4* U, int ni, int nj, double L_x, double L_y);
+
+    void set_initial_cond_constant_data(vec4* U, int ni, int nj, vec4 V);
 }
 
 namespace solid {

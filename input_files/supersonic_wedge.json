@@ -1,16 +1,16 @@
 {
   "output_folder": "wedge_verification_detached",
-  "ni": 100,
-  "nj": 100,
+  "ni": 20,
+  "nj": 20,
   "L_x": 10,
   "L_y": 10,
-  "CFL": 0.5,
+  "CFL": 0.8,
   "flux_scheme": "HLLC",
-  "ode_scheme": "TVD_RK3",
+  "ode_scheme": "ExplicitEuler",
   "fvm_write_stride": 100,
   "stopping_crit": {
     "type": "Timesteps",
-    "value": 500
+    "value": 5000
   },
 
 

@@ -84,8 +84,7 @@ namespace solid {
 
         void interpolate_fresh_points(fluid::vec4 *U_in);
 
-        void interpolate_solid(fluid::vec4 *U_in);
-        //void interpolate_solid_old(fluid::vec4 *U_in);
+        void interpolate_ghost_points(fluid::vec4 *U_in);
 
         void interpolate_cell(Cell point, std::map<Cell, GP_data> &intercept_map, fluid::vec4 *U_in,
                               bool fresh_point = false);

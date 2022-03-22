@@ -14,6 +14,10 @@
 
 enum class StoppingCrit{Time=0, Timesteps, Convergence};
 
+struct Totals{
+    double density_L2_norm, mass;
+};
+
 class FSI_Solver{
 private: //remove later
     fluid::FVM_Solver& fvm;
@@ -24,7 +28,7 @@ private: //remove later
 
     //For convergence check and output
     double* rho_old;
-    std::vector<double> convergence_history;
+    std::vector<Totals> totals_history;
 public:
 
     void add_solid(std::shared_ptr<solid::SolidBody>&& solid_body);
@@ -40,8 +44,9 @@ public:
 
     //Convergence check by L2 norm of density
     double calc_density_L2_norm();
+    double calc_mass();
     void set_rho_old();
-    void write_fvm_convergence_history();
+    void write_totals_history();
 
     void write_fsi_header();
     void write_static_solid_boundaries();

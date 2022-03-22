@@ -10,11 +10,9 @@ namespace fluid {
             : ni{ni}, nj{nj}, west{west}, east{east}, south{south}, north{north} {
         if (east == BC_Type::SupersonicInflow || north == BC_Type::SupersonicInflow || south == BC_Type::SupersonicInflow) {
             std::cerr << "Supersonic inflow only permitted at western wall\n";
+            exit(1);
         }
 
-        if (west == BC_Type::NonreflectingOutflow) {
-            std::cerr << "Nonreflecting outflow not permitted at western wall\n";
-        }
         double u_inf = M_inf*sqrt(Gamma*p_inf/rho_inf);
         U_inf = {rho_inf,rho_inf*u_inf, 0, p_inf/(Gamma-1) + 0.5*rho_inf*u_inf*u_inf};
     }
@@ -32,6 +30,13 @@ namespace fluid {
                 for (int j{0}; j < nj + 4; j++) {
                     U_in[IX(0, j)] = U_inf;
                     U_in[IX(1, j)] = U_inf;
+                }
+                break;
+            }
+            case BC_Type::NonreflectingOutflow : {
+                for (int j{ 0 }; j < nj + 4; j++) {
+                    U_in[IX(0, j)] = U_in[IX(3, j)];
+                    U_in[IX(1, j)] = U_in[IX(2, j)];
                 }
                 break;
             }

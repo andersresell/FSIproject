@@ -31,7 +31,7 @@ namespace solid {
 
 
     void SolidBody::step(fluid::vec4* U_in, double dt, bool update_solid_pos){
-        if (type == SolidBodyType::Static && first_timestep) {
+        if (first_timestep && type == SolidBodyType::Static) {
             find_solid_cells();
             flag_static();
             find_ghost_cells();
@@ -56,7 +56,7 @@ namespace solid {
                 }
             }
         }
-        interpolate_solid(U_in);
+        interpolate_ghost_points(U_in);
         first_timestep = false;
     }
 
@@ -247,10 +247,8 @@ namespace solid {
         }
     }
 
-    void SolidBody::interpolate_solid(fluid::vec4* U_in) {
-
+    void SolidBody::interpolate_ghost_points(fluid::vec4* U_in) {
         for (auto& e : cell2intercept){
-            //cout << "inpoints"  << e.first<<endl;
             interpolate_cell(e.first, cell2intercept, U_in);
         }
 
@@ -310,18 +308,18 @@ namespace solid {
         if (type == SolidBodyType::Dynamic) {
             //Only estimating one vel and acc for interpolation
             bundary_vel_and_acc(BI, u_wall, a_wall);
-            int counter{0};
+            //int counter{0};
             //Approximating the density by an average of surrounding fluid nodes. For pressure gradient calculation
             for (int ii{0}; ii < 2; ii++) {
                 for (int jj{0}; jj < 2; jj++) {
                     //if (cs[ii + 3 * jj - 2 * ii * jj] == fluid::CellStatus::Fluid) {
                         rho_approx += U_in[IX(i_bl + ii, j_bl + jj)].u1;
                         //p_approx += fluid::FVM_Solver::conserved2primitive(U_in[IX(i_bl + ii, j_bl + jj)]).u4; //Experimental
-                        counter++;
+                        //counter++;
                     //}
                 }
             }
-            rho_approx /= counter;
+            rho_approx *= 0.25;
             //p_approx /= counter;
             //cout << "GP "<<point<<", n"<<n<<", rho_approx "<<rho_approx<< ", bl "<<bottom_left_ind<<endl;
             u_n_BI = u_wall.x * n.x + u_wall.y * n.y;
@@ -332,7 +330,7 @@ namespace solid {
         for (int jj{0}; jj < 2; jj++) {
             for (int ii{0}; ii < 2; ii++) {
                 int ind = ii + 3*jj - 2*ii*jj;
-                cs[ii + 3 * jj - 2 * ii * jj] = fvm.cell_status[IX(i_bl + ii, j_bl + jj)];
+                cs[ind] = fvm.cell_status[IX(i_bl + ii, j_bl + jj)];
                 //In the case that the cell is an external GP, the value is interpolated normally for simplicity
                 if (cs[ind] == fluid::CellStatus::Fluid || !cell_within_grid(i_bl+ii,j_bl+jj)){
                     fluid::vec4 V = fluid::FVM_Solver::conserved2primitive(U_in[IX(i_bl + ii, j_bl + jj)]);
@@ -348,8 +346,7 @@ namespace solid {
                     Point BI_adj = intercept_map[{i_bl + ii, j_bl + jj}].BI;
                     Point n_adj = intercept_map[{i_bl + ii, j_bl + jj}].n;
                     //if (n_adj.x == 0 && n_adj.y == 0) cout << "FP"<<fresh_point<<", point "<<point<<", n "<<n<<", bl "<<bottom_left_ind<<", dist "<< (IP-BI).norm()<<endl;
-                    //Point BI_adj = cell2intercept[{i_bl + ii, j_bl + jj}].BI;
-                    //Point n_adj = cell2intercept[{i_bl + ii, j_bl + jj}].n;
+
                     double DX_BI_adj = BI_adj.x - bottom_left_point.x;
                     double DY_BI_adj = BI_adj.y - bottom_left_point.y;
                     A_dir.block<1, 4>(ind, 0) << 1, DX_BI_adj, DY_BI_adj, DX_BI_adj * DY_BI_adj;
@@ -411,7 +408,23 @@ namespace solid {
         V_point.u2 = n.x * u_n_point - n.y * u_t_point;
         V_point.u3 = n.y * u_n_point + n.x * u_t_point;
         U_in[IX(point.i, point.j)] = fluid::FVM_Solver::primitive2conserved(V_point);
-        //if (isnan(V_point.u1))exit(1);
+        /*if (V_point.isnan()){
+            cout << "FP"<<fresh_point<<", V_point "<<V_point << endl;
+            cout << "a_dir "<<alpha_dir<<", a_neu "<<alpha_neu<<", A_IP "<<A_IP<<endl;
+            cout <<"A_dir "<<A_dir<<endl<<"A_neu "<<A_neu<<endl;
+            cout << "cell" << point<<", bl "<<bottom_left_ind<<endl;
+            for (int i{0};i<4;i++) cout << "cs "<<(int)cs[i]<<endl;
+            for (int jj{0}; jj < 2; jj++) {
+                for (int ii{0}; ii < 2; ii++) {
+                    cout << "CS, " << (int) fvm.cell_status[IX(i_bl + ii, j_bl + jj)] <<endl;
+                    cout << "U_in "<<U_in[IX(i_bl + ii, j_bl + jj)]<<endl;
+                }
+            }
+            cout <<endl;
+            cout << "GP point "<<ind2point(point.i,point.j)<<", BI" <<BI <<", IP "<<IP<<endl;
+            cout << "dx "<< dx<<endl;
+            exit(1);
+        }*/
     }
 
     double SolidBody::interpolate_dirichlet(const Vector4d& alpha_dir, std::array<double,4> phi,

@@ -24,6 +24,7 @@ int FSI_Solver::solve() {
     write_static_solid_boundaries();
     bool breaker{false};
     double res_norm, res_norm0;
+    double mass_0, mass;
     while (true) {
         std::cout << "FSI solve: n = " + std::to_string(n) + "\n";
 
@@ -36,16 +37,19 @@ int FSI_Solver::solve() {
         }
 
         dt = fvm.ode_step(dt); //Time stepping the fvm simulation
-        std::cout << "dt = " << dt << '\n';
+        std::cout << "dt = " << dt << ", t = " << t+dt << '\n';
 
         if (n == 0) {
             res_norm0 = calc_density_L2_norm();
-            convergence_history.push_back(res_norm0);
+            mass_0 = calc_mass();
+            totals_history.push_back({res_norm0,mass_0});
         } else if (n % fvm_write_stride == 0) {
             //Checking if ||rho_{n+1} - rho_n|| <= tol * ||rho_1 - rho_0||
             res_norm = calc_density_L2_norm();
-            convergence_history.push_back(res_norm);
+            mass = calc_mass();
+            totals_history.push_back({res_norm,mass});
             std::cout << "Convergence check: res_norm0 = " << res_norm0 << ", res_norm = " << res_norm << '\n';
+            std::cout << "mass_0 = " << mass_0 << ", mass = " << mass << ", mass change = " << mass - mass_0 << '\n';
         }
 
         if (stopping_crit.first == StoppingCrit::Time) {
@@ -73,13 +77,14 @@ int FSI_Solver::solve() {
             if (n % fvm_write_stride != 0) fvm.write_fvm_output(output_folder, n); //making sure that last step is read
             fvm.write_fvm_header(output_folder, fvm_write_stride, n, t);
             write_fsi_header();
-            write_fvm_convergence_history();
+            write_totals_history();
             write_movable_solid_boundaries(n);
             write_solid_debug_files(n);
             break;
         }
         t += dt;
         n++;
+        std::cout << '\n';
     }
     auto stop_time{std::chrono::high_resolution_clock::now()};
     auto simulation_time{std::chrono::duration_cast<std::chrono::milliseconds>(stop_time - start_time)};
@@ -94,11 +99,22 @@ double FSI_Solver::calc_density_L2_norm(){
     double res_norm{0};
     for (int i{2}; i < fvm.ni + 2; i++) {
         for (int j{2}; j < nj + 4; j++) {
-            res_norm += squared(fvm.U[IX(i,j)].u1 - rho_old[IX(i,j)]);
+            if (fvm.cell_status[IX(i,j)] == fluid::CellStatus::Fluid) res_norm += squared(fvm.U[IX(i,j)].u1 - rho_old[IX(i,j)]);
         }
     }
     return sqrt(fvm.dx*fvm.dy*res_norm);
 }
+double FSI_Solver::calc_mass(){
+    int nj = fvm.nj;
+    double tmp{0};
+    for (int i{2}; i < fvm.ni + 2; i++) {
+        for (int j{2}; j < nj + 4; j++) {
+            if (fvm.cell_status[IX(i,j)] == fluid::CellStatus::Fluid) tmp += fvm.U[IX(i,j)].u1;
+        }
+    }
+    return tmp*fvm.dx*fvm.dy;
+}
+
 
 void FSI_Solver::set_rho_old() {
     int nj = fvm.nj; //needed for the IX macro
@@ -109,15 +125,15 @@ void FSI_Solver::set_rho_old() {
     }
 }
 
-void FSI_Solver::write_fvm_convergence_history() {
+void FSI_Solver::write_totals_history() {
     std::ofstream ost{"python/output_folders/" + output_folder + "/fvm_convergence_history.csv"};
     if (!ost) {
         std::cerr << "Error: couldn't open fvm convergence csv output file\n";
         exit(1);
     }
-    ost << "#n,norm\n";
-    for (int i{0}; i < convergence_history.size(); i++) {
-        ost << i * fvm_write_stride << ',' << convergence_history[i] << '\n';
+    ost << "#n,norm,mass\n";
+    for (int i{0}; i < totals_history.size(); i++) {
+        ost << i * fvm_write_stride << ',' << totals_history[i].density_L2_norm << ',' << totals_history[i].mass << '\n';
     }
 }
 
