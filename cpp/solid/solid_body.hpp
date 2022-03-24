@@ -10,36 +10,18 @@
 #include "../fluid/fvm_solver.hpp"
 
 
+
 namespace solid {
 
     enum class SolidBodyType {
         Static, Dynamic
     };
-/*
-    struct Segment_data{
-        //Stores a body intercept and its  length s from the previous boundary node
-        Segment_data(Cell GP, double s) : GP{GP}, s{s} {}
-        Cell GP;
-        double s;
-        bool operator<(const Segment_data& rhs) const {return s < rhs.s;}
-    };*/
-/*
-    struct Segment{
-        //Holds the ghost points, intercepts, normal vector, etc for each segment
-        std::vector<Segment_data> segment_data_vec;
-        Point n;
-        bool n_is_set;
-        void sort_intercepts(){std::sort(segment_data_vec.begin(), segment_data_vec.end());}
-        //void sort_intercepts(int p, int q); //to be used for pressure integration
-        Segment() : n_is_set{false}{}
-    };*/
 
     struct GP_data {
         Point BI;
         Point n;
         //double p;
     };
-
 
     class SolidBody {
     protected:
@@ -48,7 +30,7 @@ namespace solid {
         //std::vector<Cell> solid_cells;
         bool first_timestep;
         //A map from ghost cells to intercepts. Key is the ghost cell, 1st value is the intercept, 2nd value is the normal
-        inline const static double INF = 1e6; //A large number used as infinity
+        inline const static double INF = 1e6; //A large number used as spatial infinity
         fluid::FVM_Solver &fvm;
         int ni, nj;
         double dx, dy;
@@ -58,11 +40,10 @@ namespace solid {
         Eigen::Matrix4d A;
         Eigen::Matrix4d A_inv_T;
     public:
-        //std::map<Cell, GP_info> intercepts; //[Cell GP, {Point BI, Point n}]
-        //Segment *segments;
         std::map<Cell, GP_data> cell2intercept; //key = Cell GP, value = {Point BI, Point n, double p}
         std::map<Cell, GP_data> cell2intercept_FP;
         Point *boundary; //A polygon defining the boundary
+        //polygon_t boundary;
         Point *F_boundary; //Lumped force on each boundary node at current timestep;
         const int n_bound;
         const SolidBodyType type;
@@ -80,13 +61,16 @@ namespace solid {
 
         void find_intercepts(std::map<Cell, GP_data> &intercept_map);
 
-        double segment_length(int p) const { return (boundary[(p + 1) % n_bound] - boundary[p]).norm(); }
+        double segment_length(int p) const { return (boundary[(p + 1) % n_bound] - boundary[p]).norm();}
+            //const point_t& p1 = boundary.outer()[(p + 1) % n_bound];
+            //const point_t& p2 = boundary.outer()[p];
+            //return sqrt(squared(p2.x() - p1.x()) + squared(p2.y() - p1.y()));
 
         void interpolate_fresh_points(fluid::vec4 *U_in);
 
         void interpolate_ghost_points(fluid::vec4 *U_in);
 
-        void interpolate_cell(Cell point, std::map<Cell, GP_data> &intercept_map, fluid::vec4 *U_in,
+        void interpolate_cell(Cell point,const std::map<Cell, GP_data> &intercept_map, fluid::vec4 *U_in,
                               bool fresh_point = false);
 
         double interpolate_dirichlet(const Eigen::Vector4d &alpha_dir, std::array<double, 4> phi,

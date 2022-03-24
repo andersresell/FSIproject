@@ -12,6 +12,7 @@
 
 struct Simulate{
     Simulate(const std::string& input_file);
+
     fluid::BC_Type bc_type_from_str(std::string&& bc_type);
 };
 

@@ -284,6 +284,7 @@ class Plotter:
         plt.figure()
         for n in range(0,self.n_timesteps+1):
             if n % self.write_stride == 0:
+                print(n)
                 plt.clf()
                 self.plot_piston_fsi(datatype,n,bottom_level,top_level)
                 plt.pause(0.1)

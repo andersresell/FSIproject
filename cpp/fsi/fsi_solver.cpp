@@ -174,6 +174,7 @@ void FSI_Solver::write_static_solid_boundaries() {
             ost << "#x,y\n";
             for (int i{0}; i < s->n_bound; i++) {
                 ost << s->boundary[i].x << ',' << s->boundary[i].y << '\n';
+                //ost << s->boundary.outer()[i].x()<< ',' << s->boundary.outer()[i].y() << '\n';
             }
             solid_ind++;
         }
@@ -194,8 +195,11 @@ void FSI_Solver::write_movable_solid_boundaries(int n) {
             ost << "#x,y\n";
             for (int i{0}; i < s->n_bound; i++) {
                 ost << s->boundary[i].x << ',' << s->boundary[i].y << '\n';
+                //ost << s->boundary.outer()[i].x()<< ',' << s->boundary.outer()[i].y() << '\n';
             }
             solid_ind++;
+
+
         }
     }
 }
@@ -228,3 +232,4 @@ void FSI_Solver::write_solid_debug_files(int n){
 FSI_Solver::~FSI_Solver(){
     delete[] rho_old;
 }
+

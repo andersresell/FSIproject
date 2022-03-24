@@ -12,7 +12,7 @@ output_folder = "output_piston_prescribed"
 
 
 p = Plotter(output_folder)
-#p.debug_points(2)
+#p.debug_points(10)
 #p.debug_points_last()
 #p.debug_animation()
 #p.plot_steady_state("p")

@@ -168,10 +168,12 @@ namespace fluid {
 
         for (int i{2}; i < ni + 2; i++) {
             for (int j{2}; j < nj + 2; j++) {
-                if (cell_status[IX(i,j)] == CellStatus::Fluid)
+                if (cell_status[IX(i,j)] == CellStatus::Fluid) {
+                    //assert(!Res[IXR(i, j)].isnan());
                     Res[IXR(i, j)] =
-                        -1 / dx * (F_f[IXF(i, j)] - F_f[IXF(i - 1, j)]) -
-                        1 / dy * (G_f[IXG(i, j)] - G_f[IXG(i, j - 1)]);
+                            -1 / dx * (F_f[IXF(i, j)] - F_f[IXF(i - 1, j)]) -
+                            1 / dy * (G_f[IXG(i, j)] - G_f[IXG(i, j - 1)]);
+                }
             }
         }
     }

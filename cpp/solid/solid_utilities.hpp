@@ -8,7 +8,24 @@
 #include "../../includes.hpp"
 #include "../fluid/fvm_utilities.hpp"
 
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/polygon.hpp>
+
+/*
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/polygon.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/geometry/strategies/cartesian/point_in_poly_franklin.hpp>
+namespace bg = boost::geometry;
+typedef bg::model::d2::point_xy<double> point_t;
+typedef bg::model::polygon<point_t> polygon_t;
+typedef bg::model::segment<point_t> seg;
+typedef bg::strategy::within::franklin<point_t, seg, void> fran;*/
+
 namespace solid {
+
 
     struct Point {
         //also used as a vector
@@ -53,11 +70,13 @@ namespace solid {
         }
     };
 
+
     bool intersection(Point p1, Point p2, Point q1, Point q2);
 
     int orientation(Point p1, Point p2, Point p3);
 
     bool on_segment(Point p, Point q, Point r);
+
 
 }
 

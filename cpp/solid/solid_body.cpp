@@ -3,6 +3,7 @@
 //
 
 #include "solid_body.hpp"
+#include "solid_utilities.hpp"
 
 namespace solid {
 
@@ -15,9 +16,9 @@ namespace solid {
               dx{fvm.L_x / ni}, dy{fvm.L_y / nj}, type{type}, first_timestep{true}{
         boundary = new Point[n_bound];
         F_boundary = new Point[n_bound];
-        //segments = new Segment[n_bound];
         for (int i{0}; i < boundary_in.size(); i++) {
             boundary[i] = boundary_in[i];
+            //bg::append(boundary.outer(), point_t{boundary_in[i].x,boundary_in[i].y});
         }
         Cell::nj = nj;
 
@@ -84,8 +85,9 @@ namespace solid {
             for (int i{2}; i < ni + 2; i++) {
                 for (int j{2}; j < nj + 2; j++) {
                     p = ind2point(i, j);
+                    //if (i==2&&j==10) cout <<"C"<<Cell{i,j} << "p" << p <<"p inside ? "<<point_inside(p)<<endl;
                     if (point_inside(p)) {
-                        //solid_cells.push_back(Cell{i, j});
+                        cout << "C "<<Cell{i,j}<<endl;
                         solid_cells.emplace(Cell{i, j});
                         fvm.cell_status[IX(i, j)] = fluid::CellStatus::Solid;
                     }
@@ -192,6 +194,8 @@ namespace solid {
                 jp = (j + 1) % n_bound;
                 p = boundary[j];
                 q = boundary[jp];
+                //p = {boundary.outer()[j].x(),boundary.outer()[j].y()};
+                //q = {boundary.outer()[jp].x(),boundary.outer()[jp].y()};
                 r_p = p - point;
                 r_q = q - point;
                 n = {q.y - p.y, -(q.x - p.x)};
@@ -202,7 +206,12 @@ namespace solid {
                 if (curr_dist < shortest_dist){ //Used for special case where no intersection is detected
                     shortest_d = d;
                     shortest_n = n;
+                    shortest_dist = curr_dist;
                 }
+                /*if (e.first.i == 21&&e.first.j==17) {
+                    cout << "N " << n << ",p "<<p<<",q "<<q<<",SD "<<shortest_dist<<endl;
+
+                }*/
                 if (r_p.cross(n) >= 0 && n.cross(r_q) >= 0) { //intersection is on the line segment
                     if (curr_dist < prev_dist) {
                         intercept_found = true;
@@ -226,7 +235,6 @@ namespace solid {
                 e.second.BI = point + shortest_d;
                 e.second.n = shortest_n;
             }
-
         }
     }
 
@@ -255,11 +263,11 @@ namespace solid {
     }
 
 
-    void SolidBody::interpolate_cell(Cell point, std::map<Cell, GP_data>& intercept_map,
+    void SolidBody::interpolate_cell(Cell point,const std::map<Cell, GP_data>& intercept_map,
                                      fluid::vec4* U_in,bool fresh_point) {
         using namespace std;
-        Point BI = intercept_map[point].BI;
-        Point n = intercept_map[point].n;
+        Point BI = intercept_map.at(point).BI;
+        Point n = intercept_map.at(point).n;
         std::array<fluid::CellStatus,4> cs{};
         Matrix4d A_dir = A;
         Matrix4d A_neu = A;;
@@ -326,6 +334,7 @@ namespace solid {
             p_derivative_BI = -rho_approx * (a_wall.x * n.x + a_wall.y * n.y);
             //cout << "a_wall "<<a_wall<<"u_wall "<<u_wall<<", rho_approx = "<<rho_approx<<endl;
         }
+
         bool all_fluid{true};
         for (int jj{0}; jj < 2; jj++) {
             for (int ii{0}; ii < 2; ii++) {
@@ -343,8 +352,43 @@ namespace solid {
                 else if (cs[ind] == fluid::CellStatus::Ghost) {
                     //cout << "point "<<point<<", n "<<n<<", bl "<<bottom_left_ind<<", dist "<< (IP-BI).norm()<<endl;
                     all_fluid = false;
-                    Point BI_adj = intercept_map[{i_bl + ii, j_bl + jj}].BI;
-                    Point n_adj = intercept_map[{i_bl + ii, j_bl + jj}].n;
+
+                    /*if (intercept_map.find({i_bl + ii, j_bl + jj}) == intercept_map.end()){
+                        cout << "FAIL\n";
+                        for (int j{nj+1};j>1;j--){
+                            for (int i{2};i<ni+2;i++){
+                                if (i == i_bl + ii&& j == j_bl + jj) cout << "X";
+                                else cout << (int)fvm.cell_status[IX(i,j)];
+                            }
+                            cout << "j "<<j<<","<<endl;
+                        }
+                        cout << "ii "<<ii<<", jj "<<jj<<endl;
+                        cout << "FP"<<fresh_point<<endl;
+                        for (int j{nj+1};j>1;j--){
+                            for (int i{2};i<ni+2;i++){
+                                if (intercept_map.find({i,j}) != intercept_map.end()) {
+                                    if (i == i_bl + ii&& j == j_bl + jj )cout << "X";
+                                    else cout << 1;
+                                }
+                                else cout << 0;
+                            }
+                            cout << "j "<<j<<","<<endl;
+                        }
+                        cout << "point "<<point<<"n " << n <<endl;
+
+                        for (int j{0};j<n_bound;j++){
+                            int jp = (j + 1) % n_bound;
+                            Point pp = boundary[j];
+                            Point q = boundary[jp];
+                            n = {q.y - pp.y, -(q.x - pp.x)};
+                            cout << "p "<<pp<<"n "<<n<<endl;
+                        }
+                        exit(1);
+                    }*/
+                    Point BI_adj = intercept_map.at({i_bl + ii, j_bl + jj}).BI;
+                    Point n_adj = intercept_map.at({i_bl + ii, j_bl + jj}).n;
+                    //Point BI_adj = cell2intercept.at({i_bl + ii, j_bl + jj}).BI;
+                    //Point n_adj = cell2intercept.at({i_bl + ii, j_bl + jj}).n;
                     //if (n_adj.x == 0 && n_adj.y == 0) cout << "FP"<<fresh_point<<", point "<<point<<", n "<<n<<", bl "<<bottom_left_ind<<", dist "<< (IP-BI).norm()<<endl;
 
                     double DX_BI_adj = BI_adj.x - bottom_left_point.x;
@@ -407,7 +451,10 @@ namespace solid {
         }
         V_point.u2 = n.x * u_n_point - n.y * u_t_point;
         V_point.u3 = n.y * u_n_point + n.x * u_t_point;
+
         U_in[IX(point.i, point.j)] = fluid::FVM_Solver::primitive2conserved(V_point);
+
+        assert(!U_in[IX(point.i, point.j)].isnan());
         /*if (V_point.isnan()){
             cout << "FP"<<fresh_point<<", V_point "<<V_point << endl;
             cout << "a_dir "<<alpha_dir<<", a_neu "<<alpha_neu<<", A_IP "<<A_IP<<endl;
@@ -455,6 +502,8 @@ namespace solid {
     };
 
     bool SolidBody::point_inside(Point p) const{
+        //fran FRAN;
+        //return bg::within(point_t{p.x,p.y},boundary,FRAN);
         //using namespace std;
         //See https://www.geeksforgeeks.org/how-to-check-if-a-given-point-lies-inside-a-Polygon/ for details
         Point extreme{INF, p.y};
@@ -468,36 +517,12 @@ namespace solid {
                     return on_segment(boundary[i], p, boundary[next]);
                 count++;
             }
+
         }
         return count % 2 == 1; //If number of intersections are odd, return true, else return false
     }
-/*
-    void SolidBody::update_lumped_forces(fluid::vec4* U_in) {
-        int ip;
-        double ds;
-        double xi;
-        double p_j, p_jp;
-        for (int i{0}; i < n_bound; i++) {
-            double F1{0};
-            double F2{0};
-            ip = (i + 1) % n_bound;
-            double segment_length_inverse = 1 / (boundary[ip] - boundary[i]).norm();
-            segments[i].sort_intercepts();
-            std::vector<Segment_data> &v{segments[i].segment_data_vec};
-            for (size_t j{0}; j < v.size() - 1; j++) {
-                //cout << "v_size "<<v.size()<<", i "<<i<<",j "<<j<<endl;
-                ds = v[j + 1].s - v[j].s;
-                xi = (v[j].s + 0.5 * ds) * segment_length_inverse;
-                p_j = cell2intercept[v[j].GP].p;
-                p_jp = cell2intercept[v[j].GP].p;
-                F1 -= 0.5 * (p_jp + p_j) * ds * (1 - xi);
-                F2 -= 0.5 * (p_jp + p_j) * ds * xi;
-            }
-            F_boundary[i] += segments[i].n * F1;
-            F_boundary[ip] += segments[ip].n * F2;
-        }
-        for (int  i{0};i<n_bound;i++) cout<< "force b_i = "<<F_boundary[i]<<endl;
-    }*/
+
+
     void SolidBody::update_lumped_forces(fluid::vec4* U_in) {
         //uses the trapezoidal method for integrationand lumps the forces into each boudnary node
         double xi;
@@ -510,6 +535,8 @@ namespace solid {
             ip = (i + 1) % n_bound;
             Point p = boundary[i];
             Point q = boundary[ip];
+            //Point p = {boundary.outer()[i].x(),boundary.outer()[i].y()};
+            //Point q = {boundary.outer()[ip].x(),boundary.outer()[ip].y()};
             double F_p{0};
             double F_q{0};
             double seg_length = (q - p).norm();
@@ -526,6 +553,7 @@ namespace solid {
             for (int j{0};j< n_ds+1;j++){
                 double s = ds*j;
                 Point point = boundary[i] + t*s;
+                //Point point = Point{boundary.outer()[i].x(),boundary.outer()[i].y()} + t*s;
                 if (point_within_grid(point)) {
                     Cell bl = point2ind(point.x, point.y);
                     Point bl_point = ind2point(bl.i, bl.j);
@@ -538,6 +566,7 @@ namespace solid {
                     Vector4d A_point = {1, DX, DY, DX * DY};
                     alpha = A_inv_T * A_point;
                     pressures[j] = alpha.dot(P);
+                    assert(!isnan(pressures[j]));
                 }
             }
             //integrating the pressures and load lumping them
@@ -606,7 +635,6 @@ namespace solid {
     SolidBody::~SolidBody() {
         delete[] boundary;
         delete[] F_boundary;
-        //delete[] segments;
     }
 
 

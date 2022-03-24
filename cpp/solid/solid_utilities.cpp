@@ -5,7 +5,8 @@
 #include "solid_utilities.hpp"
 
 namespace solid {
-
+    using namespace std;
+    
     bool intersection(Point p1, Point q1, Point p2, Point q2) {
         //Checks wether the two lines segments p1-q1 and p2-q2 intersect
         int o1 = orientation(p1, q1, p2);
@@ -36,5 +37,7 @@ namespace solid {
         }
         return false;
     }
+
+
 
 }

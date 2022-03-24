@@ -198,3 +198,4 @@ fluid::BC_Type Simulate::bc_type_from_str(std::string&& bc_type){
         exit(1);
     }
 }
+

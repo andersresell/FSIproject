@@ -50,6 +50,7 @@ namespace solid {
         r0 = new Point[n_bound];
         for (int i{0}; i < n_bound; i++) {
             r0[i] = boundary[i] - CM;
+            //r0[i] = Point{boundary.outer()[i].x(),boundary.outer()[i].y()} - CM;
         }
     }
 
@@ -63,6 +64,12 @@ namespace solid {
             tmp = sqrt(squared(y[2] - omega * r.y) + squared(y[3] + omega * r.y));
             v_norm_max = std::max(v_norm_max, tmp);
         }
+        /*for (int i{0}; i < n_bound; i++) {
+            Point r = {boundary.outer()[i].x() - y[0], boundary.outer()[i].y() - y[1]};
+            //v = v_CM + omega x r
+            tmp = sqrt(squared(y[2] - omega * r.y) + squared(y[3] + omega * r.y));
+            v_norm_max = std::max(v_norm_max, tmp);
+        }*/
         return v_norm_max;
     }
 
@@ -89,6 +96,11 @@ namespace solid {
             r = {boundary[i].x - y[0], boundary[i].y - y[1]};
             tau_fluid += r.cross(F_boundary[i]);
         }
+        /*for (int i{0}; i < n_bound; i++) {
+            F_fluid += F_boundary[i];
+            r = {boundary.outer()[i].x() - y[0], boundary.outer()[i].y() - y[1]};
+            tau_fluid += r.cross(F_boundary[i]);
+        }*/
     }
 
     Vector6d DynamicRigid::evaluate_f(Vector6d y_in) {
@@ -118,8 +130,10 @@ namespace solid {
         double s{sin(y[4])};
         for (int i{0}; i < n_bound; i++) {
             //boundary_i(t) = CM(t) + R(t)*r0
+            assert(!isnan(y[0]) && !isnan(y[1]));
             boundary[i].x = y[0] + c * r0[i].x - s * r0[i].y;
             boundary[i].y = y[1] + s * r0[i].x + c * r0[i].y;
+            //boundary.outer()[i] = {y[0] + c * r0[i].x - s * r0[i].y, y[1] + s * r0[i].x + c * r0[i].y};
         }
     }
 
