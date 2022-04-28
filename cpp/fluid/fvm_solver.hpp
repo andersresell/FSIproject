@@ -47,7 +47,7 @@ namespace fluid {
         FVM_Solver(int ni, int nj, double L_x, double L_y, double CFL, OdeScheme ode_scheme, FluxScheme flux_scheme,
                    const ExternalBCs& external_bcs, std::string output_folder);
 
-        void write_fvm_output(const std::string& output_folder, int n);
+        void write_fvm_output(const std::string& output_folder, int n, double t);
         void write_fvm_header(const std::string& output_folder, int write_stride, int n_last, double t_end) const;
 
         double ode_step(double dt_old);
@@ -135,6 +135,14 @@ namespace fluid {
 
     inline double FVM_Solver::calc_sound_speed(const vec4 &U_in) {
         return sqrt(Gamma / U_in.u1 * calc_P(U_in));
+    }
+
+
+    inline vec4 FVM_Solver::minmod(const vec4 &a, const vec4 &b) {
+        return {sgn(a.u1) * std::max(0.0, std::min(std::abs(a.u1), sgn(a.u1) * b.u1)),
+                sgn(a.u2) * std::max(0.0, std::min(std::abs(a.u2), sgn(a.u2) * b.u2)),
+                sgn(a.u3) * std::max(0.0, std::min(std::abs(a.u3), sgn(a.u3) * b.u3)),
+                sgn(a.u4) * std::max(0.0, std::min(std::abs(a.u4), sgn(a.u4) * b.u4))};
     }
 
     inline double FVM_Solver::calc_sprad_x(const vec4 &U_in) {

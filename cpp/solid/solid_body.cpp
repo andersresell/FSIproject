@@ -87,7 +87,7 @@ namespace solid {
                     p = ind2point(i, j);
                     //if (i==2&&j==10) cout <<"C"<<Cell{i,j} << "p" << p <<"p inside ? "<<point_inside(p)<<endl;
                     if (point_inside(p)) {
-                        cout << "C "<<Cell{i,j}<<endl;
+                        //cout << "C "<<Cell{i,j}<<endl;
                         solid_cells.emplace(Cell{i, j});
                         fvm.cell_status[IX(i, j)] = fluid::CellStatus::Solid;
                     }
@@ -315,7 +315,7 @@ namespace solid {
         Point a_wall{};
         if (type == SolidBodyType::Dynamic) {
             //Only estimating one vel and acc for interpolation
-            bundary_vel_and_acc(BI, u_wall, a_wall);
+            boundary_vel_and_acc(BI, u_wall, a_wall);
             //int counter{0};
             //Approximating the density by an average of surrounding fluid nodes. For pressure gradient calculation
             for (int ii{0}; ii < 2; ii++) {

@@ -42,7 +42,7 @@
         "x_center": 15,
         "y_center": 0.5
       },
-      "rho": 30,
+      "rho": 10,
       "is_constrained": true,
       "constraints": {
         "type": "ViscoElastic",

@@ -3,6 +3,13 @@ project(FSIproject)
 
 set(CMAKE_CXX_STANDARD 20)
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Build)
+endif()
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
+set(CMAKE_CXX_FLAGS_DEBUG "-O3")
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}) #setting the output directory to FSIproject folder instead of cmake-build-debug
 
 add_executable(FSIproject

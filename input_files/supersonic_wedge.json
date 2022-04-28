@@ -1,16 +1,16 @@
 {
-  "output_folder": "wedge_verification_detached",
-  "ni": 20,
-  "nj": 20,
+  "output_folder": "wedge_verification_attached",
+  "ni": 100,
+  "nj": 100,
   "L_x": 10,
   "L_y": 10,
-  "CFL": 0.8,
+  "CFL": 0.5,
   "flux_scheme": "HLLC",
-  "ode_scheme": "ExplicitEuler",
+  "ode_scheme": "TVD_RK3",
   "fvm_write_stride": 100,
   "stopping_crit": {
     "type": "Timesteps",
-    "value": 5000
+    "value": 10000
   },
 
 
@@ -29,7 +29,7 @@
   },
 
   "initial_cond": {
-    "case": "ambient"
+    "case": "constant_horizontal_flow"
   },
 
   "solids": {
@@ -38,7 +38,7 @@
       "geometry": {
         "case": "wedge",
         "l": 3,
-        "half_angle_deg": 15,
+        "half_angle_deg": 20,
         "x_center": 5,
         "y_center": 5
       }

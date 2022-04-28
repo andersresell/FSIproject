@@ -61,14 +61,14 @@ namespace solid {
 
         void update_boundary();
 
-        void bundary_vel_and_acc(Point BI, Point &v_wall, Point &a_wall) const final;
+        void boundary_vel_and_acc(Point BI, Point &v_wall, Point &a_wall) const final;
 
     public:
         virtual ~DynamicRigid();
     };
 
 
-    inline void DynamicRigid::bundary_vel_and_acc(Point BI, Point &v_wall, Point &a_wall) const {
+    inline void DynamicRigid::boundary_vel_and_acc(Point BI, Point &v_wall, Point &a_wall) const {
         using namespace std;
         Point r = {BI.x - y[0], BI.y - y[1]};
         double omega = y[5];

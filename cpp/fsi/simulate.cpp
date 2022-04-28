@@ -72,6 +72,13 @@ Simulate::Simulate(const std::string& input_file) {
         fluid::set_initial_cond1(fvm.U,ni,nj);
     }else if (initial_cond == "initial_cond2"){
         fluid::set_initial_cond2(fvm.U,ni,nj);
+    }else if (initial_cond == "initial_cond_shock_tube_experiment"){
+        fluid::vec4 V_l{0,0,0,0}, V_r{0,0,0,0};
+        V_l.u1 = root.get<double>("initial_cond.rho_l");
+        V_l.u4 = root.get<double>("initial_cond.p_l");
+        V_r.u1 = root.get<double>("initial_cond.rho_r");
+        V_r.u4 = root.get<double>("initial_cond.p_r");
+        fluid::set_initial_cond_shock_tube_experiment(fvm.U,ni,nj,L_x,V_l,V_r);
     }else if (initial_cond == "constant_data"){
         fluid::vec4 V{};
         V.u1 = root.get<double>("initial_cond.rho");
@@ -123,8 +130,8 @@ Simulate::Simulate(const std::string& input_file) {
             auto y_center = root.get<double>(geom_str + ".y_center");
             boundary = solid::generate_circle(R, n_nodes, x_center, y_center);
             if (solid_body_type == solid::SolidBodyType::Dynamic) {
-                M = M_PI * squared(R) * rho;
-                I = 0.5 * M * squared(R);
+                M = M_PI * sqr(R) * rho;
+                I = 0.5 * M * sqr(R);
                 CM = {x_center, y_center};
             }
         } else if (root.get<string>(geom_str + ".case") == "wedge") {
@@ -137,7 +144,7 @@ Simulate::Simulate(const std::string& input_file) {
                 double h = l * sin(half_angle_deg * M_PI / 180);
                 M = 2 * h * l * rho;
                 I = rho / 3 * h * l *
-                    (squared(h) + squared(l)); //Calculated by solving a double integral, might be wrong
+                    (sqr(h) + sqr(l)); //Calculated by solving a double integral, might be wrong
                 CM = {x_center, y_center};
             }
         } else if (root.get<string>(geom_str + ".case") == "rectangle") {
@@ -149,7 +156,7 @@ Simulate::Simulate(const std::string& input_file) {
             boundary = solid::generate_rectangle(W, H, rotation_angle_deg, x_center, y_center);
             if (solid_body_type == solid::SolidBodyType::Dynamic) {
                 M = W * H * rho;
-                I = M / 12 * (squared(W) + squared(H));
+                I = M / 12 * (sqr(W) + sqr(H));
                 CM = {x_center, y_center};
             }
         } else {
@@ -182,7 +189,6 @@ Simulate::Simulate(const std::string& input_file) {
 
     std::cout << "Setup complete\n";
     fsi.solve();
-
 }
 
 

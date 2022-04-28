@@ -64,7 +64,7 @@ namespace solid {
         double segment_length(int p) const { return (boundary[(p + 1) % n_bound] - boundary[p]).norm();}
             //const point_t& p1 = boundary.outer()[(p + 1) % n_bound];
             //const point_t& p2 = boundary.outer()[p];
-            //return sqrt(squared(p2.x() - p1.x()) + squared(p2.y() - p1.y()));
+            //return sqrt(sqr(p2.x() - p1.x()) + sqr(p2.y() - p1.y()));
 
         void interpolate_fresh_points(fluid::vec4 *U_in);
 
@@ -87,7 +87,7 @@ namespace solid {
                                    const std::vector<fluid::CellStatus>& cs);*/
 
         //The virtual functions needed definitions to avoid vtable error, even though they are not used in the base class
-        virtual void bundary_vel_and_acc(Point BI, Point &v_wall, Point &a_wall) const {};
+        virtual void boundary_vel_and_acc(Point BI, Point &v_wall, Point &a_wall) const {};
 
         virtual double max_boundary_speed() const { return 0; }
 

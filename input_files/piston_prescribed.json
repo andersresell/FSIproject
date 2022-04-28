@@ -4,13 +4,13 @@
   "nj": 10,
   "L_x": 20,
   "L_y": 1,
-  "CFL": 0.6,
+  "CFL": 0.5,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
   "fvm_write_stride": 1,
   "stopping_crit": {
     "type": "Time",
-    "value": 0.018
+    "value": 0.01
   },
 
   "west_bc": {
@@ -50,7 +50,7 @@
       "is_constrained": true,
       "constraints": {
         "type": "PrescribedVelocity",
-        "vel": 100
+        "vel": 500
       }
 
     }

@@ -12,12 +12,9 @@ output_folder = "output_piston_prescribed"
 
 
 p = Plotter(output_folder)
-#p.debug_points(10)
-#p.debug_points_last()
-#p.debug_animation()
-#p.plot_steady_state("p")
-#p.animate_1D("p")
-#p.animate("p")
-p.plot_piston_prescribed(1,100)
+
+p.contour_plot("p")
+p.plot_piston_prescribed(500)
 p.plot_convergence()
 plt.show()
+

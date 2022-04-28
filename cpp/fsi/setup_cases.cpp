@@ -55,6 +55,23 @@ namespace fluid {
         std::cout << "Initial condition 2 set\n";
     }
 
+    void set_initial_cond_shock_tube_experiment(vec4* U, int ni, int nj, double L_x, vec4 V_l, vec4 V_r){
+        //The left part is the "driver" section, and the right part is the "driven" section
+        double dx = L_x/ni;
+        double driver_length = 0.26;
+        for (int i{0}; i < ni + 4; i++) {
+            double x = (i-1.5)*dx;
+            for (int j{0}; j < nj + 4; j++) {
+                if (x <= driver_length) {
+                    U[IX(i, j)] = fluid::FVM_Solver::primitive2conserved(V_l);
+                } else {
+                    U[IX(i, j)] = fluid::FVM_Solver::primitive2conserved(V_r);
+                }
+            }
+        }
+        std::cout << "Shock tube experiment set\n";
+    }
+
     void set_constant_horizontal_flow_cond(vec4* U, int ni, int nj, double M, double rho, double p){
         double u = M*sqrt(Gamma*p/rho);
         for (int i{0}; i < ni + 4; i++) {
@@ -107,7 +124,7 @@ namespace fluid {
                 U[IX(i, j)].u1 = rho;
                 U[IX(i, j)].u2 = rho * u;
                 U[IX(i, j)].u3 = rho * v;
-                if (squared(x-x_c) + squared(y-y_c) <= squared(R)) {
+                if (sqr(x-x_c) + sqr(y-y_c) <= sqr(R)) {
                     U[IX(i, j)].u4 = p_high / (fluid::Gamma - 1) + 0.5 * rho * (u * u + v * v);
                 } else {
                     U[IX(i, j)].u4 = p_low / (fluid::Gamma - 1) + 0.5 * rho * (u * u + v * v);

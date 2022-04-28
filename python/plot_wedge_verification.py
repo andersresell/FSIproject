@@ -9,15 +9,16 @@ from plotting_utilities import *
 
 #Read header
 output_folder = "wedge_verification_attached"
-output_folder = "wedge_verification_detached"
+#output_folder = "wedge_verification_detached"
 
 p = Plotter(output_folder)
-p.debug_points_last()
-p.plot_steady_state("M")
-p.animate("p")
-#print(p.probe("M",2,5))
-#print(p.probe("M",5,6))
-#print(p.probe("M",3.8,5.58))
+#p.contour_animate("p")
+p.contour_plot("M",-1,True)
+p.plot_convergence()
+print(p.probe("M",4,6))
+print(p.probe("M",4,7))
+print(p.probe("M",4.67,6.23))
+p.schlieren()
 plt.show()
 
 

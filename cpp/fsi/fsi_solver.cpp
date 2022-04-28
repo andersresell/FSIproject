@@ -30,7 +30,7 @@ int FSI_Solver::solve() {
 
         if (n % fvm_write_stride == 0) {
             std::cout << "Writing output\n";
-            fvm.write_fvm_output(output_folder, n);
+            fvm.write_fvm_output(output_folder, n, t);
             write_movable_solid_boundaries(n);
             write_solid_debug_files(n);
             set_rho_old();
@@ -74,7 +74,7 @@ int FSI_Solver::solve() {
         //Writing fvm header at last timestep, since the number of steps can't be known a priori if endtime is
         //used as stopping criterion
         if (breaker) {
-            if (n % fvm_write_stride != 0) fvm.write_fvm_output(output_folder, n); //making sure that last step is read
+            if (n % fvm_write_stride != 0) fvm.write_fvm_output(output_folder, n, t); //making sure that last step is read
             fvm.write_fvm_header(output_folder, fvm_write_stride, n, t);
             write_fsi_header();
             write_totals_history();
@@ -99,7 +99,7 @@ double FSI_Solver::calc_density_L2_norm(){
     double res_norm{0};
     for (int i{2}; i < fvm.ni + 2; i++) {
         for (int j{2}; j < nj + 4; j++) {
-            if (fvm.cell_status[IX(i,j)] == fluid::CellStatus::Fluid) res_norm += squared(fvm.U[IX(i,j)].u1 - rho_old[IX(i,j)]);
+            if (fvm.cell_status[IX(i,j)] == fluid::CellStatus::Fluid) res_norm += sqr(fvm.U[IX(i,j)].u1 - rho_old[IX(i,j)]);
         }
     }
     return sqrt(fvm.dx*fvm.dy*res_norm);

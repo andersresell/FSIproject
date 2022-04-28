@@ -61,13 +61,13 @@ namespace solid {
         for (int i{0}; i < n_bound; i++) {
             Point r = {boundary[i].x - y[0], boundary[i].y - y[1]};
             //v = v_CM + omega x r
-            tmp = sqrt(squared(y[2] - omega * r.y) + squared(y[3] + omega * r.y));
+            tmp = sqrt(sqr(y[2] - omega * r.y) + sqr(y[3] + omega * r.y));
             v_norm_max = std::max(v_norm_max, tmp);
         }
         /*for (int i{0}; i < n_bound; i++) {
             Point r = {boundary.outer()[i].x() - y[0], boundary.outer()[i].y() - y[1]};
             //v = v_CM + omega x r
-            tmp = sqrt(squared(y[2] - omega * r.y) + squared(y[3] + omega * r.y));
+            tmp = sqrt(sqr(y[2] - omega * r.y) + sqr(y[3] + omega * r.y));
             v_norm_max = std::max(v_norm_max, tmp);
         }*/
         return v_norm_max;

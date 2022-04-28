@@ -31,7 +31,7 @@ namespace fluid {
         initialize_solids();
     }
 
-    void FVM_Solver::write_fvm_output(const std::string& output_folder, int n) {
+    void FVM_Solver::write_fvm_output(const std::string& output_folder, int n, double t) {
         //Writing one output data file for every timestep
         conserved2primitive(U);
         std::ofstream ost{"python/output_folders/" + output_folder +  "/fvm_output_t" + std::to_string(n) + ".csv"};
@@ -39,7 +39,8 @@ namespace fluid {
             std::cerr << "Error: couldn't open fvm csv output file\n";
             exit(1);
         }
-        ost << "#rho,u,v,p\n";
+        ost << "#t," << t << '\n'
+        << "#rho,u,v,p\n";
         int ind;
         for (int i{2}; i < ni + 2; i++) {
             for (int j{2}; j < nj + 2; j++) {
@@ -187,8 +188,12 @@ namespace fluid {
             for (int j{2}; j < nj + 2; j++) {
                 if (cell_status[IX(i,j)] != CellStatus::Solid) {
                     Delta = minmod(V[IX(i, j)] - V[IX(i - 1, j)], V[IX(i + 1, j)] - V[IX(i, j)]);
+                    //MC limiter
+                    //Delta = minmod(0.5*(V[IX(i+1,j)] - V[IX(i-1,j)]),minmod(2*(V[IX(i,j)]-V[IX(i-1,j)]), 2*(V[IX(i+1,j)]-V[IX(i,j)])));
                     U_left[IXH(i, j)] = primitive2conserved(V[IX(i, j)] - 0.5 * Delta);
                     U_right[IXH(i, j)] = primitive2conserved(V[IX(i, j)] + 0.5 * Delta);
+                    //U_left[IXH(i, j)] = primitive2conserved(V[IX(i, j)] - 0.5 * (V[IX(i, j)] - V[IX(i-1,j)]));
+                    //U_right[IXH(i, j)] = primitive2conserved(V[IX(i, j)] + 0.5 * (V[IX(i+1, j)] - V[IX(i,j)]));
               }
             }
         }
@@ -196,20 +201,17 @@ namespace fluid {
             for (int j{1}; j < nj + 3; j++) {
                 if (cell_status[IX(i,j)] != CellStatus::Solid) {
                     Delta = minmod(V[IX(i, j)] - V[IX(i, j - 1)], V[IX(i, j + 1)] - V[IX(i, j)]);
+                    //MC limiter
+                    //Delta = minmod(0.5*(V[IX(i,j+1)] - V[IX(i,j-1)]),minmod(2*(V[IX(i,j)]-V[IX(i,j-1)]), 2*(V[IX(i,j+1)]-V[IX(i,j)])));
                     U_down[IXV(i, j)] = primitive2conserved(V[IX(i, j)] - 0.5 * Delta);
                     U_up[IXV(i, j)] = primitive2conserved(V[IX(i, j)] + 0.5 * Delta);
+                    //U_down[IXV(i, j)] = primitive2conserved(V[IX(i, j)] - 0.5 * (V[IX(i, j)] - V[IX(i,j-1)]));
+                    //U_up[IXV(i, j)] = primitive2conserved(V[IX(i, j)] + 0.5 * (V[IX(i, j+1)] - V[IX(i,j)]));
 
                 }
             }
         }
 
-    }
-
-    vec4 FVM_Solver::minmod(const vec4 &a, const vec4 &b) {
-        return {sgn(a.u1) * std::max(0.0, std::min(std::abs(a.u1), sgn(a.u1) * b.u1)),
-                sgn(a.u2) * std::max(0.0, std::min(std::abs(a.u2), sgn(a.u2) * b.u2)),
-                sgn(a.u3) * std::max(0.0, std::min(std::abs(a.u3), sgn(a.u3) * b.u3)),
-                sgn(a.u4) * std::max(0.0, std::min(std::abs(a.u4), sgn(a.u4) * b.u4))};
     }
 
     void FVM_Solver::conserved2primitive(vec4 *U_in) {

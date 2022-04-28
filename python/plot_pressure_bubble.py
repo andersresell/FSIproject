@@ -8,11 +8,11 @@ from plotting_utilities import *
 
 
 #Read header
-output_folder = "wedge_verification_attached"
+
 output_folder = "output_pressure_bubble"
 
 p = Plotter(output_folder)
 #p.debug_points()
-p.plot_steady_state("p")
-p.animate("p",0,10e5)
+#p.plot_steady_state("p")
+p.contour_animate("p",1e4,5e5)
 plt.show()

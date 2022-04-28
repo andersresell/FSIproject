@@ -19,7 +19,7 @@ template <typename T> inline int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
-template <typename T> inline T squared(T val){
+template <typename T> inline T sqr(T val){
     return val*val;
 }
 

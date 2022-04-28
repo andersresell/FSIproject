@@ -1,16 +1,16 @@
 {
   "output_folder": "output_dynamic_circle_blast",
-  "ni": 200,
-  "nj": 100,
+  "ni": 600,
+  "nj": 300,
   "L_x": 20,
   "L_y": 10,
   "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
-  "fvm_write_stride": 100,
+  "fvm_write_stride": 30,
   "stopping_crit": {
     "type": "Timesteps",
-    "value": 1396
+    "value": 1300
   },
 
   "west_bc": {
@@ -18,7 +18,7 @@
     "M_inf": false
   },
   "east_bc": {
-    "type": "NonreflectingOutflow"
+    "type": "InvicidWall"
   },
   "south_bc": {
     "type": "InvicidWall"
