@@ -9,8 +9,8 @@
   "ode_scheme": "TVD_RK3",
   "fvm_write_stride": 30,
   "stopping_crit": {
-    "type": "Timesteps",
-    "value": 2000
+    "type": "Time",
+    "value": 0.03
   },
 
   "west_bc": {

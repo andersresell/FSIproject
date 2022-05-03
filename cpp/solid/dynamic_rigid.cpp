@@ -40,7 +40,7 @@ namespace solid {
 
     DynamicRigid::DynamicRigid(fluid::FVM_Solver &fvm, std::vector<Point> &&boundary_in, Point CM, double M, double I)
             : SolidBody(fvm, std::move(boundary_in), SolidBodyType::Dynamic), M{M}, I{I}, CM0{CM}, rigid_constraints{},
-            F_fluid{0,0}, F_solid{0,0}, tau_solid{0} {
+            F_fluid{0,0}, F_solid{0,0}, tau_solid{0}, omega_prev{0}, vel_CM_prev{0,0}, dt_prev{INF} {
         y[0] = CM.x;
         y[1] = CM.y;
         y[2] = 0;
@@ -83,6 +83,10 @@ namespace solid {
             F_fluid.y = 0;
             tau_fluid = 0;
         }
+        cout << "F_fluid "<<F_fluid<<endl;
+        omega_prev = y[5];
+        vel_CM_prev = {y[2],y[3]};
+        dt_prev = dt;
         RK4_step(dt);
         update_boundary();
     }

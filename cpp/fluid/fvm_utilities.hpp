@@ -67,7 +67,7 @@ namespace fluid {
 
 
 
-    enum class BC_Type{InvicidWall, SupersonicInflow, NonreflectingOutflow};
+    enum class BC_Type{InvicidWall, SupersonicInflow, NonreflectingOutflow ,TimeHistory};
 
     class ExternalBCs {
         //ExternalBC &west, &east, &south, &north;

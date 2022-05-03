@@ -42,6 +42,8 @@ namespace solid {
 
         Point operator*(double rhs) const { return {x * rhs, y * rhs}; }
 
+        void operator*=(double rhs) {x *= rhs; y*= rhs;}
+
         double cross(Point rhs) const { return x * rhs.y - y * rhs.x; }
 
         double norm() const { return sqrt(x * x + y * y); }

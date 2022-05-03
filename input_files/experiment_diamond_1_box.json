@@ -1,0 +1,53 @@
+{
+  "output_folder": "output_experiment_diamond_1",
+  "ni": 200,
+  "nj": 200,
+  "L_x": 0.29,
+  "L_y": 0.29,
+  "CFL": 0.6,
+  "flux_scheme": "HLLC",
+  "ode_scheme": "TVD_RK3",
+  "fvm_write_stride": 200,
+  "stopping_crit": {
+    "type": "Time",
+    "value": 0.011
+  },
+
+  "west_bc": {
+    "type": "InvicidWall",
+    "M_inf": false
+  },
+  "east_bc": {
+    "type": "NonreflectingOutflow"
+  },
+  "south_bc": {
+    "type": "InvicidWall"
+  },
+  "north_bc": {
+    "type": "InvicidWall"
+  },
+
+  "initial_cond": {
+    "case": "initial_cond_shock_tube_experiment",
+    "rho_l": 3.761,
+    "p_l": 317890,
+    "rho_r": 1.199,
+    "p_r": 101890
+  },
+
+  "solids": {
+    "s2": {
+      "is_static": true,
+      "geometry": {
+        "case": "wedge",
+        "l": 0.02,
+        "half_angle_deg": 45,
+        "x_center": 5.075,
+        "y_center": 0.145
+      }
+    }
+  }
+
+}
+
+

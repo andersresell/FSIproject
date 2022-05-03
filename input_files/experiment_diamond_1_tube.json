@@ -1,13 +1,13 @@
 {
-  "output_folder": "output_experiment_diamond_1",
+  "output_folder": "output_experiment_diamond_1_tube",
   "ni": 4100,
-  "nj": 200,
+  "nj": 1,
   "L_x": 6,
   "L_y": 0.29,
   "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
-  "fvm_write_stride": 200,
+  "fvm_write_stride": 100,
   "stopping_crit": {
     "type": "Time",
     "value": 0.011
@@ -36,16 +36,6 @@
   },
 
   "solids": {
-    "s2": {
-      "is_static": true,
-      "geometry": {
-        "case": "wedge",
-        "l": 0.02,
-        "half_angle_deg": 45,
-        "x_center": 5.075,
-        "y_center": 0.145
-      }
-    }
   }
 
 }

@@ -40,6 +40,7 @@ namespace fluid {
                 }
                 break;
             }
+            case BC_Type::TimeHistory
         }
         switch (east) {
             case BC_Type::InvicidWall : {

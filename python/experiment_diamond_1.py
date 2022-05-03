@@ -28,18 +28,20 @@ P10_2 = P10_2 - np.mean(P10_2[0:20])
 P10_1 = P10_1 - np.mean(P10_1[0:20])
 P10_2 = P10_2*1e5 + p_a
 P10_1 = P10_1*1e5 + p_a
-x_P10_2 = 0.26+3.84
-x_P10_1 = 0.26+3.94
+x_P10_2 = 4.1
+x_P10_1 = 4.2
 y_center = 0.29/2
 
 
 
-output_folder = "output_experiment_diamond_1"
+output_folder = "output_experiment_diamond_1_tube"
 p = Plotter(output_folder)
-p.schlieren_experiment()
-#time,pressure = p.time_history(x_P10_2,y_center)
+time,pressure = p.time_history(x_P10_2,y_center)
+
+
+#p.schlieren_experiment()
 plt.figure()
-#plt.plot(time,pressure)
+plt.plot(time,pressure)
 plt.plot(t,P10_2)
 plt.xlabel("t[s]")
 plt.ylabel("p[Pa]")

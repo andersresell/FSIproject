@@ -87,7 +87,7 @@ namespace solid {
                                    const std::vector<fluid::CellStatus>& cs);*/
 
         //The virtual functions needed definitions to avoid vtable error, even though they are not used in the base class
-        virtual void boundary_vel_and_acc(Point BI, Point &v_wall, Point &a_wall) const {};
+        virtual void boundary_vel_and_fluid_boundary_acc(Point BI, Point n, Point u_fluid, Point &u_wall, double &a_normal) const {};
 
         virtual double max_boundary_speed() const { return 0; }
 
