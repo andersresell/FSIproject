@@ -1,5 +1,5 @@
 {
-  "output_folder": "output_experiment_diamond_1_box",
+  "output_folder": "output_experiment_square_3_box",
   "ni": 500,
   "nj": 500,
   "L_x": 0.26,
@@ -16,7 +16,7 @@
   "west_bc": {
     "type": "TimeHistory",
     "M_inf": false,
-    "time_history_folder": "output_experiment_diamond_1_tube"
+    "time_history_folder": "output_experiment_square_3_tube"
   },
   "east_bc": {
     "type": "NonreflectingOutflow"
@@ -30,17 +30,18 @@
 
   "initial_cond": {
     "case": "quiecent",
-    "rho": 1.199,
-    "p": 101890
+    "rho": 1.199209,
+    "p": 101858
   },
 
   "solids": {
     "s2": {
       "is_static": true,
       "geometry": {
-        "case": "wedge",
-        "l": 0.02,
-        "half_angle_deg": 45,
+        "case": "rectangle",
+        "W": 0.04,
+        "H": 0.04,
+        "rotation_angle_deg": 0,
         "x_center": 0.13,
         "y_center": 0.13
       }

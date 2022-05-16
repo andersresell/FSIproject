@@ -83,7 +83,6 @@ namespace solid {
             F_fluid.y = 0;
             tau_fluid = 0;
         }
-        cout << "F_fluid "<<F_fluid<<endl;
         omega_prev = y[5];
         vel_CM_prev = {y[2],y[3]};
         dt_prev = dt;

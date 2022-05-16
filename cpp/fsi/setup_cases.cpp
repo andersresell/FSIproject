@@ -7,15 +7,13 @@
 namespace fluid {
 
 
-    void set_initial_cond_ambient(vec4* U, int ni, int nj){
-        double rho = 1.2;
-        double p = 1e5;
+    void set_initial_cond_quiecent(vec4* U, int ni, int nj, double rho, double p){
         for (int i{0}; i < ni + 4; i++) {
             for (int j{0}; j < nj + 4; j++) {
                 U[IX(i, j)] = fluid::FVM_Solver::primitive2conserved({rho,0,0,p});
             }
         }
-        std::cout << "Initial condition ambient set\n";
+        std::cout << "Initial condition quiecent set\n";
     }
 
     void set_initial_cond1(vec4 *U, int ni, int nj) {
@@ -45,7 +43,7 @@ namespace fluid {
         double rho_high = rho_low*p_high/p_low;
         for (int i{0}; i < ni + 4; i++) {
             for (int j{0}; j < nj + 4; j++) {
-                if (i <= (ni + 3) / 10 ) {
+                if (i <= ni / 10 + 2) {
                     U[IX(i, j)] = fluid::FVM_Solver::primitive2conserved({rho_high,0,0,p_high});
                 } else {
                     U[IX(i, j)] = fluid::FVM_Solver::primitive2conserved({rho_low,0,0,p_low});
@@ -58,7 +56,7 @@ namespace fluid {
     void set_initial_cond_shock_tube_experiment(vec4* U, int ni, int nj, double L_x, vec4 V_l, vec4 V_r){
         //The left part is the "driver" section, and the right part is the "driven" section
         double dx = L_x/ni;
-        double driver_length = 0.26;
+        double driver_length = 0.27;
         for (int i{0}; i < ni + 4; i++) {
             double x = (i-1.5)*dx;
             for (int j{0}; j < nj + 4; j++) {
@@ -105,29 +103,31 @@ namespace fluid {
         std::cout << "Initial condition Riemann set\n";
     }
 
-    void set_initial_cond_pressure_bubble(vec4* U, int ni, int nj, double L_x, double L_y){
-        double rho = 1.2;
+    void set_initial_cond_pressure_bubble(vec4* U, int ni, int nj, double L_x, double L_y, double x_c,
+                                          double y_c, double radius){
+        double rho_low = 1.2;
         double p_low = 1e5;
-        double p_high = 10 * p_low;
+        double p_high = 30 * p_low;
+        double T_high = 273.15+200;
+        double rho_high = p_high/(287*T_high);
         double u{0};
         double v{0};
         double R = L_x/10;
         double x, y;
         double dx = L_x/ni;
         double dy = L_y/nj;
-        double x_c = L_x/4;
-        double y_c = L_y/4;
         for (int i{0}; i < ni + 4; i++) {
             for (int j{0}; j < nj + 4; j++) {
                 x = dx*(i-1.5);
                 y = dy*(j-1.5);
-                U[IX(i, j)].u1 = rho;
-                U[IX(i, j)].u2 = rho * u;
-                U[IX(i, j)].u3 = rho * v;
+                U[IX(i, j)].u2 = 0;
+                U[IX(i, j)].u3 = 0;
                 if (sqr(x-x_c) + sqr(y-y_c) <= sqr(R)) {
-                    U[IX(i, j)].u4 = p_high / (fluid::Gamma - 1) + 0.5 * rho * (u * u + v * v);
+                    U[IX(i, j)].u1 = rho_high;
+                    U[IX(i, j)].u4 = p_high / (fluid::Gamma - 1) + 0.5 * rho_high * (u * u + v * v);
                 } else {
-                    U[IX(i, j)].u4 = p_low / (fluid::Gamma - 1) + 0.5 * rho * (u * u + v * v);
+                    U[IX(i, j)].u1 = rho_low;
+                    U[IX(i, j)].u4 = p_low / (fluid::Gamma - 1) + 0.5 * rho_high * (u * u + v * v);
                 }
             }
         }
@@ -151,14 +151,24 @@ namespace fluid {
 
 namespace solid {
     std::vector<solid::Point>
-    generate_wedge(double l, double half_angle_deg, double x_center, double y_center) {
+    generate_wedge(double l, double half_angle_deg, double x_tip, double y_tip){
         std::vector<solid::Point> wedge;
         double h = l * tan(half_angle_deg * M_PI / 180);
-        wedge.push_back(solid::Point{x_center - l, y_center});
-        wedge.push_back(solid::Point{x_center, y_center - h});
-        wedge.push_back(solid::Point{x_center + l, y_center});
-        wedge.push_back(solid::Point{x_center, y_center + h});
+        wedge.push_back(solid::Point{x_tip,y_tip});
+        wedge.push_back(solid::Point{x_tip+l,y_tip+h});
+        wedge.push_back(solid::Point{x_tip+l,y_tip-h});
         return wedge;
+    }
+
+    std::vector<solid::Point>
+    generate_diamond_wedge(double l, double half_angle_deg, double x_center, double y_center) {
+        std::vector<solid::Point> diamond_wedge;
+        double h = l * tan(half_angle_deg * M_PI / 180);
+        diamond_wedge.push_back(solid::Point{x_center - l, y_center});
+        diamond_wedge.push_back(solid::Point{x_center, y_center - h});
+        diamond_wedge.push_back(solid::Point{x_center + l, y_center});
+        diamond_wedge.push_back(solid::Point{x_center, y_center + h});
+        return diamond_wedge;
     }
 
     std::vector<solid::Point> generate_circle(double R, int n_nodes, double x_center, double y_center) {

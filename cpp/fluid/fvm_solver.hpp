@@ -50,7 +50,7 @@ namespace fluid {
         void write_fvm_output(const std::string& output_folder, int n, double t);
         void write_fvm_header(const std::string& output_folder, int write_stride, int n_last, double t_end) const;
 
-        double ode_step(double dt_old);
+        double ode_step(double dt_old, double t_old);
 
         static vec4 conserved2primitive(const vec4 &U_in);
 

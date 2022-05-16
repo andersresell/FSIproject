@@ -105,8 +105,8 @@ namespace fluid {
         return std::min(dx,dy)/v_norm_max; //Could perhaps use the CFL condition here additionally
     }
 
-    double FVM_Solver::ode_step(double dt_old) {
-        external_bcs.set_BCs(U);
+    double FVM_Solver::ode_step(double dt_old, double t_old) {
+        external_bcs.set_BCs(U, t_old);
         step_solids(U,dt_old,true);
         double dt = std::min(calc_timestep(),calc_solid_timestep());
         switch (ode_scheme) {
@@ -128,7 +128,7 @@ namespace fluid {
                     }
                 }
 
-                external_bcs.set_BCs(U_tmp);
+                external_bcs.set_BCs(U_tmp, t_old);
                 step_solids(U_tmp,dt, false);
                 eval_RHS(U_tmp);
                 for (int i{2}; i < ni + 2; i++) {
@@ -138,7 +138,7 @@ namespace fluid {
                     }
                 }
 
-                external_bcs.set_BCs(U_tmp);
+                external_bcs.set_BCs(U_tmp, t_old);
                 step_solids(U_tmp,dt, false);
                 eval_RHS(U_tmp);
                 for (int i{2}; i < ni + 2; i++) {

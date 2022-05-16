@@ -1,16 +1,16 @@
 {
   "output_folder": "wedge_verification_attached",
-  "ni": 100,
-  "nj": 100,
+  "ni": 300,
+  "nj": 600,
   "L_x": 10,
-  "L_y": 10,
-  "CFL": 0.5,
+  "L_y": 20,
+  "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
   "fvm_write_stride": 100,
   "stopping_crit": {
-    "type": "Timesteps",
-    "value": 10000
+    "type": "Convergence",
+    "value": 1e-6
   },
 
 
@@ -37,12 +37,16 @@
       "is_static": true,
       "geometry": {
         "case": "wedge",
-        "l": 3,
+        "l": 7,
         "half_angle_deg": 20,
-        "x_center": 5,
-        "y_center": 5
+        "x_tip": 4,
+        "y_tip": 10
       }
     }
+  },
+
+  "write_history_output_west": {
+    "case": false
   }
 }
 

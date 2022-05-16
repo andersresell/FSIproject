@@ -1,7 +1,12 @@
+import sys
+
 import numpy as np
 from numpy import genfromtxt
 import matplotlib.pyplot as plt
 from analytical_solutions import *
+from decimal import Decimal
+import sys
+from matplotlib import ticker
 
 plt.rcParams.update({
     "text.usetex": True,
@@ -13,6 +18,7 @@ plt.rcParams.update({
     #"lines.linewidth": 2,'
     "axes.labelsize": 30,
     "legend.fontsize": 21,
+
 
     #"figure.figsize": (6,6)
 
@@ -43,16 +49,23 @@ class Plotter:
         plt.figure()
         for n in range(0,self.n_timesteps+1):
             if n % self.write_stride == 0:
-                self.contour( datatype,n,bottom_level,top_level)
+                self.contour( datatype,n,bottom_level,top_level,False,False,True)
                 plt.pause(0.00001)
             print(n)
-    def contour_plot(self,datatype, n=-1,contour_lines=False):
+    def contour_plot(self,datatype, n=-1, t0 = -1, bottom_level=0, top_level=0,contour_lines=False):
         plt.figure(figsize=(7,6))
-        if n == -1:
+        if n == -1 and t0== -1:
             n = self.n_timesteps
-        self.contour(datatype,n,0,0,True,contour_lines)
+        elif t0 >= 0:
+            for n in range(0,self.n_timesteps+1):
+                if n % self.write_stride == 0:
+                    if (self.timestep2time(n) >= t0):
+                        self.contour(datatype=datatype,n=n,bottom_level=bottom_level, top_level=top_level)
+                        return
+        self.contour(datatype=datatype,n=n,bottom_level=bottom_level, top_level=top_level)
 
-    def contour(self,datatype,n,bottom_level=0,top_level=0,high_res=False,contour_lines=False):
+
+    def contour(self,datatype,n,bottom_level=0,top_level=0,high_res=False,contour_lines=False, show_time=False):
         n_levels = 100
         if high_res:
             n_levels = 300
@@ -72,18 +85,29 @@ class Plotter:
             else:
                 cs = plt.contourf(self.x,self.y,data, levels=levels, cmap=plt.get_cmap('hot'))
         cb = plt.colorbar(cs)
+        tick_locator = ticker.MaxNLocator(nbins=5)
+        cb.locator = tick_locator
+        cb.update_ticks()
+        if not auto_level:
+            plt.clim(bottom_level,top_level)
         if datatype == "M":
             cb.set_label("$M$")
         elif datatype == "p":
-            cb.set_label("$p\;[Pa]$")
-        self.plot_solids(n)
-        plt.axis('equal')
-        plt.xlabel('$x$')
-        plt.ylabel('$y$')
-        plt.title("t = "+str(self.timestep2time(n))+"[s]")
+            cb.set_label(r"""$p\;[\textrm{Pa}]$""")
+        #plt.axis('equal')
         ax = plt.gca()
+        ax.set_aspect('equal', 'box')
+        plt.xlabel(r"""$x\;[\textrm{m}]$""")
+        plt.ylabel(r"""$y\;[\textrm{m}]$""")
+        plt.locator_params(axis="x", nbins=4)
+        plt.locator_params(axis="y", nbins=4)
+        self.time_title(n,"ms")
+        #if show_time:
+         #   plt.title("t = "+str(self.timestep2time(n))+"[s]")
+        ax = plt.gca()
+        self.plot_solids(n)
         #ax.set_facecolor("lightsteelblue")
-        #plt.tight_layout()
+        plt.tight_layout()
 
 
     def extract_data(self,datatype,n):
@@ -120,6 +144,7 @@ class Plotter:
         plt.tight_layout()
 
     def plot_solids(self, n):
+        plt.autoscale(False)
         for i in range(0,self.n_static_solids+self.n_movable_solids):
             if i < self.n_static_solids:
                 data = genfromtxt("output_folders/"+self.output_folder+"/static_boundary"+str(i)+".csv",comments = "#", delimiter=',')
@@ -127,6 +152,7 @@ class Plotter:
                 data = genfromtxt("output_folders/"+self.output_folder+"/movable_boundary"+str(i-self.n_static_solids)+"_t"+str(n)+".csv",comments = "#", delimiter=',')
             plt.fill(data[:,0],data[:,1],"silver")
             plt.plot(np.append(data[:,0],data[0,0]),np.append(data[:,1],data[0,1]),"black")
+        #plt.autoscale(True)
 
     def plot_riemann_problem(self):
 
@@ -210,21 +236,34 @@ class Plotter:
         plt.suptitle("$ni = "+str(self.ni)+"$",y=0.96,x=0.25)
         plt.tight_layout()
 
+    def plot_1D(self,datatype,bottom_level=0,top_level=0,n=-1,t_goal=0,show_timestep=True):
+        if n == -1 and t_goal == 0:
+            n = self.n_timesteps
+        elif t_goal>0:
+            n = self.time2timestep(t_goal)
+        print(n,t_goal)
+        data = self.extract_data(datatype,n)
+        plt.plot(self.x,data[(int(self.nj/2)),:],'k')
+        plt.xlabel("x [m]")
+        if datatype == "p":
+            plt.ylabel("p [Pa]")
+        if top_level != 0:
+            plt.ylim(bottom_level,top_level)
+        if show_timestep:
+            self.time_title(n,"ms")
+        plt.tight_layout()
+        plt.locator_params(axis="x", nbins=5)
+        plt.locator_params(axis="y", nbins=4)
 
-    def animate_1D(self,datatype,bottom_level=0,top_level=0):
+
+    def animate_1D(self,datatype,bottom_level=0,top_level=0,show_timestep=True):
         plt.figure()
         for n in range(0,self.n_timesteps+1):
             if n % self.write_stride == 0:
-                data = self.extract_data(datatype,n)
-                plt.clf()
-                plt.plot(self.x,data[(int(self.nj/2)),:])
-                plt.xlabel("x")
-                plt.ylabel(datatype)
-                print(top_level)
-                if top_level != 0:
-                    plt.ylim(bottom_level,top_level)
-                plt.tight_layout()
+                plt.cla()
+                self.plot_1D(datatype=datatype,bottom_level=bottom_level,top_level=top_level,n=n,show_timestep=show_timestep)
                 plt.pause(0.1)
+
 
     def plot_static_wall(self):
         rho_l = self.extract_data("rho",0)
@@ -348,10 +387,18 @@ class Plotter:
             if n % self.write_stride == 0:
                 print(n)
                 plt.clf()
-                self.plot_piston_fsi(datatype,n,bottom_level,top_level)
+                self.piston_fsi(datatype,n,bottom_level,top_level)
                 plt.pause(0.1)
-
-    def plot_piston_fsi(self,datatype,n,bottom_level=0,top_level=0):
+    def plot_piston_fsi(self,datatype,t0=-1,bottom_level=0,top_level=0):
+        plt.figure()
+        if t0 >= 0:
+            for n in range(0,self.n_timesteps+1):
+                if n % self.write_stride == 0:
+                    if self.timestep2time(n) >= t0:
+                        self.piston_fsi(datatype=datatype,n=n,bottom_level=bottom_level,top_level=top_level)
+                        return
+        self.piston_fsi(datatype,self.n_timesteps,bottom_level,top_level)
+    def piston_fsi(self,datatype,n,bottom_level=0,top_level=0):
         autolevel = False
         if bottom_level==0 and top_level==0:
             autolevel = True
@@ -366,10 +413,12 @@ class Plotter:
             return data
 
         def visualize_piston(data):
-            MAX = max(data)
-            MIN = min(data)
-            MAX = 1e6
-            MIN = 0
+            if bottom_level==0 and top_level == 0:
+                MAX = max(data)
+                MIN = min(data)
+            else:
+                MAX = top_level
+                MIN = bottom_level
             delta = (MAX-MIN)*0.1
             MAX+=delta
             MIN-=delta
@@ -380,10 +429,16 @@ class Plotter:
             plt.ylim(MIN,MAX)
 
         data = get_data(datatype)
-        plt.plot(self.x,data,'k.',markersize=3.5)
+        plt.plot(self.x,data,'k.',markersize=2.5)
         visualize_piston(data)
-        plt.xlabel("x")
-        plt.ylabel(datatype)
+
+        #plt.ticklabel_format(scilimits=(-3,9))
+        #plt.xlabel(r"""$x\;[\textrm{m}]$""")
+        #plt.ylabel(r"""$p\;[\textrm{Pa}]$""")
+        plt.xlabel(r"""$x$""")
+        plt.ylabel(r"""$p$""")
+        self.time_title(n,"ms")
+        plt.tight_layout()
 
     def debug_points_animation(self):
         plt.figure()
@@ -443,33 +498,93 @@ class Plotter:
             #if data.size(0) > 0:
             #    plt.plot(x_i,y_i,'kx')
             #    plt.axis('equal')
+    #def interpolate(self,x,y,datatype,n):
+     #   data = self.extract_data(datatype,n)
+      #  im = int(x/self.dx-0.5)
+       # jm = int(y/self.dy-0.5)
 
 
-    def probe(self,datatype,x_point,y_point,n=-1):
+    def probe_1D(self,datatype,x,n=-1):
+        #the method is meant for 1D interpolation, and should be modified before being used for 2D interpolation
         if n==-1:
             n = self.n_timesteps
         data = self.extract_data(datatype,n)
-        i = int(x_point/self.dx-0.5)
-        j = int(y_point/self.dy-0.5)
-        return data[j,i]
-    def time_history(self,x_point,y_point,datatype="p"):
+        i = int(x/self.dx-0.5)
+        a = self.dx*(i+0.5)
+        b = a + self.dx
+        epsilon = (x-a)/(b-a)
+        j = 0
+        return data[j,i]*(1-epsilon) + data[j,i+1]*epsilon
+    def time_history_1D(self,x_point,datatype="p"):
         val = np.array([])
         t = np.array([])
         for n in range(0,self.n_timesteps):
             if n%self.write_stride == 0:
-                val = np.append(val,self.probe(datatype,x_point,y_point,n))
+                print("probing time history "+str(n)+" of "+str(self.n_timesteps))
+                val = np.append(val,self.probe_1D(datatype,x_point,n))
                 t = np.append(t,self.timestep2time(n))
         return t,val
     def timestep2time(self,n):
         f = open("output_folders/"+self.output_folder+"/fvm_output_t"+str(n)+".csv","r")
         first_line = f.readline()
         return float(first_line[3:])
-
-    def schlieren_experiment(self):
+    def time2timestep(self,t_goal):
+        for n in range(0,self.n_timesteps):
+            if n%self.write_stride == 0:
+                if self.timestep2time(n) >= t_goal:
+                    return n
+        sys.exit("error! no n found")
+    def time_title(self,n,unit="s"):
+        if unit == "s":
+            plt.title("t = "+f"{self.timestep2time(n):.2f}"+" [s]")
+        elif unit == "ms":
+            #plt.title("time = "+f"{self.timestep2time(n)*1e3:.2f}"+" [ms]")
+            plt.title(r"""$$ t = """+f"{self.timestep2time(n)*1e3:.2f}"+r""" \;[\textrm{ms}]$$""")
+    def schlieren_last(self):
         plt.figure()
-        data = self.extract_data("rho",self.n_timesteps)
-        x_center = 5.075
-        y_center = 0.29/2
+        self.schlieren(self.n_timesteps)
+    def schlieren_animate(self):
+        plt.rcParams.update({
+            "axes.facecolor": "black"
+        })
+        fig = plt.figure()
+        fig.patch.set_facecolor("black")
+        for n in range(0,self.n_timesteps):
+            if n % self.write_stride == 0:
+                plt.cla()
+                self.schlieren(n,show_timestep=True)
+                plt.pause(0.00001)
+    def schlieren_plot_all(self):
+        for n in range(800,self.n_timesteps):
+            if n % self.write_stride == 0:
+                plt.figure()
+                self.schlieren(n)
+        plt.show()
+    def schlieren_plot_time_interval(self,t0,show_timestep):
+        t = 0
+        delta_t = 1/37000
+        first_found = False
+        #print('%.2E' % Decimal('40800000000.00000000000000'))
+        for n in range(0,self.n_timesteps):
+            if n % self.write_stride == 0:
+                #print(self.timestep2time(n))
+                if self.timestep2time(n) >= t0+t:
+                    plt.figure()
+                    plt.rcParams.update({
+                        "axes.facecolor": "black"
+                    })
+                    if not first_found:
+                        t0 = self.timestep2time(n)
+                        first_found = True
+                    self.schlieren(n,show_timestep)
+                    plt.title("t = "+f"{self.timestep2time(n)-t0:.6f}")
+                    t += delta_t
+        plt.show()
+
+    def schlieren(self,n,show_timestep=False):
+        data = self.extract_data("rho",n)
+        x_center = 0.26/2
+        y_center = 0.26/2
         w = 0.120
         h = w
         a = x_center-w/2
@@ -488,6 +603,22 @@ class Plotter:
         d_rho_dy[:,-1] = (data[:,-1] - data[:,-2])/self.dy
 
         d_rho_norm = np.sqrt(d_rho_dx**2+d_rho_dy**2)
-        cs = plt.contourf(self.x[ii],self.y[jj],d_rho_norm,300,cmap=plt.get_cmap('binary'))
+        levels = np.linspace(0,200,50)
+
+        cs = plt.contourf(self.x[ii],self.y[jj],d_rho_norm,levels=levels,cmap=plt.get_cmap('binary'))
+        #cs = plt.contourf(self.x[ii],self.y[jj],d_rho_norm,100,cmap=plt.get_cmap('binary'))
         self.plot_solids(self.n_timesteps)
-        plt.axis('equal')
+
+        #plt.axis('equal')
+        ax = plt.gca()
+        ax.set_aspect('equal', 'box')
+        ax.axes.xaxis.set_ticklabels([])
+        ax.axes.yaxis.set_ticklabels([])
+        plt.tick_params(left = False)
+        plt.tick_params(bottom = False)
+        plt.tight_layout()
+        plt.rcParams.update({
+            "axes.facecolor": "black"
+        })
+        if show_timestep:
+            plt.title("t = "+str(self.timestep2time(n)))

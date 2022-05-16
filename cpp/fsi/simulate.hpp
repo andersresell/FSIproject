@@ -17,6 +17,6 @@ struct Simulate{
 
 };
 
-
+void generate_time_history_west(std::string output_folder, int ni);
 
 #endif //FSIPROJECT_SIMULATE_HPP

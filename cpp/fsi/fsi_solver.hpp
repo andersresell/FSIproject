@@ -29,6 +29,12 @@ private: //remove later
     //For convergence check and output
     double* rho_old;
     std::vector<Totals> totals_history;
+
+    bool history_output_west_enabled;
+    double t0_history_output_west;
+    double x0_history_output_west;
+    double dx0_history_output_west;
+    std::vector<fluid::TimeHistory> history_output_west;
 public:
 
     void add_solid(std::shared_ptr<solid::SolidBody>&& solid_body);
@@ -52,6 +58,10 @@ public:
     void write_static_solid_boundaries();
     void write_movable_solid_boundaries(int n);
     void write_solid_debug_files(int n);
+
+    void enable_history_output_west(double x0, double dx0, double t0 = 0);
+    void sample_history_output_west(double t);
+    void write_history_output_west();
 
 
     ~FSI_Solver();

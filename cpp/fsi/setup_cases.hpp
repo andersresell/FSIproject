@@ -11,7 +11,7 @@
 
 namespace fluid{
 
-    void set_initial_cond_ambient(vec4* U, int ni, int nj);
+    void set_initial_cond_quiecent(vec4* U, int ni, int nj, double rho=1.2, double p=1e5);
 
     void set_initial_cond1(vec4* U, int ni, int nj);
 
@@ -23,14 +23,18 @@ namespace fluid{
 
     void set_initial_cond_riemann(vec4* U, int ni, int nj,const vec4& V_l, const vec4& V_r);
 
-    void set_initial_cond_pressure_bubble(vec4* U, int ni, int nj, double L_x, double L_y);
+    void set_initial_cond_pressure_bubble(vec4* U, int ni, int nj, double L_x, double L_y, double x_c,
+                                          double y_c, double radius);
 
     void set_initial_cond_constant_data(vec4* U, int ni, int nj, vec4 V);
 }
 
 namespace solid {
     std::vector<solid::Point>
-    generate_wedge(double l, double half_angle_deg, double x_center, double y_center);
+    generate_wedge(double l, double half_angle_deg, double x_tip, double y_tip);
+
+    std::vector<solid::Point>
+    generate_diamond_wedge(double l, double half_angle_deg, double x_center, double y_center);
 
     std::vector<solid::Point> generate_circle(double R, int n_nodes, double x_center, double y_center);
 

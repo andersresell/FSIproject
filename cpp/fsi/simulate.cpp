@@ -41,12 +41,19 @@ Simulate::Simulate(const std::string& input_file) {
 
     fluid::BC_Type west_bc, east_bc, south_bc, north_bc;
     west_bc = bc_type_from_str(std::move(root.get<std::string>("west_bc.type")));
-    double M_inf;
-    if (west_bc == fluid::BC_Type::SupersonicInflow) M_inf = root.get<double>("west_bc.M_inf");
+    double M_inf, p_inf, rho_inf;
+    string time_history_west_folder;
+    if (west_bc == fluid::BC_Type::SupersonicInflow) {
+        M_inf = root.get<double>("west_bc.M_inf");
+        p_inf = root.get<double>("west_bc.p_inf");
+        rho_inf = root.get<double>("west_bc.rho_inf");
+    } else if (west_bc == fluid::BC_Type::TimeHistory){
+        time_history_west_folder = root.get<string>("west_bc.time_history_folder");
+    }
     east_bc = bc_type_from_str(std::move(root.get<std::string>("east_bc.type")));
     south_bc = bc_type_from_str(std::move(root.get<std::string>("south_bc.type")));
     north_bc = bc_type_from_str(std::move(root.get<std::string>("north_bc.type")));
-    fluid::ExternalBCs bcs{ni,nj,west_bc,east_bc,south_bc,north_bc,M_inf};
+    fluid::ExternalBCs bcs{ni,nj,west_bc,east_bc,south_bc,north_bc, time_history_west_folder, M_inf, p_inf, rho_inf};
 
     fluid::FVM_Solver fvm{ni,nj,L_x,L_y,CFL,ode_scheme,flux_scheme,bcs,output_folder};
 
@@ -65,9 +72,14 @@ Simulate::Simulate(const std::string& input_file) {
     }else if (initial_cond == "constant_horizontal_flow") {
         fluid::set_constant_horizontal_flow_cond(fvm.U,ni,nj,M_inf);
     }else if (initial_cond == "pressure_bubble") {
-        fluid::set_initial_cond_pressure_bubble(fvm.U, ni, nj, L_x, L_y);
-    }else if (initial_cond == "ambient"){
-        fluid::set_initial_cond_ambient(fvm.U,ni,nj);
+        auto x_c = root.get<double>("initial_cond.x_c");
+        auto y_c = root.get<double>("initial_cond.y_c");
+        auto radius = root.get<double>("initial_cond.radius");
+        fluid::set_initial_cond_pressure_bubble(fvm.U, ni, nj, L_x, L_y, x_c, y_c, radius);
+    }else if (initial_cond == "quiecent"){
+        auto rho = root.get<double>("initial_cond.rho");
+        auto p = root.get<double>("initial_cond.p");
+        fluid::set_initial_cond_quiecent(fvm.U,ni,nj,rho,p);
     }else if (initial_cond == "initial_cond1"){
         fluid::set_initial_cond1(fvm.U,ni,nj);
     }else if (initial_cond == "initial_cond2"){
@@ -134,12 +146,23 @@ Simulate::Simulate(const std::string& input_file) {
                 I = 0.5 * M * sqr(R);
                 CM = {x_center, y_center};
             }
-        } else if (root.get<string>(geom_str + ".case") == "wedge") {
+        }else if (root.get<string>(geom_str + ".case") == "wedge") {
+            auto l = root.get<double>(geom_str + ".l");
+            auto half_angle_deg = root.get<double>(geom_str + ".half_angle_deg");
+            auto x_tip = root.get<double>(geom_str + ".x_tip");
+            auto y_tip = root.get<double>(geom_str + ".y_tip");
+            boundary = solid::generate_wedge(l, half_angle_deg, x_tip, y_tip);
+            if (solid_body_type == solid::SolidBodyType::Dynamic) {
+                std::cerr << "Dynamic properties not yet set for wedge geometry!\n";
+                exit(1);
+            }
+        }
+        else if (root.get<string>(geom_str + ".case") == "diamond_wedge") {
             auto l = root.get<double>(geom_str + ".l");
             auto half_angle_deg = root.get<double>(geom_str + ".half_angle_deg");
             auto x_center = root.get<double>(geom_str + ".x_center");
             auto y_center = root.get<double>(geom_str + ".y_center");
-            boundary = solid::generate_wedge(l, half_angle_deg, x_center, y_center);
+            boundary = solid::generate_diamond_wedge(l, half_angle_deg, x_center, y_center);
             if (solid_body_type == solid::SolidBodyType::Dynamic) {
                 double h = l * sin(half_angle_deg * M_PI / 180);
                 M = 2 * h * l * rho;
@@ -187,6 +210,14 @@ Simulate::Simulate(const std::string& input_file) {
 
     }
 
+    auto write_history_output_west = root.get<bool>("write_history_output_west.case");
+    if (write_history_output_west){
+        auto x0_sample = root.get<double>("write_history_output_west.x0");
+        auto dx0_sample = root.get<double>("write_history_output_west.dx0");
+        auto t0_sample = root.get<double>("write_history_output_west.t0");
+        fsi.enable_history_output_west(x0_sample,dx0_sample,t0_sample);
+    }
+
     std::cout << "Setup complete\n";
     fsi.solve();
 }
@@ -197,8 +228,10 @@ fluid::BC_Type Simulate::bc_type_from_str(std::string&& bc_type){
         return fluid::BC_Type::InvicidWall;
     } else if (bc_type == "NonreflectingOutflow"){
         return fluid::BC_Type::NonreflectingOutflow;
-    } else if (bc_type == "SupersonicInflow"){
+    } else if (bc_type == "SupersonicInflow") {
         return fluid::BC_Type::SupersonicInflow;
+    }else if (bc_type == "TimeHistory"){
+        return fluid::BC_Type::TimeHistory;
     } else{
         std::cerr << "Invalid wall condition \"" + bc_type + "\" in json file\n";
         exit(1);

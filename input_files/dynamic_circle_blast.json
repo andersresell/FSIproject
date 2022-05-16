@@ -1,24 +1,26 @@
 {
   "output_folder": "output_dynamic_circle_blast",
-  "ni": 600,
-  "nj": 300,
-  "L_x": 20,
-  "L_y": 10,
+  "ni": 500,
+  "nj": 100,
+  "L_x": 1,
+  "L_y": 0.2,
   "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
-  "fvm_write_stride": 30,
+  "fvm_write_stride": 300,
   "stopping_crit": {
     "type": "Timesteps",
-    "value": 1300
+    "value": 10000
   },
 
   "west_bc": {
-    "type": "InvicidWall",
-    "M_inf": false
+    "type": "SupersonicInflow",
+    "M_inf": 3,
+    "rho_inf": 1,
+    "p_inf": 3
   },
   "east_bc": {
-    "type": "InvicidWall"
+    "type": "NonreflectingOutflow"
   },
   "south_bc": {
     "type": "InvicidWall"
@@ -28,7 +30,9 @@
   },
 
   "initial_cond": {
-    "case": "initial_cond2"
+    "case": "quiecent",
+    "p": 1,
+    "rho": 3.4843e-3
   },
 
   "solids": {
@@ -36,12 +40,12 @@
       "is_static": false,
       "geometry": {
         "case": "circle",
-        "R": 1,
-        "n_nodes": 20,
-        "x_center": 5,
-        "y_center": 1.200001
+        "R": 0.05,
+        "n_nodes": 50,
+        "x_center": 0.15,
+        "y_center": 0.054
       },
-      "rho": 10,
+      "rho": 10.77,
       "is_constrained": false,
       "constraints": {
         "type": "ViscoElastic",
@@ -49,6 +53,9 @@
         "C": 0
       }
     }
-  }
+  },
 
+  "write_history_output_west": {
+    "case": false
+  }
 }

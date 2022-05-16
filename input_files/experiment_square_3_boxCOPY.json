@@ -1,16 +1,16 @@
 {
-  "output_folder": "output_experiment_diamond_1_box",
-  "ni": 500,
-  "nj": 500,
+  "output_folder": "output_experiment_square_3_box",
+  "ni": 200,
+  "nj": 200,
   "L_x": 0.26,
   "L_y": 0.26,
   "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
-  "fvm_write_stride": 10,
+  "fvm_write_stride": 50,
   "stopping_crit": {
     "type": "Time",
-    "value": 0.0007
+    "value": 0.004
   },
 
   "west_bc": {
@@ -38,9 +38,10 @@
     "s2": {
       "is_static": true,
       "geometry": {
-        "case": "wedge",
-        "l": 0.02,
-        "half_angle_deg": 45,
+        "case": "rectangle",
+        "W": 0.04,
+        "H": 0.04,
+        "rotation_angle_deg": 0,
         "x_center": 0.13,
         "y_center": 0.13
       }

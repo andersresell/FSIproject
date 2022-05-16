@@ -69,18 +69,27 @@ namespace fluid {
 
     enum class BC_Type{InvicidWall, SupersonicInflow, NonreflectingOutflow ,TimeHistory};
 
+    struct TimeHistory{
+        double t; vec4 U_inner_GP; vec4 U_outer_GP;
+    };
+
+
     class ExternalBCs {
         //ExternalBC &west, &east, &south, &north;
         BC_Type west, east, south, north;
         const int ni, nj;
         vec4 U_inf; //Used in case of supersonic inflow
+        std::vector<TimeHistory> time_history_west; //Used for time history at western boundary
     public:
         //ExternalBCs(int ni, int nj, ExternalBC &west, ExternalBC &east, ExternalBC &south, ExternalBC &north);
         ExternalBCs(int ni, int nj, BC_Type west, BC_Type east, BC_Type south, BC_Type north,
-                    double M_inf = 0, double p_inf = 1e5, double rho_inf = 1.2);
-        void set_BCs(vec4 *U_in);
+                    std::string history_output_west_folder,
+                    double M_inf, double p_inf, double rho_inf);
+        void set_BCs(vec4 *U_in, double t);
         static vec4 set_vertical_invicid_wall(const vec4& U_in);
         static vec4 set_horizontal_invicid_wall(const vec4& U_in);
+
+        void load_history_output_west(std::string&& history_output_west_folder);
     };
 
 

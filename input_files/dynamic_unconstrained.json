@@ -1,7 +1,7 @@
 {
   "output_folder": "output_dynamic_unconstrained",
-  "ni": 100,
-  "nj": 100,
+  "ni": 500,
+  "nj": 500,
   "L_x": 10,
   "L_y": 10,
   "CFL": 0.6,
@@ -9,8 +9,8 @@
   "ode_scheme": "TVD_RK3",
   "fvm_write_stride": 100,
   "stopping_crit": {
-    "type": "Timesteps",
-    "value": 500
+    "type": "Time",
+    "value": 0.03
   },
 
   "west_bc": {
@@ -18,7 +18,7 @@
     "M_inf": false
   },
   "east_bc": {
-    "type": "InvicidWall"
+    "type": "NonreflectingOutflow"
   },
   "south_bc": {
     "type": "InvicidWall"
@@ -28,7 +28,10 @@
   },
 
   "initial_cond": {
-    "case": "initial_cond2"
+    "case": "pressure_bubble",
+    "x_c": 3,
+    "y_c": 3,
+    "radius": 2
   },
 
   "solids": {
@@ -36,18 +39,23 @@
       "is_static": false,
       "geometry": {
         "case": "rectangle",
-        "W": 0.4,
+        "W": 0.1,
         "H": 6,
         "rotation_angle_deg": 0,
         "x_center": 5,
         "y_center": 5
       },
-      "rho": 2700,
+      "rho": 100,
       "is_constrained": false,
       "constraints": {
       }
     }
-    }
+    },
+
+  "write_history_output_west": {
+    "case": false
+  }
+
 }
 
 

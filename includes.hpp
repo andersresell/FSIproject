@@ -6,6 +6,7 @@
 #define FSIPROJECT_INCLUDES_HPP
 
 #include <iostream>
+#include <sstream>
 #include <cmath>
 #include <vector>
 #include <array>

@@ -6,7 +6,8 @@
 
 
 FSI_Solver::FSI_Solver(fluid::FVM_Solver& fvm, int fvm_write_stride, std::string output_folder)
-    : fvm{fvm}, fvm_write_stride{fvm_write_stride}, output_folder{std::move(output_folder)}
+    : fvm{fvm}, fvm_write_stride{fvm_write_stride}, output_folder{std::move(output_folder)},
+        history_output_west_enabled{false}
 {
     rho_old = new double[(fvm.ni + 4) * (fvm.nj + 4)];
 }
@@ -28,6 +29,8 @@ int FSI_Solver::solve() {
     while (true) {
         std::cout << "FSI solve: n = " + std::to_string(n) + "\n";
 
+        sample_history_output_west(t);
+
         if (n % fvm_write_stride == 0) {
             std::cout << "Writing output\n";
             fvm.write_fvm_output(output_folder, n, t);
@@ -36,7 +39,7 @@ int FSI_Solver::solve() {
             set_rho_old();
         }
 
-        dt = fvm.ode_step(dt); //Time stepping the fvm simulation
+        dt = fvm.ode_step(dt, t); //Time stepping the fvm simulation
         std::cout << "dt = " << dt << ", t = " << t+dt << '\n';
 
         if (n == 0) {
@@ -78,6 +81,7 @@ int FSI_Solver::solve() {
             fvm.write_fvm_header(output_folder, fvm_write_stride, n, t);
             write_fsi_header();
             write_totals_history();
+            write_history_output_west();
             write_movable_solid_boundaries(n);
             write_solid_debug_files(n);
             break;
@@ -224,9 +228,52 @@ void FSI_Solver::write_solid_debug_files(int n){
             ost2 << e.second.BI.x << ',' <<e.second.BI.y << '\n';
         }
     }
+}
 
+void FSI_Solver::enable_history_output_west(double x0, double dx0, double t0){
+    history_output_west_enabled = true;
+    t0_history_output_west = t0;
+    assert(x0 < fvm.L_x && x0 >= 0 && x0 - dx0 > -fvm.dx);
+    x0_history_output_west = x0;
+    dx0_history_output_west = dx0;
 
+}
+void FSI_Solver::sample_history_output_west(double t){
+    if (history_output_west_enabled && t >= t0_history_output_west) {
+        int nj = fvm.nj;
 
+        //Needs interpolation since dx in each simulation differ etc.
+        double xs = x0_history_output_west - 0.5*dx0_history_output_west;
+        int i = (int) (xs / fvm.dx + 1.5);
+        double a = fvm.dx*(i-1.5);
+        double b = fvm.dx*(i-0.5);
+        double epsilon = (xs - a)/(b - a);
+        fluid::vec4 U1 = (1-epsilon)*fvm.U[IX(i, 2)] + epsilon*fvm.U[IX(i+1, 2)];
+
+        xs = x0_history_output_west - 1.5*dx0_history_output_west;
+        i = (int) (xs / fvm.dx + 1.5);
+        a = fvm.dx*(i-1.5);
+        b = fvm.dx*(i-0.5);
+        epsilon = (xs - a)/(b - a);
+        fluid::vec4 U0 = (1-epsilon)*fvm.U[IX(i, 2)] + epsilon*fvm.U[IX(i+1, 2)];
+        history_output_west.push_back({t-t0_history_output_west, U1,U0});
+    }
+}
+void FSI_Solver::write_history_output_west(){
+    if (history_output_west_enabled) {
+        std::ofstream ost{"python/output_folders/" + output_folder + "/fvm_history_output_west.csv"};
+        if (!ost) std::cerr << "error, couldn't open fvm history output west csv file\n";
+        ost << "#t rho_0 mom_x_0 mom_y_0 E_0 rho_1 mom_x_1 mom_y_1 E_1\n";
+        fluid::vec4 U0, U1;
+        for (auto &e: history_output_west) {
+            U0 = e.U_outer_GP;
+            U1 = e.U_inner_GP;
+            //ost << e.t << ',' << V0.u1 << ',' << V0.u2 << ',' << V0.u3 << ',' << V0.u4 << ','
+              //  << V1.u1 << ',' << V1.u2 << ',' << V1.u3 << ',' << V1.u4 << '\n';
+            ost << e.t << ' ' << U0.u1 << ' ' << U0.u2 << ' ' << U0.u3 << ' ' << U0.u4 << ' '
+                << U1.u1 << ' ' << U1.u2 << ' ' << U1.u3 << ' ' << U1.u4 << '\n';
+        }
+    }
 }
 
 FSI_Solver::~FSI_Solver(){

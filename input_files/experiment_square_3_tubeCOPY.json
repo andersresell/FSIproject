@@ -1,16 +1,16 @@
 {
-  "output_folder": "output_experiment_diamond_1_tube",
-  "ni": 1000,
+  "output_folder": "output_experiment_square_3_tube",
+  "ni": 5000,
   "nj": 2,
   "L_x": 6,
   "L_y": 0.26,
   "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
-  "fvm_write_stride": 1,
+  "fvm_write_stride": 100,
   "stopping_crit": {
     "type": "Time",
-    "value": 0.011
+    "value": 0.01
   },
 
   "west_bc": {
@@ -29,10 +29,10 @@
 
   "initial_cond": {
     "case": "initial_cond_shock_tube_experiment",
-    "rho_l": 3.761,
-    "p_l": 317890,
-    "rho_r": 1.199,
-    "p_r": 101890
+    "rho_l": 12.9945,
+    "p_l": 1101858,
+    "rho_r": 1.199209,
+    "p_r": 101858
   },
 
   "solids": {
@@ -42,7 +42,7 @@
     "case": true,
     "x0": 4.945,
     "dx0": 2.9e-4,
-    "t0": 0.0105
+    "t0": 0.00828
   }
 
 }
