@@ -55,6 +55,8 @@ namespace solid {
 
         void find_solid_cells();
 
+        virtual Point get_CM_velocity() const {return {0,0};} //wrote placeholder implementation to avoid vtable error
+
         void flag_static();
 
         void find_ghost_cells();

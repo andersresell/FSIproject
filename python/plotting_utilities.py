@@ -19,6 +19,13 @@ plt.rcParams.update({
     "axes.labelsize": 30,
     "legend.fontsize": 21,
 
+    "font.size": 20,
+    #"axes.facecolor": "xkcd:mint green"
+    #"axes.facecolor": "lightsteelblue"
+    #"lines.linewidth": 2,'
+    "axes.labelsize": 25,
+    "legend.fontsize": 21,
+
 
     #"figure.figsize": (6,6)
 
@@ -139,9 +146,16 @@ class Plotter:
         #plt.figure(figsize=(5,5))
         plt.figure()
         plt.plot(data[:,0],data[:,2],"k",linewidth=1)
-        plt.xlabel("$n$")
-        plt.ylabel("$m \; [kg]$")
+
+        plt.xlabel(r"""$n$""")
+        plt.ylabel(r"""$m \; [\textrm{kg}]$""")
         plt.tight_layout()
+        plt.locator_params(axis="x", nbins=5)
+        plt.locator_params(axis="y", nbins=5)
+        mass0 = data[0,2]
+        mass_end = data[-1,2]
+        error = 100*abs(mass_end-mass0)/mass0
+        print(mass0,mass_end,error)
 
     def plot_solids(self, n):
         plt.autoscale(False)
@@ -384,7 +398,7 @@ class Plotter:
     def animate_piston_fsi(self,datatype,bottom_level=0, top_level=0):
         plt.figure()
         for n in range(0,self.n_timesteps+1):
-            if n % self.write_stride == 0:
+            if n % self.write_stride == 0and n%100==0:
                 print(n)
                 plt.clf()
                 self.piston_fsi(datatype,n,bottom_level,top_level)
@@ -398,11 +412,77 @@ class Plotter:
                         self.piston_fsi(datatype=datatype,n=n,bottom_level=bottom_level,top_level=top_level)
                         return
         self.piston_fsi(datatype,self.n_timesteps,bottom_level,top_level)
+    def piston_fsi_extract_data(self,t_a=0,t_b=0):
+        if t_b == 0:
+            last_step = self.n_timesteps
+        else:
+            last_step = self.time2timestep(t_b)
+        t = np.array([])
+        a = np.array([])
+        p_wall = np.array([])
+        u_wall = np.array([])
+        for n in range(0,self.n_timesteps):
+            if n%self.write_stride == 0 and n%10==0:
+                if self.timestep2time(n) >= t_a and n <= last_step:
+                    t = np.append(t,self.timestep2time(n))
+                    #t[n] = self.timestep2time(n)
+                    print("t = "+str(t[-1])+" step n = "+str(n)+" of "+str(self.n_timesteps))
+                    if self.n_movable_solids == 1:
+                        piston = genfromtxt("output_folders/"+self.output_folder+"/movable_boundary0_t"+str(n)+".csv",comments = "#", delimiter=',')
+                        piston_vel = genfromtxt("output_folders/"+self.output_folder+"/movable_solid_body_CM_velocity0_t"+str(n)+".csv",comments = "#", delimiter=',')
+                    elif self.n_static_solids == 1:
+                        piston = genfromtxt("output_folders/"+self.output_folder+"/static_boundary0.csv",comments = "#", delimiter=',')
+                    else:
+                        sys.exit("error! There has to be exactly on solid object for this simulation")
+                    #a[n] = piston[0,0]
+                    a = np.append(a,piston[0,0])
+                    #u_wall[n] = piston_vel[0]
+                    u_wall = np.append(u_wall,piston_vel[0])
+                    b = piston[1,0]
+                    #if t[n] >= 0.02:# and t[n] <= 0.03:
+                    #p_wall[n] = self.probe_1D(datatype="p",x=a[n],n=n)
+                    p_wall = np.append(p_wall,self.probe_1D(datatype="p",x=a[-1],n=n))
+                    #u_wall[n] = self.probe_1D(datatype="u",x=a[n],n=n)
+        return t,a,p_wall,u_wall
+
+    def piston_fsi_comparison(self):
+        t,a,p_wall,u_wall = self.piston_fsi_extract_data()
+        ind = np.where(u_wall>1)
+        g = 1.4
+        p_r = 701258.5
+        rho_r = 4.572815
+        c_r = np.sqrt(g*p_r/rho_r)
+        print(c_r)
+        pressure_ratio_analytical = (1 - (g-1)/2*u_wall/c_r)**((2*g)/(g-1))
+        pressure_ratio_sim = p_wall/p_r
+
+        plt.figure()
+        plt.plot(t*1000,u_wall,'k')
+        plt.xlabel(r"""$t\;[\textrm{ms}]$""")
+        plt.ylabel(r"""$u_{wall}\;[\textrm{m/s}]$""")
+        plt.xlim(20,40)
+        plt.tight_layout()
+
+        plt.figure()
+        plt.plot(t*1000,pressure_ratio_sim,'k')
+        plt.plot(t[ind]*1000,pressure_ratio_analytical[ind],'--r')
+        plt.xlim(20,40)
+        plt.xlabel(r"""$t\;[\textrm{ms}]$""")
+        #plt.ylabel(r"""$p'_r/p_r$""")
+        #plt.legend(['Simulation','Analytical Formula'])
+        plt.legend([r"""$p'_{r,sim}/p_r$""",r"""$\left(1-\frac{\gamma-1}{2}\frac{u_{wall}}{c_{r}}\right)^{\frac{2\gamma}{\gamma-1}}$"""])
+        plt.tight_layout()
+
     def piston_fsi(self,datatype,n,bottom_level=0,top_level=0):
         autolevel = False
         if bottom_level==0 and top_level==0:
             autolevel = True
-        piston = genfromtxt("output_folders/"+self.output_folder+"/movable_boundary0_t"+str(n)+".csv",comments = "#", delimiter=',')
+        if self.n_movable_solids == 1:
+            piston = genfromtxt("output_folders/"+self.output_folder+"/movable_boundary0_t"+str(n)+".csv",comments = "#", delimiter=',')
+        elif self.n_static_solids == 1:
+            piston = genfromtxt("output_folders/"+self.output_folder+"/static_boundary0.csv",comments = "#", delimiter=',')
+        else:
+            sys.exit("error! There has to be exactly on solid object for this simulation")
         a = piston[0,0]
         b = piston[1,0]
         def get_data(datatype):
@@ -515,14 +595,20 @@ class Plotter:
         epsilon = (x-a)/(b-a)
         j = 0
         return data[j,i]*(1-epsilon) + data[j,i+1]*epsilon
-    def time_history_1D(self,x_point,datatype="p"):
+    def time_history_1D(self,x_point,datatype="p",t_a=0,t_b=0):
+        if t_b != 0:
+            n_first = self.time2timestep(t_a)
+            n_last = self.time2timestep(t_b)
+        else:
+            n_first = 0
+            n_last = self.n_timesteps
         val = np.array([])
         t = np.array([])
-        for n in range(0,self.n_timesteps):
-            if n%self.write_stride == 0:
-                print("probing time history "+str(n)+" of "+str(self.n_timesteps))
-                val = np.append(val,self.probe_1D(datatype,x_point,n))
-                t = np.append(t,self.timestep2time(n))
+        for n in range(n_first,n_last):
+                if n%self.write_stride == 0and n%100==0:
+                    print("probing time history "+str(n)+" of "+str(self.n_timesteps))
+                    val = np.append(val,self.probe_1D(datatype,x_point,n))
+                    t = np.append(t,self.timestep2time(n))
         return t,val
     def timestep2time(self,n):
         f = open("output_folders/"+self.output_folder+"/fvm_output_t"+str(n)+".csv","r")
@@ -539,7 +625,7 @@ class Plotter:
             plt.title("t = "+f"{self.timestep2time(n):.2f}"+" [s]")
         elif unit == "ms":
             #plt.title("time = "+f"{self.timestep2time(n)*1e3:.2f}"+" [ms]")
-            plt.title(r"""$$ t = """+f"{self.timestep2time(n)*1e3:.2f}"+r""" \;[\textrm{ms}]$$""")
+            plt.title(r"""$$ t = """+f"{self.timestep2time(n)*1e3:.2f}"+r""" \;\textrm{ms}$$""")
     def schlieren_last(self):
         plt.figure()
         self.schlieren(self.n_timesteps)

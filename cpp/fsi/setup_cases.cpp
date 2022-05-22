@@ -53,10 +53,9 @@ namespace fluid {
         std::cout << "Initial condition 2 set\n";
     }
 
-    void set_initial_cond_shock_tube_experiment(vec4* U, int ni, int nj, double L_x, vec4 V_l, vec4 V_r){
+    void set_initial_cond_shock_tube_experiment(vec4* U, int ni, int nj, double L_x, double driver_length, vec4 V_l, vec4 V_r){
         //The left part is the "driver" section, and the right part is the "driven" section
         double dx = L_x/ni;
-        double driver_length = 0.27;
         for (int i{0}; i < ni + 4; i++) {
             double x = (i-1.5)*dx;
             for (int j{0}; j < nj + 4; j++) {

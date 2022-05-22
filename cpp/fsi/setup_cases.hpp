@@ -17,7 +17,7 @@ namespace fluid{
 
     void set_initial_cond2(vec4* U, int ni, int nj);
 
-    void set_initial_cond_shock_tube_experiment(vec4* U, int ni, int nj, double L_x, vec4 V_l, vec4 V_r);
+    void set_initial_cond_shock_tube_experiment(vec4* U, int ni, int nj, double L_x, double driver_length, vec4 V_l, vec4 V_r);
 
     void set_constant_horizontal_flow_cond(vec4* U, int ni, int nj, double M = 0, double rho = 1.2, double p = 1e5);
 

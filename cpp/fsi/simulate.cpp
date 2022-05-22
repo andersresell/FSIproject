@@ -85,12 +85,13 @@ Simulate::Simulate(const std::string& input_file) {
     }else if (initial_cond == "initial_cond2"){
         fluid::set_initial_cond2(fvm.U,ni,nj);
     }else if (initial_cond == "initial_cond_shock_tube_experiment"){
+        auto driver_length = root.get<double>("initial_cond.driver_length");
         fluid::vec4 V_l{0,0,0,0}, V_r{0,0,0,0};
         V_l.u1 = root.get<double>("initial_cond.rho_l");
         V_l.u4 = root.get<double>("initial_cond.p_l");
         V_r.u1 = root.get<double>("initial_cond.rho_r");
         V_r.u4 = root.get<double>("initial_cond.p_r");
-        fluid::set_initial_cond_shock_tube_experiment(fvm.U,ni,nj,L_x,V_l,V_r);
+        fluid::set_initial_cond_shock_tube_experiment(fvm.U,ni,nj,L_x,driver_length, V_l,V_r);
     }else if (initial_cond == "constant_data"){
         fluid::vec4 V{};
         V.u1 = root.get<double>("initial_cond.rho");

@@ -59,6 +59,8 @@ namespace fluid {
                 for (int j{ 0 }; j < nj + 4; j++) {
                     U_in[IX(0, j)] = U0;
                     U_in[IX(1, j)] = U1;
+                    //U_in[IX(0, j)] = set_vertical_invicid_wall(U_in[IX(3, j)]);
+                    //U_in[IX(1, j)] = set_vertical_invicid_wall(U_in[IX(2, j)]);
                 }
 
                 break;
@@ -142,12 +144,12 @@ namespace fluid {
         }
         std::string line;
         double t;
-        vec4 U0;
-        vec4 U1;
-        //while (std::getline(ist,line)){
-          //  std::stringstream ss{line};
-            //while (getline(ss))
-        //}
+        vec4 U0{};
+        vec4 U1{};
+
+        time_history_west.reserve(100); //It seems like this vector overwrites another memeory location,
+        // had no time to investigate it, this solved it for now
+
         std::string first_line;
         getline(ist,first_line); //skipping first line
         while (ist >> t >> U0.u1 >> U0.u2 >> U0.u3 >> U0.u4 >> U1.u1 >> U1.u2 >> U1.u3 >> U1.u4){

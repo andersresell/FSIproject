@@ -57,6 +57,7 @@ public:
     void write_fsi_header();
     void write_static_solid_boundaries();
     void write_movable_solid_boundaries(int n);
+    void write_movable_solid_body_CM_velocity(int n);
     void write_solid_debug_files(int n);
 
     void enable_history_output_west(double x0, double dx0, double t0 = 0);

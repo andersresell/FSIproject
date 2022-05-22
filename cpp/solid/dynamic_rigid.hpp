@@ -55,6 +55,8 @@ namespace solid {
 
         double max_boundary_speed() const final;
 
+        Point get_CM_velocity() const final {return {y[2],y[3]};}
+
     private:
         void update_total_fluid_force_and_moment();
 

@@ -26,6 +26,7 @@ int FSI_Solver::solve() {
     bool breaker{false};
     double res_norm, res_norm0;
     double mass_0, mass;
+
     while (true) {
         std::cout << "FSI solve: n = " + std::to_string(n) + "\n";
 
@@ -35,7 +36,8 @@ int FSI_Solver::solve() {
             std::cout << "Writing output\n";
             fvm.write_fvm_output(output_folder, n, t);
             write_movable_solid_boundaries(n);
-            write_solid_debug_files(n);
+            write_movable_solid_body_CM_velocity(n);
+            //write_solid_debug_files(n);
             set_rho_old();
         }
 
@@ -46,6 +48,7 @@ int FSI_Solver::solve() {
             res_norm0 = calc_density_L2_norm();
             mass_0 = calc_mass();
             totals_history.push_back({res_norm0,mass_0});
+            write_solid_debug_files(n);
         } else if (n % fvm_write_stride == 0) {
             //Checking if ||rho_{n+1} - rho_n|| <= tol * ||rho_1 - rho_0||
             res_norm = calc_density_L2_norm();
@@ -83,6 +86,7 @@ int FSI_Solver::solve() {
             write_totals_history();
             write_history_output_west();
             write_movable_solid_boundaries(n);
+            write_movable_solid_body_CM_velocity(n);
             write_solid_debug_files(n);
             break;
         }
@@ -204,6 +208,24 @@ void FSI_Solver::write_movable_solid_boundaries(int n) {
             solid_ind++;
 
 
+        }
+    }
+}
+void FSI_Solver::write_movable_solid_body_CM_velocity(int n) {
+    int solid_ind{0};
+    for (auto &s: solid_bodies) {
+        if (s->type == solid::SolidBodyType::Dynamic) {
+            std::ofstream ost{
+                    "python/output_folders/" + output_folder + "/movable_solid_body_CM_velocity" + std::to_string(solid_ind) +
+                    "_t" + std::to_string(n) + ".csv"};
+            if (!ost) {
+                std::cerr << "error: couldn't open movable body CM velocity csv file\n";
+                exit(1);
+            }
+            ost << "#u_CM,v_CM\n";
+            solid::Point u_CM = s->get_CM_velocity();
+            ost << u_CM.x << ',' << u_CM.y << '\n';
+            solid_ind++;
         }
     }
 }

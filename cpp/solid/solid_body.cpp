@@ -338,6 +338,7 @@ namespace solid {
             boundary_vel_and_fluid_boundary_acc(BI,n, u_fluid_approx, u_wall, a_fluid_normal);
             u_n_BI = u_wall.x * n.x + u_wall.y * n.y;
             p_derivative_BI = -rho_approx * a_fluid_normal;
+            //p_derivative_BI=0;
             //cout <<endl;
             //cout << "bli "<<bottom_left_ind<<endl;
             //cout << "p_der "<<p_derivative_BI << ", rho_approx "<<rho_approx<< ", a_f_n "<<a_fluid_normal<<", u_f_a "<<u_fluid_approx<<endl;
@@ -521,7 +522,8 @@ namespace solid {
                     Vector4d A_point = {1, DX, DY, DX * DY};
                     alpha = A_inv_T * A_point;
                     pressures[j] = alpha.dot(P);
-                    pressures[j] -= 1e5; //Normalizing around some ambient pressure. Will improve accuracy.
+                    //pressures[j] -= 1e5; //Normalizing around some ambient pressure. Will improve accuracy.
+                    pressures[j] -= 100646.68;
                     assert(!isnan(pressures[j]));
                 }
             }

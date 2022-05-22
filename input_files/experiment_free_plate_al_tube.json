@@ -1,24 +1,23 @@
 {
-  "output_folder": "output_experiment_square_3_tube",
+  "output_folder": "output_experiment_free_plate_al_tube",
   "ni": 5000,
-  "nj": 2,
-  "L_x": 6,
-  "L_y": 0.26,
+  "nj": 1,
+  "L_x": 20,
+  "L_y": 0.004,
   "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
-  "fvm_write_stride": 100,
+  "fvm_write_stride": 1,
   "stopping_crit": {
     "type": "Time",
-    "value": 0.01
+    "value": 0.045
   },
 
   "west_bc": {
-    "type": "InvicidWall",
-    "M_inf": false
+    "type": "InvicidWall"
   },
   "east_bc": {
-    "type": "NonreflectingOutflow"
+    "type": "InvicidWall"
   },
   "south_bc": {
     "type": "InvicidWall"
@@ -29,20 +28,20 @@
 
   "initial_cond": {
     "case": "initial_cond_shock_tube_experiment",
-    "rho_l": 12.9945,
-    "p_l": 1101858,
-    "rho_r": 1.199209,
-    "p_r": 101858
+    "driver_length": 0.77,
+    "rho_l": 11.89797,
+    "p_l": 1000000,
+    "rho_r": 1.19749,
+    "p_r": 100646.68
   },
 
   "solids": {
   },
-
   "write_history_output_west": {
     "case": true,
-    "x0": 4.945,
-    "dx0": 2.9e-4,
-    "t0": 0.00828
+    "x0": 15.973,
+    "dx0": 0.0005,
+    "t0": 0.0275
   }
 
 }
