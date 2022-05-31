@@ -1,10 +1,10 @@
 {
   "output_folder": "output_riemann_sod",
   "ni": 1000,
-  "nj": 10,
+  "nj": 1,
   "L_x": 3,
-  "L_y": 0.3,
-  "CFL": 0.5,
+  "L_y": 0.003,
+  "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
   "fvm_write_stride": 10,
@@ -14,8 +14,7 @@
   },
 
   "west_bc": {
-    "type": "InvicidWall",
-    "M_inf": false
+    "type": "InvicidWall"
   },
   "east_bc": {
     "type": "InvicidWall"
@@ -41,7 +40,12 @@
 
   "solids": {
 
-    }
+    },
+
+  "write_history_output_west": {
+    "case": false
+  }
+
 
 }
 

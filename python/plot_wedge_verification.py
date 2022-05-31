@@ -13,11 +13,11 @@ output_folder = "wedge_verification_attached"
 
 p = Plotter(output_folder)
 #p.contour_animate("p")
-p.contour_plot("M",-1,True)
+p.contour_plot(datatype="M")
 p.plot_convergence()
-print(p.probe("M",9,14))
-print(p.probe("M",4,7))
-print(p.probe("M",4.67,6.23))
+#print(p.probe("M",9,14))
+#print(p.probe("M",4,7))
+#print(p.probe("M",4.67,6.23))
 plt.show()
 
 

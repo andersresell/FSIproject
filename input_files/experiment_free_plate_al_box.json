@@ -7,7 +7,7 @@
   "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
-  "fvm_write_stride": 100,
+  "fvm_write_stride": 10,
   "stopping_crit": {
     "type": "Time",
     "value": 0.004
@@ -18,7 +18,7 @@
     "time_history_folder": "output_experiment_free_plate_al_tube"
   },
   "east_bc": {
-    "type": "NonreflectingOutflow"
+    "type": "InvicidWall"
   },
   "south_bc": {
     "type": "InvicidWall"
@@ -29,7 +29,7 @@
 
   "initial_cond": {
     "case": "quiecent",
-    "rho": 1.19749,
+    "rho": 1.190703553542644,
     "p": 100646.68
   },
 
@@ -41,7 +41,7 @@
         "W": 0.003,
         "H": 0.01,
         "rotation_angle_deg": 0,
-        "x_center": 0.9485,
+        "x_center": 0.95,
         "y_center": 0.0025
       },
       "rho": 1350,

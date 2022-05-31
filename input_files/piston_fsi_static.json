@@ -1,23 +1,23 @@
 {
-  "output_folder": "output_experiment_free_plate_al",
-  "ni": 24000,
-  "nj": 1,
-  "L_x": 17.54,
-  "L_y": 0.18,
+  "output_folder": "output_piston_fsi",
+  "ni": 1000,
+  "nj": 10,
+  "L_x": 20,
+  "L_y": 0.1,
   "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
   "fvm_write_stride": 1,
   "stopping_crit": {
-    "type": "Timesteps",
-    "value": 10
+    "type": "Time",
+    "value": 0.04
   },
 
   "west_bc": {
     "type": "InvicidWall"
   },
   "east_bc": {
-    "type": "InvicidWall"
+    "type": "NonreflectingOutflow"
   },
   "south_bc": {
     "type": "InvicidWall"
@@ -27,26 +27,21 @@
   },
 
   "initial_cond": {
-    "case": "initial_cond_shock_tube_experiment",
-    "driver_length": 0.77,
-    "rho_l": 11.89797,
-    "p_l": 1000000,
-    "rho_r": 1.19749,
-    "p_r": 100646.68
+    "case": "initial_cond2"
   },
 
   "solids": {
     "s1": {
-      "is_static": false,
+      "is_static": true,
       "geometry": {
         "case": "rectangle",
-        "W": 0.1,
-        "H": 0.3,
+        "W": 1,
+        "H": 0.2,
         "rotation_angle_deg": 0,
-        "x_center": 16.97,
-        "y_center": 0.09
+        "x_center": 15,
+        "y_center": 0.05
       },
-      "rho": 48.6,
+      "rho": 7,
       "is_constrained": true,
       "constraints": {
         "type": "ViscoElastic",
@@ -56,10 +51,9 @@
 
     }
   },
+
   "write_history_output_west": {
     "case": false
   }
 
 }
-
-

@@ -14,8 +14,7 @@
   },
 
   "west_bc": {
-    "type": "InvicidWall",
-    "M_inf": false
+    "type": "InvicidWall"
   },
   "east_bc": {
     "type": "NonreflectingOutflow"

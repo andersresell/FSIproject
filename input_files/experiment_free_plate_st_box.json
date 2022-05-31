@@ -1,16 +1,16 @@
 {
-  "output_folder": "output_experiment_free_plate_al_box",
+  "output_folder": "output_experiment_free_plate_st_box",
   "ni": 2000,
   "nj": 10,
   "L_x": 1,
-  "L_y": 0.1,
+  "L_y": 0.005,
   "CFL": 0.6,
   "flux_scheme": "HLLC",
   "ode_scheme": "TVD_RK3",
-  "fvm_write_stride": 100,
+  "fvm_write_stride": 10,
   "stopping_crit": {
     "type": "Time",
-    "value": 0.0004
+    "value": 0.005
   },
 
   "west_bc": {
@@ -29,8 +29,8 @@
 
   "initial_cond": {
     "case": "quiecent",
-    "rho": 1.19749,
-    "p": 100646.68
+    "rho": 1.1902590253587393,
+    "p": 100636.6161
   },
 
   "solids": {
@@ -39,12 +39,12 @@
       "geometry": {
         "case": "rectangle",
         "W": 0.003,
-        "H": 0.05,
+        "H": 0.01,
         "rotation_angle_deg": 0,
-        "x_center": 0.9485,
+        "x_center": 0.95,
         "y_center": 0.0025
       },
-      "rho": 270,
+      "rho": 3925,
       "is_constrained": true,
       "constraints": {
         "type": "ViscoElastic",
@@ -54,10 +54,9 @@
 
     }
   },
+
   "write_history_output_west": {
     "case": false
   }
 
 }
-
-

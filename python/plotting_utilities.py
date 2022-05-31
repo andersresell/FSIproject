@@ -52,14 +52,14 @@ class Plotter:
         self.n_static_solids = int(data[0])
         self.n_movable_solids = int(data[1])
 
-    def contour_animate(self,datatype,bottom_level=0, top_level=0) :
+    def contour_animate(self,datatype="p",bottom_level=0, top_level=0) :
         plt.figure()
         for n in range(0,self.n_timesteps+1):
             if n % self.write_stride == 0:
-                self.contour( datatype,n,bottom_level,top_level,False,False,True)
+                self.contour(datatype=datatype,n=n,bottom_level=bottom_level,top_level=top_level,high_res=False,show_time=True)
                 plt.pause(0.00001)
             print(n)
-    def contour_plot(self,datatype, n=-1, t0 = -1, bottom_level=0, top_level=0,contour_lines=False):
+    def contour_plot(self,datatype="p", n=-1, t0 = -1, bottom_level=0, top_level=0,show_time=False):
         plt.figure(figsize=(7,6))
         if n == -1 and t0== -1:
             n = self.n_timesteps
@@ -69,10 +69,10 @@ class Plotter:
                     if (self.timestep2time(n) >= t0):
                         self.contour(datatype=datatype,n=n,bottom_level=bottom_level, top_level=top_level)
                         return
-        self.contour(datatype=datatype,n=n,bottom_level=bottom_level, top_level=top_level)
+        self.contour(datatype=datatype,n=n,bottom_level=bottom_level, top_level=top_level,high_res=True,show_time=show_time)
 
 
-    def contour(self,datatype,n,bottom_level=0,top_level=0,high_res=False,contour_lines=False, show_time=False):
+    def contour(self,datatype,n,bottom_level=0,top_level=0,high_res=False, show_time=False):
         n_levels = 100
         if high_res:
             n_levels = 300
@@ -83,8 +83,8 @@ class Plotter:
             levels = np.linspace(bottom_level,top_level,n_levels)
         data = self.extract_data(datatype,n)
         plt.clf()
-        if contour_lines:
-            cs = plt.contourf(self.x,self.y,data,300,cmap=plt.get_cmap('jet'))
+        if datatype=="M":
+            cs = plt.contourf(self.x,self.y,data,n_levels,cmap=plt.get_cmap('jet'))
             #plt.contour(self.x,self.y,data,30, linewidths=0.5,colors='k')
         else:
             if auto_level:
@@ -106,11 +106,8 @@ class Plotter:
         ax.set_aspect('equal', 'box')
         plt.xlabel(r"""$x\;[\textrm{m}]$""")
         plt.ylabel(r"""$y\;[\textrm{m}]$""")
-        plt.locator_params(axis="x", nbins=4)
-        plt.locator_params(axis="y", nbins=4)
-        self.time_title(n,"ms")
-        #if show_time:
-         #   plt.title("t = "+str(self.timestep2time(n))+"[s]")
+        if show_time:
+            self.time_title(n,"ms")
         ax = plt.gca()
         self.plot_solids(n)
         #ax.set_facecolor("lightsteelblue")
@@ -185,8 +182,10 @@ class Plotter:
         p_l = p[int(self.nj/2),0]
         p_r = p[int(self.nj/2),self.ni-1]
 
+        rho_exact= np.zeros(self.x.shape)
+        u_exact=rho_exact
+        p_exact=rho_exact
         rho_exact,u_exact,p_exact = riemann_exact_solution(rho_l,u_l,p_l,rho_r,u_r,p_r,self.ni,self.L_x,self.t_end)
-
         #plt.figure()
         #s_exact = np.log(p_exact/rho_exact**1.4)
         #plt.plot(self.x,s_exact)
@@ -194,7 +193,7 @@ class Plotter:
 
         plt.figure()
         plt.plot(self.x,rho[int(self.nj/2),:],'k.')
-        plt.plot(self.x,rho_exact,'--r')
+        #plt.plot(self.x,rho_exact,'--r')
         plt.legend(['Numerical','Exact'])
         plt.xlabel("$x$")
         plt.ylabel(r'$\rho$')
@@ -240,6 +239,7 @@ class Plotter:
         plt.plot(self.x,u_exact,'--r')
         plt.xlabel("$x$")
         plt.ylabel("$u$")
+        #ax1.set_xticks([1,2.5,2])
 
         ax3 = plt.subplot(3,1,3,sharex=ax2)
         plt.plot(self.x,p[int(self.nj/2),:],'k.')
@@ -247,7 +247,7 @@ class Plotter:
         plt.xlabel("$x$")
         plt.ylabel("$p$")
 
-        plt.suptitle("$ni = "+str(self.ni)+"$",y=0.96,x=0.25)
+        plt.suptitle("$NI = "+str(self.ni)+"$",y=0.96,x=0.25)
         plt.tight_layout()
 
     def plot_1D(self,datatype,bottom_level=0,top_level=0,n=-1,t_goal=0,show_timestep=True):
@@ -323,6 +323,11 @@ class Plotter:
         plt.ylabel("Pressure")
 
     def plot_piston_prescribed(self,vel):
+        plt.rcParams.update({
+            "font.size": 25,
+            "axes.labelsize": 30,
+            "legend.fontsize": 21,
+        })
         rho_c = self.extract_data("rho",0)
         rho_c = rho_c[0,0]
         u_c = self.extract_data("u",0)
@@ -371,9 +376,10 @@ class Plotter:
         plt.plot(self.x,rho_exact,'--r',linewidth=2)
         plt.legend(['Numerical','Exact'])
         visualize_piston(rho)
-        plt.xlabel("$x$")
-        plt.ylabel(r'$\rho$')
-        #plt.tight_layout()
+        self.set_unit_labels_SI("rho")
+        plt.tight_layout()
+        ax = plt.gca()
+        ax.set_yticks([0,1.5,3])
 
         u = get_data("u")
         plt.figure()
@@ -381,9 +387,11 @@ class Plotter:
         plt.plot(self.x,u_exact,'--r',linewidth=2)
         plt.legend(['Numerical','Exact'])
         visualize_piston(u)
-        plt.xlabel("$x$")
-        plt.ylabel("$u$")
-        #plt.tight_layout()
+        self.set_unit_labels_SI("u")
+        plt.ylabel(r"""$u\;[\textrm{m/s}]$""")
+        plt.tight_layout()
+        ax = plt.gca()
+        ax.set_yticks([0,250,500])
 
         p = get_data("p")
         plt.figure()
@@ -391,9 +399,10 @@ class Plotter:
         plt.plot(self.x,p_exact,'--r',linewidth=2)
         plt.legend(['Numerical','Exact'])
         visualize_piston(p)
-        plt.xlabel("$x$")
-        plt.ylabel("$p$")
-        #plt.tight_layout()
+        self.set_unit_labels_SI("p")
+        ax = plt.gca()
+        ax.set_yticks([0,250000,500000])
+        plt.tight_layout()
 
     def animate_piston_fsi(self,datatype,bottom_level=0, top_level=0):
         plt.figure()
@@ -412,7 +421,7 @@ class Plotter:
                         self.piston_fsi(datatype=datatype,n=n,bottom_level=bottom_level,top_level=top_level)
                         return
         self.piston_fsi(datatype,self.n_timesteps,bottom_level,top_level)
-    def piston_fsi_extract_data(self,t_a=0,t_b=0):
+    def piston_fsi_extract_data(self,t_a=0,t_b=0,get_c_wall=False,stride=1):
         if t_b == 0:
             last_step = self.n_timesteps
         else:
@@ -421,8 +430,9 @@ class Plotter:
         a = np.array([])
         p_wall = np.array([])
         u_wall = np.array([])
+        c_wall = np.array([])
         for n in range(0,self.n_timesteps):
-            if n%self.write_stride == 0 and n%10==0:
+            if n%self.write_stride == 0 and n%stride==0:
                 if self.timestep2time(n) >= t_a and n <= last_step:
                     t = np.append(t,self.timestep2time(n))
                     #t[n] = self.timestep2time(n)
@@ -432,29 +442,44 @@ class Plotter:
                         piston_vel = genfromtxt("output_folders/"+self.output_folder+"/movable_solid_body_CM_velocity0_t"+str(n)+".csv",comments = "#", delimiter=',')
                     elif self.n_static_solids == 1:
                         piston = genfromtxt("output_folders/"+self.output_folder+"/static_boundary0.csv",comments = "#", delimiter=',')
+                        piston_vel = np.array([0])
                     else:
                         sys.exit("error! There has to be exactly on solid object for this simulation")
                     #a[n] = piston[0,0]
                     a = np.append(a,piston[0,0])
                     #u_wall[n] = piston_vel[0]
+
                     u_wall = np.append(u_wall,piston_vel[0])
                     b = piston[1,0]
                     #if t[n] >= 0.02:# and t[n] <= 0.03:
                     #p_wall[n] = self.probe_1D(datatype="p",x=a[n],n=n)
                     p_wall = np.append(p_wall,self.probe_1D(datatype="p",x=a[-1],n=n))
+                    if get_c_wall:
+                        rho_wall = self.probe_1D(datatype="p",x=a[-1],n=n)
+                        c_wall = np.append(c_wall,np.sqrt(1.4*p_wall[-1]/rho_wall))
                     #u_wall[n] = self.probe_1D(datatype="u",x=a[n],n=n)
-        return t,a,p_wall,u_wall
+        return t,a,p_wall,u_wall,c_wall
 
-    def piston_fsi_comparison(self):
-        t,a,p_wall,u_wall = self.piston_fsi_extract_data()
+    def piston_fsi_comparison(self,updated_comparison=False,stride=1):
+        t,a,p_wall,u_wall,c_wall = self.piston_fsi_extract_data(stride=stride)
         ind = np.where(u_wall>1)
         g = 1.4
-        p_r = 701258.5
-        rho_r = 4.572815
-        c_r = np.sqrt(g*p_r/rho_r)
-        print(c_r)
-        pressure_ratio_analytical = (1 - (g-1)/2*u_wall/c_r)**((2*g)/(g-1))
-        pressure_ratio_sim = p_wall/p_r
+        if not updated_comparison:
+            p_r = 701258.5
+            rho_r = 4.572815
+            c_r = np.sqrt(g*p_r/rho_r)
+            pressure_ratio_analytical = (1 - (g-1)/2*u_wall/c_r)**((2*g)/(g-1))
+            pressure_ratio_sim = p_wall/p_r
+        else:
+            p_stat = Plotter("piston_fsi_static")
+            t_stat,a_stat,p_wall_stat,u_wall_stat,c_wall_stat = p_stat.piston_fsi_extract_data()
+            p_r = np.zeros(t.shape)
+            c_r = np.zeros(t.shape)
+            #for i in range(0,t.size):
+            #    p_r[i] = np.argmax()
+            #pressure_ratio_analytical = (1 - (g-1)/2*u_wall/c_r)**((2*g)/(g-1))
+            pressure_ratio_sim = p_wall/p_r
+
 
         plt.figure()
         plt.plot(t*1000,u_wall,'k')
@@ -515,8 +540,7 @@ class Plotter:
         #plt.ticklabel_format(scilimits=(-3,9))
         #plt.xlabel(r"""$x\;[\textrm{m}]$""")
         #plt.ylabel(r"""$p\;[\textrm{Pa}]$""")
-        plt.xlabel(r"""$x$""")
-        plt.ylabel(r"""$p$""")
+        self.set_unit_labels_SI("p")
         self.time_title(n,"ms")
         plt.tight_layout()
 
@@ -595,7 +619,7 @@ class Plotter:
         epsilon = (x-a)/(b-a)
         j = 0
         return data[j,i]*(1-epsilon) + data[j,i+1]*epsilon
-    def time_history_1D(self,x_point,datatype="p",t_a=0,t_b=0):
+    def time_history_1D(self,x_point,datatype="p",t_a=0,t_b=0,stride=1):
         if t_b != 0:
             n_first = self.time2timestep(t_a)
             n_last = self.time2timestep(t_b)
@@ -605,7 +629,7 @@ class Plotter:
         val = np.array([])
         t = np.array([])
         for n in range(n_first,n_last):
-                if n%self.write_stride == 0and n%100==0:
+                if n%self.write_stride == 0 and n%stride==0:
                     print("probing time history "+str(n)+" of "+str(self.n_timesteps))
                     val = np.append(val,self.probe_1D(datatype,x_point,n))
                     t = np.append(t,self.timestep2time(n))
@@ -619,13 +643,25 @@ class Plotter:
             if n%self.write_stride == 0:
                 if self.timestep2time(n) >= t_goal:
                     return n
-        sys.exit("error! no n found")
+        sys.exit("error! t_goal larger than max t. no n found")
     def time_title(self,n,unit="s"):
         if unit == "s":
             plt.title("t = "+f"{self.timestep2time(n):.2f}"+" [s]")
         elif unit == "ms":
             #plt.title("time = "+f"{self.timestep2time(n)*1e3:.2f}"+" [ms]")
             plt.title(r"""$$ t = """+f"{self.timestep2time(n)*1e3:.2f}"+r""" \;\textrm{ms}$$""")
+    def set_unit_labels_SI(self,datatype):
+        plt.xlabel(r"""$x\;[\textrm{m}]$""")
+        if datatype == "rho":
+            plt.ylabel(r"""$\rho\;[\textrm{kg/m}^3]$""")
+        elif datatype == "u":
+            plt.ylabel(r"""$u\;[\textrm{m/s}]$""")
+        elif datatype == "p":
+            plt.ylabel(r"""$p\;[\textrm{Pa}]$""")
+    def set_ticks(self, n_x,n_y):
+        ax = plt.gca()
+        ax.set_xticks(np.linspace(0,self.L_x,n_x))
+        ax.set_yticks(np.linspace(0,self.L_y,n_x))
     def schlieren_last(self):
         plt.figure()
         self.schlieren(self.n_timesteps)

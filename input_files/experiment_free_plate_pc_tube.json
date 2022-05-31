@@ -1,5 +1,5 @@
 {
-  "output_folder": "output_experiment_free_plate_al_tube",
+  "output_folder": "output_experiment_free_plate_pc_tube",
   "ni": 5000,
   "nj": 1,
   "L_x": 20,
@@ -29,10 +29,10 @@
   "initial_cond": {
     "case": "initial_cond_shock_tube_experiment",
     "driver_length": 0.77,
-    "rho_l": 11.830635437691987,
-    "p_l": 998700.0,
-    "rho_r": 1.190703553542644,
-    "p_r": 100646.68
+    "rho_l": 11.92277947026914,
+    "p_l": 1005100.0,
+    "rho_r": 1.191909448466851,
+    "p_r": 100598.1628
   },
 
   "solids": {

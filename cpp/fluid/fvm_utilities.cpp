@@ -142,20 +142,23 @@ namespace fluid {
             std::cerr << "Error: couldn't open fvm history output west file\n";
             exit(1);
         }
+
+        int n_lines{0};
         std::string line;
+        while (std::getline(ist, line)) n_lines++;
+        time_history_west.reserve(n_lines); //It seems like this vector overwrites another memeory location, because
+        //the simulation is disturbed when this vector is pushed back, but not if not...
+        // had no time to investigate it, I think allocating space beforehand solved it for now
+
         double t;
         vec4 U0{};
         vec4 U1{};
-
-        time_history_west.reserve(100); //It seems like this vector overwrites another memeory location,
-        // had no time to investigate it, this solved it for now
-
+        std::ifstream iist{"python/output_folders/" + history_output_west_folder +  "/fvm_history_output_west.csv"};
         std::string first_line;
-        getline(ist,first_line); //skipping first line
-        while (ist >> t >> U0.u1 >> U0.u2 >> U0.u3 >> U0.u4 >> U1.u1 >> U1.u2 >> U1.u3 >> U1.u4){
+        getline(iist,first_line); //skipping first line
+        while (iist >> t >> U0.u1 >> U0.u2 >> U0.u3 >> U0.u4 >> U1.u1 >> U1.u2 >> U1.u3 >> U1.u4){
             time_history_west.push_back({t,U1,U0});
         }
-
         std::cout << "Fvm time history at western boundary successfully loaded\n";
 
     }
