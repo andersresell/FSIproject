@@ -1,4 +1,3 @@
 
-Project for my Master's thesis. The goal is to develop an explicit Fluid Structure Interaction (FSI) solver that uses 
-a Finite Volume (FVM) solver in the fluid domain to solve the compressible Euler equations. How the solid domain 
-is treated is yet TBD. The purpose of the solver is to study shock and it's applications to blast loading.
+Project for my Master's thesis, where the goal was to develop a fluid-structure interaction (FSI) solver for shock-tube applications. The result is a 2D cartesian grid solver for the compressible Euler equations, coupled with rigid bodies and enforcing boudnary conditions through a ghost cell immersed boundary method. The fluid solver used the HLLC riemann solver and second-order MUSCL extrapolation along with the third-order total variation diminishing Runge-Kutta method for time integration.
+Note that the code is not completely finished, and bugs are still present. An overall restructure of the code might also be of benefit.
