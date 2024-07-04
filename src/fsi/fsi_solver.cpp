@@ -26,8 +26,8 @@ int FSI_Solver::solve() {
     double mass_0, mass;
 
     while (true) {
-        std::cout << "FSI solve: n = " + std::to_string(n) + "\n";
 
+        std::cout << "FSI solve: n = " + std::to_string(n) + "\n";
         sample_history_output_west(t);
 
         if (n % fvm_write_stride == 0) {
@@ -133,10 +133,10 @@ void FSI_Solver::set_rho_old() {
 }
 
 void FSI_Solver::write_totals_history() {
-    std::ofstream ost{"python/output_folders/" + output_folder + "/fvm_convergence_history.csv"};
+    const string file = output_folder + "fvm_convergence_history.csv";
+    std::ofstream ost{file};
     if (!ost) {
-        std::cerr << "Error: couldn't open fvm convergence csv output file\n";
-        exit(1);
+        throw runtime_error("Error: couldn't open fvm convergence csv output file:" + file);
     }
     ost << "#n,norm,mass\n";
     for (int i{0}; i < (int)totals_history.size(); i++) {
@@ -146,10 +146,10 @@ void FSI_Solver::write_totals_history() {
 }
 
 void FSI_Solver::write_fsi_header() {
-    std::ofstream ost{"python/output_folders/" + output_folder + "/fsi_header.csv"};
+    const string file = output_folder + "fsi_header.csv";
+    std::ofstream ost{file};
     if (!ost) {
-        std::cerr << "Error: couldn't open fsi csv header file\n";
-        exit(1);
+        throw runtime_error("Error: couldn't open fsi csv header file:" + file);
     }
     ost << "#n_static_solids,n_movable_solids\n";
     int n_static{0};
@@ -160,8 +160,7 @@ void FSI_Solver::write_fsi_header() {
         } else if (s->type == solid::SolidBodyType::Dynamic) {
             n_movable++;
         } else {
-            std::cerr << "Error: Solid Body type is neither Static or Movable (in write fsi header)\n";
-            exit(1);
+            throw runtime_error("Solid Body type is neither Static or Movable (in write fsi header)");
         }
     }
     ost << n_static << ',' << n_movable << '\n';
@@ -171,11 +170,10 @@ void FSI_Solver::write_static_solid_boundaries() {
     int solid_ind{0};
     for (auto &s : solid_bodies) {
         if (s->type == solid::SolidBodyType::Static) {
-            std::ofstream ost{"python/output_folders/" + output_folder + "/static_boundary" +
-                              std::to_string(solid_ind) + ".csv"};
+            const string file = output_folder + "static_boundary" + to_string(solid_ind) + ".csv";
+            std::ofstream ost{file};
             if (!ost) {
-                std::cerr << "error: couldn't open static boundary csv file\n";
-                exit(1);
+                throw runtime_error("Couldn't open static boundary csv file " + file);
             }
             ost << "#x,y\n";
             for (int i{0}; i < s->n_bound; i++) {
@@ -191,11 +189,11 @@ void FSI_Solver::write_movable_solid_boundaries(int n) {
     int solid_ind{0};
     for (auto &s : solid_bodies) {
         if (s->type == solid::SolidBodyType::Dynamic) {
-            std::ofstream ost{"python/output_folders/" + output_folder + "/movable_boundary" +
-                              std::to_string(solid_ind) + "_t" + std::to_string(n) + ".csv"};
+            const string file =
+                output_folder + "movable_boundary" + std::to_string(solid_ind) + "_t" + std::to_string(n) + ".csv";
+            std::ofstream ost{file};
             if (!ost) {
-                std::cerr << "error: couldn't open movable boundary csv file\n";
-                exit(1);
+                throw runtime_error("error: couldn't open movable boundary csv file: " + file);
             }
             ost << "#x,y\n";
             for (int i{0}; i < s->n_bound; i++) {
@@ -210,11 +208,11 @@ void FSI_Solver::write_movable_solid_body_CM_velocity(int n) {
     int solid_ind{0};
     for (auto &s : solid_bodies) {
         if (s->type == solid::SolidBodyType::Dynamic) {
-            std::ofstream ost{"python/output_folders/" + output_folder + "/movable_solid_body_CM_velocity" +
-                              std::to_string(solid_ind) + "_t" + std::to_string(n) + ".csv"};
+            const string file = output_folder + "movable_solid_body_CM_velocity" + std::to_string(solid_ind) + "_t" +
+                                std::to_string(n) + ".csv";
+            std::ofstream ost{file};
             if (!ost) {
-                std::cerr << "error: couldn't open movable body CM velocity csv file\n";
-                exit(1);
+                throw runtime_error("couldn't open movable body CM velocity csv file: " + file);
             }
             ost << "#u_CM,v_CM\n";
             solid::Point u_CM = s->get_CM_velocity();
@@ -226,9 +224,10 @@ void FSI_Solver::write_movable_solid_body_CM_velocity(int n) {
 void FSI_Solver::write_solid_debug_files(int n) {
     // Writes the status of the solid bodies. One file for the node cell status and one for the intercepts
     int nj = fvm.nj;
-    std::ofstream ost1{"python/output_folders/" + output_folder + "/debug_nodes_t" + std::to_string(n) + ".csv"};
+    const string file1 = output_folder + "debug_nodes_t" + std::to_string(n) + ".csv";
+    std::ofstream ost1{file1};
     if (!ost1)
-        std::cerr << "error, couldn't open node debug csv file\n";
+        throw runtime_error("Couldn't open node debug csv file: " + file1);
     ost1 << "#type,x,y\n";
     for (int i{0}; i < fvm.ni + 4; i++) {
         for (int j{0}; j < nj + 4; j++) {
@@ -236,10 +235,12 @@ void FSI_Solver::write_solid_debug_files(int n) {
             ost1 << static_cast<int>(fvm.cell_status[IX(i, j)]) << ',' << p.x << ',' << p.y << '\n';
         }
     }
+    const string file2 = output_folder + "debug_intercepts_t" + std::to_string(n) + ".csv";
+    std::ofstream ost2{file2};
+    if (!ost2) {
+        throw runtime_error("Couldn't open solid debug intercepts csv file" + file2);
+    }
 
-    std::ofstream ost2{"python/output_folders/" + output_folder + "/debug_intercepts_t" + std::to_string(n) + ".csv"};
-    if (!ost2)
-        std::cerr << "error, couldn't open solid debug intercepts csv file\n";
     ost2 << "#x_i,y_i\n";
     for (auto &s : solid_bodies) {
         for (auto &e : s->cell2intercept) {
@@ -278,9 +279,11 @@ void FSI_Solver::sample_history_output_west(double t) {
 }
 void FSI_Solver::write_history_output_west() {
     if (history_output_west_enabled) {
-        std::ofstream ost{"python/output_folders/" + output_folder + "/fvm_history_output_west.csv"};
+
+        const string file = output_folder + "fvm_history_output_west.csv";
+        std::ofstream ost{file};
         if (!ost)
-            std::cerr << "error, couldn't open fvm history output west csv file\n";
+            throw runtime_error("error, couldn't open fvm history output west csv file: " + file);
         ost << "#t rho_0 mom_x_0 mom_y_0 E_0 rho_1 mom_x_1 mom_y_1 E_1\n";
         fluid::vec4 U0, U1;
         for (auto &e : history_output_west) {

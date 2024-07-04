@@ -129,30 +129,6 @@ FSIproject/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/FSIproject.dir/build.make CMakeFiles/FSIproject.dir/build
 .PHONY : FSIproject/fast
 
-fluid/HLLC.o: fluid/HLLC.cpp.o
-.PHONY : fluid/HLLC.o
-
-# target to build an object file
-fluid/HLLC.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/FSIproject.dir/build.make CMakeFiles/FSIproject.dir/fluid/HLLC.cpp.o
-.PHONY : fluid/HLLC.cpp.o
-
-fluid/HLLC.i: fluid/HLLC.cpp.i
-.PHONY : fluid/HLLC.i
-
-# target to preprocess a source file
-fluid/HLLC.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/FSIproject.dir/build.make CMakeFiles/FSIproject.dir/fluid/HLLC.cpp.i
-.PHONY : fluid/HLLC.cpp.i
-
-fluid/HLLC.s: fluid/HLLC.cpp.s
-.PHONY : fluid/HLLC.s
-
-# target to generate assembly for a file
-fluid/HLLC.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/FSIproject.dir/build.make CMakeFiles/FSIproject.dir/fluid/HLLC.cpp.s
-.PHONY : fluid/HLLC.cpp.s
-
 fluid/fvm_solver.o: fluid/fvm_solver.cpp.o
 .PHONY : fluid/fvm_solver.o
 
@@ -402,9 +378,6 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... FSIproject"
-	@echo "... fluid/HLLC.o"
-	@echo "... fluid/HLLC.i"
-	@echo "... fluid/HLLC.s"
 	@echo "... fluid/fvm_solver.o"
 	@echo "... fluid/fvm_solver.i"
 	@echo "... fluid/fvm_solver.s"

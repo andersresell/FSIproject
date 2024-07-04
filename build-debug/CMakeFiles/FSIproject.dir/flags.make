@@ -6,5 +6,5 @@ CXX_DEFINES = -DYAML_CPP_STATIC_DEFINE
 
 CXX_INCLUDES = -I/include
 
-CXX_FLAGS = -g -Wall -Wno-reorder -Wno-unused-function -fmax-errors=1 -g -D_GLIBCXX_ASSERTIONS -std=gnu++20
+CXX_FLAGS = -g -Wall -Wno-reorder -Wno-unused-function -fmax-errors=1 -g -D_GLIBCXX_ASSERTIONS -fopenmp -std=gnu++20
 

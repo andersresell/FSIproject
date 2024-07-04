@@ -63,6 +63,11 @@ enum class FluxScheme {
     HLLC
 };
 
+enum class Limiter {
+    Minmod,
+    MC
+};
+
 enum class BC_Type {
     InvicidWall,
     SupersonicInflow,

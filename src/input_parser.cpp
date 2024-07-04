@@ -2,6 +2,7 @@
 #include "fluid/fvm_solver.hpp"
 
 InputParser::InputParser(const string &input_filename) : input_filename{input_filename} {
+    using namespace std;
     try {
         root_node = YAML::LoadFile(input_filename);
     } catch (const exception &e) {
@@ -17,23 +18,38 @@ InputParser::InputParser(const string &input_filename) : input_filename{input_fi
                             "\nNote that the input file has to be located in the configurations directory.\n");
     }
     cout << "Input file: " << input_filename << endl;
-    base_dir = std::filesystem::current_path();
+    base_dir = filesystem::current_path();
     if (base_dir[base_dir.size() - 1] != '/')
         base_dir += '/';
-    cout << "Simulation directory: \n" << base_dir;
+    cout << "Simulation directory: \n" << base_dir << endl;
+
+    // Create output directory
+    output_dir = base_dir + "output/";
+    if (filesystem::exists(output_dir)) {
+        if (!filesystem::remove_all(output_dir)) {
+            throw runtime_error{"Failed to remove old output directory: " + output_dir};
+        }
+    }
+    if (!filesystem::create_directory(output_dir)) {
+        throw runtime_error{string("Failed to create output directory:" + output_dir + "\n")};
+    }
 }
 
-void InputParser::create_solvers(unique_ptr<fluid::FVM_Solver> &fvm, unique_ptr<FSI_Solver> &fsi,
-                                 unique_ptr<fluid::ExternalBCs> &bcs) {
+void InputParser::create_solvers(unique_ptr<fluid::FVM_Solver> &fvm, unique_ptr<FSI_Solver> &fsi) {
     const string root_name_setup = "setup";
     const string root_name_ext_bcs = "external_bcs";
-    const string root_name_initial_cond = "initial_condition";
+    const string root_name_initial_cond = "initial_cond";
     const string root_name_solids = "solids";
     try {
 
         /*--------------------------------------------------------------------
         Setup
         --------------------------------------------------------------------*/
+        const size_t num_threads = read_optional_option<size_t>(root_name_setup, "num_threads", 1);
+        if (num_threads > 8) {
+            throw runtime_error("Specify < 8 threads for open mp\n");
+        }
+        omp_set_num_threads(num_threads);
         const int ni = read_required_option<int>(root_name_setup, "nx");
         const int nj = read_required_option<int>(root_name_setup, "ny");
         const double L_x = read_required_option<double>(root_name_setup, "L_x");
@@ -43,11 +59,13 @@ void InputParser::create_solvers(unique_ptr<fluid::FVM_Solver> &fvm, unique_ptr<
             root_name_setup, "flux_scheme", flux_scheme_from_string, fluid::FluxScheme::HLLC);
         const fluid::OdeScheme ode_scheme = read_optional_enum_option<fluid::OdeScheme>(
             root_name_setup, "ode_scheme", ode_scheme_from_string, fluid::OdeScheme::TVD_RK3);
+        const fluid::Limiter limiter = read_optional_enum_option<fluid::Limiter>(
+            root_name_setup, "limiter", limiter_from_string, fluid::Limiter::MC);
         const int fvm_write_stride = read_required_option<int>(root_name_setup, "fvm_write_stride");
 
-        const StoppingCrit stopping_crit_type = read_required_enum_option<StoppingCrit>(
-            root_name_setup, "stopping_criterion_type", stopping_crit_from_string);
-        const double stopping_crit_value = read_required_option<double>(root_name_setup, "stopping_criterion_value");
+        const StoppingCrit stopping_crit_type =
+            read_required_enum_option<StoppingCrit>(root_name_setup, "stopping_crit_type", stopping_crit_from_string);
+        const double stopping_crit_value = read_required_option<double>(root_name_setup, "stopping_crit_val");
 
         /*--------------------------------------------------------------------
         External boundary conditions
@@ -79,10 +97,9 @@ void InputParser::create_solvers(unique_ptr<fluid::FVM_Solver> &fvm, unique_ptr<
             throw runtime_error("Time history boundary condition type is currently not supported");
         }
 
-        bcs = make_unique<fluid::ExternalBCs>(ni, nj, west_bc, east_bc, south_bc, north_bc, M_inf, p_inf, rho_inf, "");
+        fluid::ExternalBCs bcs = {ni, nj, west_bc, east_bc, south_bc, north_bc, M_inf, p_inf, rho_inf, ""};
 
-        const string output_dir = base_dir + "/output";
-        fvm = make_unique<fluid::FVM_Solver>(ni, nj, L_x, L_y, CFL, ode_scheme, flux_scheme, *bcs, output_dir);
+        fvm = make_unique<fluid::FVM_Solver>(ni, nj, L_x, L_y, CFL, ode_scheme, flux_scheme, limiter, bcs, output_dir);
 
         /*--------------------------------------------------------------------
         Initial condition
@@ -156,13 +173,13 @@ void InputParser::create_solvers(unique_ptr<fluid::FVM_Solver> &fvm, unique_ptr<
             for (const YAML::Node &solid_node : solid_nodes) {
                 counter++;
                 try {
-                    double M, rho, I;
+                    double M{0}, rho{0}, I{0};
                     solid::Point CM;
                     vector<solid::Point> boundary;
                     solid::SolidBodyType type = solid::SolidBodyType::Static;
                     if (solid_node["is_static"] && solid_node["is_static"].as<bool>() == false) {
                         type = solid::SolidBodyType::Dynamic;
-                        rho = solid_node["rho"].as<double>();
+                        rho = read_option<double>(solid_node, "rho");
                     }
 
                     YAML::Node geometry_node = solid_node["geometry"];
@@ -170,27 +187,27 @@ void InputParser::create_solvers(unique_ptr<fluid::FVM_Solver> &fvm, unique_ptr<
                         string geom_case;
                         if (geometry_node["case"]) {
                             geom_case = geometry_node["case"].as<string>();
-
+                            // consider placing try-catch blocks between each if to give more context for errors
                             if (geom_case == "circle") {
-                                auto radius = geometry_node["radius"].as<double>();
-                                auto n_nodes = geometry_node["n_nodes"].as<double>();
-                                auto x_center = geometry_node["x_center"].as<double>();
-                                auto y_center = geometry_node["y_center"].as<double>();
+                                auto radius = read_option<double>(geometry_node, "radius");
+                                auto n_nodes = read_option<double>(geometry_node, "n_nodes");
+                                auto x_center = read_option<double>(geometry_node, "x_center");
+                                auto y_center = read_option<double>(geometry_node, "y_center");
                                 boundary = solid::generate_circle(radius, n_nodes, x_center, y_center);
                             } else if (geom_case == "wedge") {
-                                auto l = geometry_node["l"].as<double>();
-                                auto half_angle_deg = geometry_node["half_angle_deg"].as<double>();
-                                auto x_tip = geometry_node["x_tip"].as<double>();
-                                auto y_tip = geometry_node["y_tip"].as<double>();
+                                auto l = read_option<double>(geometry_node, "l");
+                                auto half_angle_deg = read_option<double>(geometry_node, "half_angle_deg");
+                                auto x_tip = read_option<double>(geometry_node, "x_tip");
+                                auto y_tip = read_option<double>(geometry_node, "y_tip");
                                 boundary = solid::generate_wedge(l, half_angle_deg, x_tip, y_tip);
                                 if (type == solid::SolidBodyType::Dynamic) {
                                     throw runtime_error("Dynamic properties not yet set for wedge geometry!\n");
                                 }
                             } else if (geom_case == "diamond_wedge") {
-                                auto l = geometry_node["l"].as<double>();
-                                auto half_angle_deg = geometry_node["half_angle_deg"].as<double>();
-                                auto x_center = geometry_node["x_center"].as<double>();
-                                auto y_center = geometry_node["y_center"].as<double>();
+                                auto l = read_option<double>(geometry_node, "l");
+                                auto half_angle_deg = read_option<double>(geometry_node, "half_angle_deg");
+                                auto x_center = read_option<double>(geometry_node, "x_center");
+                                auto y_center = read_option<double>(geometry_node, "y_center");
                                 boundary = solid::generate_diamond_wedge(l, half_angle_deg, x_center, y_center);
                                 if (type == solid::SolidBodyType::Dynamic) {
                                     double h = l * sin(half_angle_deg * M_PI / 180);
@@ -200,11 +217,11 @@ void InputParser::create_solvers(unique_ptr<fluid::FVM_Solver> &fvm, unique_ptr<
                                     CM = {x_center, y_center};
                                 }
                             } else if (geom_case == "rectangle") {
-                                auto W = geometry_node["width"].as<double>();
-                                auto H = geometry_node["height"].as<double>();
-                                auto rotation_angle_deg = geometry_node["rotation_angle_deg"].as<double>();
-                                auto x_center = geometry_node["x_center"].as<double>();
-                                auto y_center = geometry_node["y_center"].as<double>();
+                                auto W = read_option<double>(geometry_node, "width");
+                                auto H = read_option<double>(geometry_node, "height");
+                                auto rotation_angle_deg = read_option<double>(geometry_node, "rotation_angle_deg");
+                                auto x_center = read_option<double>(geometry_node, "x_center");
+                                auto y_center = read_option<double>(geometry_node, "y_center");
                                 boundary = solid::generate_rectangle(W, H, rotation_angle_deg, x_center, y_center);
                                 if (type == solid::SolidBodyType::Dynamic) {
                                     M = W * H * rho;
@@ -214,11 +231,16 @@ void InputParser::create_solvers(unique_ptr<fluid::FVM_Solver> &fvm, unique_ptr<
                             } else if (geom_case == "random_polygon") {
                                 YAML::Node points_node = geometry_node["points"];
                                 if (points_node) {
-                                    for (const auto &p_node : points_node) {
-                                        solid::Point p;
-                                        p.x = p_node[0].as<double>();
-                                        p.y = p_node[1].as<double>();
-                                        boundary.push_back(p);
+                                    try {
+                                        for (const auto &p_node : points_node) {
+                                            solid::Point p;
+                                            p.x = p_node[0].as<double>();
+                                            p.y = p_node[1].as<double>();
+                                            boundary.push_back(p);
+                                        }
+                                    } catch (exception &e) {
+                                        throw runtime_error("Failed reading list of points. Specify on the format\n "
+                                                            "points:\n  - [px1, py1]\n  - [px2, py2]\n  - ...");
                                     }
                                 } else {
                                     throw runtime_error("\'points\' must be specified for a \'random_polygon\'");
@@ -242,7 +264,8 @@ void InputParser::create_solvers(unique_ptr<fluid::FVM_Solver> &fvm, unique_ptr<
                     }
                     fsi->add_solid(move(solid));
                 } catch (exception &e) {
-                    throw runtime_error("Failed to parse solid geometry object number " + to_string(counter) + "\n" +
+                    throw runtime_error("Failed to parse entries with base name \'" + root_name_solids + "\'\n" +
+                                        "Failed to parse solid geometry object number " + to_string(counter) + "\n" +
                                         string(e.what()));
                 }
             }
@@ -253,52 +276,9 @@ void InputParser::create_solvers(unique_ptr<fluid::FVM_Solver> &fvm, unique_ptr<
 }
 
 string InputParser::option_not_specified_msg(string root_name, string option_name, string extra_msg) const {
-    string msg = "\"" + option_name + "\" not specified in the input file \"" + input_filename + "\"\n";
-    msg += "\"with base name \"" + root_name + "\"";
+    string msg = "Option \"" + option_name + "\" not specified in the input file \"" + input_filename + "\"";
+    msg += " with base name \"" + root_name + "\"";
     if (!extra_msg.empty())
         msg += "\n" + extra_msg;
     return msg;
-}
-
-void InputParser::check_that_root_name_is_valid(string root_name) const {
-
-    auto it = std::find(available_root_nodes.begin(), available_root_nodes.end(), root_name);
-    if (it == available_root_nodes.end()) {
-        throw runtime_error("Illegal root name \'" + root_name + "\' encountered");
-    }
-}
-
-void InputParser::add_parsed_option(string root_name, string option_name) {
-    parsed_options.emplace_back(root_name, option_name);
-}
-
-static bool yaml_file_option_exist(const vector<pair<string, string>> &parsed_options,
-                                   pair<string, string> option_pair) {
-    auto it = std::find(parsed_options.begin(), parsed_options.end(), option_pair);
-    return it != parsed_options.end();
-}
-
-void InputParser::report_invalid_options() const {
-    for (const pair<string, string> &parsed_option : parsed_options) {
-        const string &root_name = parsed_option.first;
-        const string &option_name = parsed_option.second;
-        if (!root_node[root_name][option_name]) {
-            cout << "Warning: Input option with name \'" + option_name + "\' and root name \'" + root_name +
-                        "\' is not specified in the input file\n";
-        }
-    }
-    for (const string &root_name : available_root_nodes) {
-        for (YAML::const_iterator it = root_node[root_name].begin(); it != root_node[root_name].end(); it++) {
-            const string option_name = it->first.as<string>();
-            const pair<string, string> option_pair = {root_name, option_name};
-            if (!yaml_file_option_exist(parsed_options, option_pair)) {
-                cout << "Warning: Input option with name \'" + option_name + "\' and root name \'" + root_name +
-                            "\' specified in the input file is invalid\n";
-            }
-        }
-    }
-}
-
-InputParser::~InputParser() {
-    report_invalid_options();
 }

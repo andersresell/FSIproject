@@ -473,8 +473,7 @@ void SolidBody::update_lumped_forces(fluid::vec4 *U_in) {
 }
 
 void SolidBody::write_fresh_points(int n) const {
-    std::ofstream ost{"python/output_folders/" + fvm.output_folder + "/debug_fresh_points_t" + std::to_string(n) +
-                      ".csv"};
+    std::ofstream ost{fvm.output_folder + "debug_fresh_points_t" + std::to_string(n) + ".csv"};
     if (!ost)
         std::cerr << "error, couldn't open solid debug fresh points csv file\n";
     ost << "#x_i,y_i\n";

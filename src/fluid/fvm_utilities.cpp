@@ -133,10 +133,10 @@ vec4 ExternalBCs::set_horizontal_invicid_wall(const vec4 &U_in) {
 }
 
 void ExternalBCs::load_history_output_west(string history_output_west_folder) {
-    std::ifstream ist{"python/output_folders/" + history_output_west_folder + "/fvm_history_output_west.csv"};
+    string file = history_output_west_folder + "fvm_history_output_west.csv";
+    std::ifstream ist{file};
     if (!ist) {
-        std::cerr << "Error: couldn't open fvm history output west file\n";
-        exit(1);
+        throw runtime_error("Couldn't open fvm history output west file: " + file);
     }
 
     int n_lines{0};
@@ -150,7 +150,7 @@ void ExternalBCs::load_history_output_west(string history_output_west_folder) {
     double t;
     vec4 U0{};
     vec4 U1{};
-    std::ifstream iist{"python/output_folders/" + history_output_west_folder + "/fvm_history_output_west.csv"};
+    std::ifstream iist{history_output_west_folder + "fvm_history_output_west.csv"};
     std::string first_line;
     getline(iist, first_line); // skipping first line
     while (iist >> t >> U0.u1 >> U0.u2 >> U0.u3 >> U0.u4 >> U1.u1 >> U1.u2 >> U1.u3 >> U1.u4) {

@@ -1,0 +1,41 @@
+
+setup:
+  num_threads: 4
+  nx: 100
+  ny: 1
+  L_x: 3
+  L_y: 0.03
+  CFL: 0.9
+  limiter: mc
+  fvm_write_stride: 10
+  stopping_crit_type: time
+  stopping_crit_val: 0.5
+  
+external_bcs:
+  type_west: inviscid_wall
+  type_east: inviscid_wall
+  type_south: inviscid_wall
+  type_north: inviscid_wall
+  
+initial_cond:
+  case: riemann_problem
+  rho_l: 3
+  u_l: 0
+  v_l: 0
+  p_l: 3
+  rho_r: 1
+  u_r: 0
+  v_r: 0
+  p_r: 1
+
+solids:
+  - is_static: true
+    geometry:
+      case: wedge
+      l: 7
+      half_angle_deg: 20
+      x_tip: 4
+      y_tip: 10
+
+
+

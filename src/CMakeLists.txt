@@ -17,7 +17,6 @@ simulate.cpp
 input_parser.cpp
 fluid/fvm_solver.cpp
 fluid/fvm_utilities.cpp
-fluid/HLLC.cpp
 fsi/fsi_solver.cpp
 fsi/setup_cases.cpp
 solid/dynamic_rigid.cpp
@@ -32,11 +31,11 @@ add_executable(${PROJECT_NAME} ${SRC})
 target_compile_options(${PROJECT_NAME} PRIVATE
     -Wall -Wno-reorder -Wno-unused-function -fmax-errors=1
 )
-if (CMAKE_BUILD_TYPE STREQUAL "Release")
+if (CMAKE_BUILD_TYPE STREQUAL "release")
 target_compile_options(${PROJECT_NAME} PRIVATE
-    -DNDEBUG -O3 -march=native
+    -DNDEBUG -O3 -march=native #-ffast-math #-flto 
 )
-elseif (CMAKE_BUILD_TYPE STREQUAL "Debug")
+elseif (CMAKE_BUILD_TYPE STREQUAL "debug")
 target_compile_options(${PROJECT_NAME} PRIVATE
     -g -D_GLIBCXX_ASSERTIONS
 )
@@ -51,10 +50,10 @@ find_package(yaml-cpp REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE yaml-cpp)
 
 # Link OpenMP
-if(USE_OPENMP)
-    find_package(OpenMP REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
-endif()
+#if(USE_OPENMP)
+find_package(OpenMP REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+#endif()
 
 # Set include directories
 include_directories(${FSI_PROJECT_HOME}/include)

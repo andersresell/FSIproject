@@ -1,24 +1,28 @@
 
 setup:
-  nx: 300
-  ny: 600
+  num_threads: 4
+  nx: 100
+  ny: 200
   L_x: 10
   L_y: 20
-  CFL: 0.6
+  CFL: 0.9
   fvm_write_stride: 100
+  limiter: mc
+  # stopping_crit_type: convergence
+  # stopping_crit_val: 1e-6
   stopping_crit_type: time
-  stopping_crit_val: 0.2
-  
+  stopping_crit_val: 0.1
+
 external_bcs:
   type_west: supersonic_inflow
-  M_inf: 2
+  M_inf: 3
   rho_inf: 1.2
   p_inf: 100000
   type_east: nonreflecting_outflow
   type_south: nonreflecting_outflow
   type_north: nonreflecting_outflow
   
-intial_cond:
+initial_cond:
   case: constant_data
   rho: 1.2
   u: 0
@@ -27,10 +31,11 @@ intial_cond:
 
 solids:
   - is_static: true
-    case: wedge
-    l: 7
-    half_angle_deg: 20
-    x_tip: 4
-    ytip: 10
+    geometry:
+      case: wedge
+      l: 7
+      half_angle_deg: 20
+      x_tip: 4
+      y_tip: 10
 
 

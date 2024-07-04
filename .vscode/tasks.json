@@ -6,7 +6,7 @@
             "label": "Build debug",
             "command": "./build.sh",
             "args": [
-                "-g"
+                "--debug"
             ],
             "options": {
                 "cwd": "${workspaceFolder}",

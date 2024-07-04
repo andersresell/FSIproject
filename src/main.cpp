@@ -13,6 +13,8 @@ int main(int argc, char *argv[]) {
 
         const string input_file = argv[1];
 
+        omp_set_num_threads(4);
+
         simulate(input_file);
     }
 

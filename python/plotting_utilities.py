@@ -6,36 +6,38 @@ import matplotlib.pyplot as plt
 from analytical_solutions import *
 from decimal import Decimal
 import sys
+import os
 from matplotlib import ticker
 
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "serif",
-    "font.serif": ["Computer Modern Roman"],
-    "font.size": 25,
-    #"axes.facecolor": "xkcd:mint green"
-    #"axes.facecolor": "lightsteelblue"
-    #"lines.linewidth": 2,'
-    "axes.labelsize": 30,
-    "legend.fontsize": 21,
+# fmt: off
+# plt.rcParams.update({
+#     "text.usetex": True,
+#     "font.family": "serif",
+#     "font.serif": ["Computer Modern Roman"],
+#     "font.size": 25,
+#     #"axes.facecolor": "xkcd:mint green"
+#     #"axes.facecolor": "lightsteelblue"
+#     #"lines.linewidth": 2,'
+#     "axes.labelsize": 30,
+#     "legend.fontsize": 21,
 
-    "font.size": 20,
-    #"axes.facecolor": "xkcd:mint green"
-    #"axes.facecolor": "lightsteelblue"
-    #"lines.linewidth": 2,'
-    "axes.labelsize": 25,
-    "legend.fontsize": 21,
+#     "font.size": 20,
+#     #"axes.facecolor": "xkcd:mint green"
+#     #"axes.facecolor": "lightsteelblue"
+#     #"lines.linewidth": 2,'
+#     "axes.labelsize": 25,
+#     "legend.fontsize": 21,
 
 
-    #"figure.figsize": (6,6)
+#     #"figure.figsize": (6,6)
 
-    })
+#     })
 
 class Plotter:
-    def __init__(self, output_folder):
-        self.output_folder = output_folder
+    def __init__(self, sim_dir):
+        self.output_dir= os.path.join(sim_dir,"output")
         #read fvm header:
-        data = genfromtxt("output_folders/"+output_folder+"/fvm_header.csv",comments = "#", delimiter=',')
+        data = genfromtxt(os.path.join(self.output_dir, "fvm_header.csv"),comments = "#", delimiter=',')
         self.ni = int(data[0])
         self.nj = int(data[1])
         self.L_x = data[2]
@@ -48,7 +50,7 @@ class Plotter:
         self.x = np.linspace(self.dx/2,self.L_x-self.dx/2,self.ni)
         self.y = np.linspace(self.dy/2,self.L_y-self.dy/2,self.nj)
         #read fsi header:
-        data = genfromtxt("output_folders/"+output_folder+"/fsi_header.csv",comments = "#", delimiter=',')
+        data = genfromtxt(os.path.join(self.output_dir, "fsi_header.csv"),comments = "#", delimiter=',')
         self.n_static_solids = int(data[0])
         self.n_movable_solids = int(data[1])
 
@@ -100,12 +102,12 @@ class Plotter:
         if datatype == "M":
             cb.set_label("$M$")
         elif datatype == "p":
-            cb.set_label(r"""$p\;[\textrm{Pa}]$""")
+            cb.set_label(r"$p [Pa]$""")
         #plt.axis('equal')
         ax = plt.gca()
         ax.set_aspect('equal', 'box')
-        plt.xlabel(r"""$x\;[\textrm{m}]$""")
-        plt.ylabel(r"""$y\;[\textrm{m}]$""")
+        plt.xlabel(r"$x[m]$")
+        plt.ylabel(r"$y[m]$")
         if show_time:
             self.time_title(n,"ms")
         ax = plt.gca()
@@ -115,7 +117,7 @@ class Plotter:
 
 
     def extract_data(self,datatype,n):
-        data = genfromtxt("output_folders/"+self.output_folder+"/fvm_output_t"+str(n)+".csv",comments = "#", delimiter=',')
+        data = genfromtxt(os.path.join( self.output_dir,"fvm_output_t"+str(n)+".csv"),comments = "#", delimiter=',')
         if (datatype == "M"):
             M = np.sqrt((data[:,1]**2 + data[:,2]**2)/(1.4*data[:,3]/data[:,0]))
             return np.transpose(M.reshape((self.ni,self.nj)))
@@ -131,12 +133,12 @@ class Plotter:
 
 
     def plot_convergence(self):
-        data = genfromtxt("output_folders/"+self.output_folder+"/fvm_convergence_history.csv",comments = "#", delimiter=',')
+        data = genfromtxt(os.path.join(self.output_dir,"fvm_convergence_history.csv"),comments = "#", delimiter=',')
         #plt.figure(figsize=(7,6))
         plt.figure()
         plt.plot(data[:,0],data[:,1],"k")
         plt.xlabel("$n$")
-        plt.ylabel(r'$||\rho^{n+1} -\rho^n||_2$')
+        plt.ylabel(r"$||\rho^{n+1} -\rho^n||_2$")
         plt.semilogy()
         plt.tight_layout()
 
@@ -144,8 +146,8 @@ class Plotter:
         plt.figure()
         plt.plot(data[:,0],data[:,2],"k",linewidth=1)
 
-        plt.xlabel(r"""$n$""")
-        plt.ylabel(r"""$m \; [\textrm{kg}]$""")
+        plt.xlabel(r"$n$")
+        plt.ylabel(r"$m [kg]$")
         plt.tight_layout()
         plt.locator_params(axis="x", nbins=5)
         plt.locator_params(axis="y", nbins=5)
@@ -158,16 +160,16 @@ class Plotter:
         plt.autoscale(False)
         for i in range(0,self.n_static_solids+self.n_movable_solids):
             if i < self.n_static_solids:
-                data = genfromtxt("output_folders/"+self.output_folder+"/static_boundary"+str(i)+".csv",comments = "#", delimiter=',')
+                data = genfromtxt(os.path.join(self.output_dir,"static_boundary"+str(i)+".csv"),comments = "#", delimiter=',')
             else:
-                data = genfromtxt("output_folders/"+self.output_folder+"/movable_boundary"+str(i-self.n_static_solids)+"_t"+str(n)+".csv",comments = "#", delimiter=',')
+                data = genfromtxt(os.path.join(self.output_dir,"movable_boundary"+str(i-self.n_static_solids)+"_t"+str(n)+".csv"),comments = "#", delimiter=',')
             plt.fill(data[:,0],data[:,1],"silver")
             plt.plot(np.append(data[:,0],data[0,0]),np.append(data[:,1],data[0,1]),"black")
         #plt.autoscale(True)
 
     def plot_riemann_problem(self):
 
-        data = genfromtxt("output_folders/"+self.output_folder+"/fvm_output_t"+str(self.n_timesteps)+".csv",comments = "#", delimiter=',')
+        data = genfromtxt(os.path.join(self.output_dir,"fvm_output_t"+str(self.n_timesteps)+".csv"),comments = "#", delimiter=',')
         rho = data[:,0]
         rho = np.transpose(rho.reshape((self.ni,self.nj)))
         u = data[:,1]
@@ -196,7 +198,7 @@ class Plotter:
         #plt.plot(self.x,rho_exact,'--r')
         plt.legend(['Numerical','Exact'])
         plt.xlabel("$x$")
-        plt.ylabel(r'$\rho$')
+        plt.ylabel(r"$\rho$")
 
         plt.figure()
         plt.plot(self.x,u[int(self.nj/2),:],'k.')
@@ -228,7 +230,7 @@ class Plotter:
         b = plt.plot(self.x,rho_exact,'--r',label='Exact')
         #plt.legend(['Numerical','Exact'])
         plt.xlabel("$x$")
-        plt.ylabel(r'$\rho$')
+        plt.ylabel(r"$\rho$")
 
         lines, labels = fig.axes[-1].get_legend_handles_labels()
         #fig.legend(lines, labels, loc = 'upper right',)
@@ -337,7 +339,7 @@ class Plotter:
 
         #a = 0.5*(self.L_x-width) + vel*self.t_end
         #b = 0.5*(self.L_x+width) + vel*self.t_end
-        piston = genfromtxt("output_folders/"+self.output_folder+"/movable_boundary0_t"+str(self.n_timesteps)+".csv",comments = "#", delimiter=',')
+        piston = genfromtxt(os.path.join(self.output_dir,"movable_boundary0_t"+str(self.n_timesteps)+".csv"),comments = "#", delimiter=',')
         a = piston[0,0]
         b = piston[1,0]
         width = b-a
@@ -388,7 +390,7 @@ class Plotter:
         plt.legend(['Numerical','Exact'])
         visualize_piston(u)
         self.set_unit_labels_SI("u")
-        plt.ylabel(r"""$u\;[\textrm{m/s}]$""")
+        plt.ylabel(r"$u[m/s]$")
         plt.tight_layout()
         ax = plt.gca()
         ax.set_yticks([0,250,500])
@@ -407,7 +409,7 @@ class Plotter:
     def animate_piston_fsi(self,datatype,bottom_level=0, top_level=0):
         plt.figure()
         for n in range(0,self.n_timesteps+1):
-            if n % self.write_stride == 0and n%100==0:
+            if n % self.write_stride == 0 and n%100==0:
                 print(n)
                 plt.clf()
                 self.piston_fsi(datatype,n,bottom_level,top_level)
@@ -438,10 +440,10 @@ class Plotter:
                     #t[n] = self.timestep2time(n)
                     print("t = "+str(t[-1])+" step n = "+str(n)+" of "+str(self.n_timesteps))
                     if self.n_movable_solids == 1:
-                        piston = genfromtxt("output_folders/"+self.output_folder+"/movable_boundary0_t"+str(n)+".csv",comments = "#", delimiter=',')
-                        piston_vel = genfromtxt("output_folders/"+self.output_folder+"/movable_solid_body_CM_velocity0_t"+str(n)+".csv",comments = "#", delimiter=',')
+                        piston = genfromtxt(os.path.join(self.output_dir,"movable_boundary0_t"+str(n)+".csv"),comments = "#", delimiter=',')
+                        piston_vel = genfromtxt(os.path.join(self.output_dir,"movable_solid_body_CM_velocity0_t"+str(n)+".csv"),comments = "#", delimiter=',')
                     elif self.n_static_solids == 1:
-                        piston = genfromtxt("output_folders/"+self.output_folder+"/static_boundary0.csv",comments = "#", delimiter=',')
+                        piston = genfromtxt(os.path.join(self.output_dir, "static_boundary0.csv"),comments = "#", delimiter=',')
                         piston_vel = np.array([0])
                     else:
                         sys.exit("error! There has to be exactly on solid object for this simulation")
@@ -483,8 +485,8 @@ class Plotter:
 
         plt.figure()
         plt.plot(t*1000,u_wall,'k')
-        plt.xlabel(r"""$t\;[\textrm{ms}]$""")
-        plt.ylabel(r"""$u_{wall}\;[\textrm{m/s}]$""")
+        plt.xlabel(r"$t [ms]$")
+        plt.ylabel(r"$u_{wall} [m/s]$")
         plt.xlim(20,40)
         plt.tight_layout()
 
@@ -492,10 +494,10 @@ class Plotter:
         plt.plot(t*1000,pressure_ratio_sim,'k')
         plt.plot(t[ind]*1000,pressure_ratio_analytical[ind],'--r')
         plt.xlim(20,40)
-        plt.xlabel(r"""$t\;[\textrm{ms}]$""")
+        plt.xlabel(r"$t[ms]$")
         #plt.ylabel(r"""$p'_r/p_r$""")
         #plt.legend(['Simulation','Analytical Formula'])
-        plt.legend([r"""$p'_{r,sim}/p_r$""",r"""$\left(1-\frac{\gamma-1}{2}\frac{u_{wall}}{c_{r}}\right)^{\frac{2\gamma}{\gamma-1}}$"""])
+        plt.legend([r"$p'_{r,sim}/p_r$""",r"""$\left(1-\frac{\gamma-1}{2}\frac{u_{wall}}{c_{r}}\right)^{\frac{2\gamma}{\gamma-1}}$"""])
         plt.tight_layout()
 
     def piston_fsi(self,datatype,n,bottom_level=0,top_level=0):
@@ -503,9 +505,9 @@ class Plotter:
         if bottom_level==0 and top_level==0:
             autolevel = True
         if self.n_movable_solids == 1:
-            piston = genfromtxt("output_folders/"+self.output_folder+"/movable_boundary0_t"+str(n)+".csv",comments = "#", delimiter=',')
+            piston = genfromtxt(os.path.join(self.output_dir,"movable_boundary0_t"+str(n)+".csv"),comments = "#", delimiter=',')
         elif self.n_static_solids == 1:
-            piston = genfromtxt("output_folders/"+self.output_folder+"/static_boundary0.csv",comments = "#", delimiter=',')
+            piston = genfromtxt(os.path.join(self.output_dir,"static_boundary0.csv"),comments = "#", delimiter=',')
         else:
             sys.exit("error! There has to be exactly on solid object for this simulation")
         a = piston[0,0]
@@ -558,7 +560,7 @@ class Plotter:
 
     def debug_points(self, n):
         #plotting points
-        data = genfromtxt("output_folders/"+self.output_folder+"/debug_nodes_t"+str(n)+".csv",comments = "#", delimiter=',')
+        data = genfromtxt(os.path.join(self.output_dir,"debug_nodes_t"+str(n)+".csv"),comments = "#", delimiter=',')
         cell_type = data[:,0]
         x = data[:,1]
         y = data[:,2]
@@ -575,37 +577,20 @@ class Plotter:
         #plotting boundaries
         for i in range(0,self.n_static_solids+self.n_movable_solids):
             if i < self.n_static_solids:
-                data = genfromtxt("output_folders/"+self.output_folder+"/static_boundary"+str(i)+".csv",comments = "#", delimiter=',')
+                data = genfromtxt(os.path.join(self.output_dir,"static_boundary"+str(i)+".csv"),comments = "#", delimiter=',')
             else:
-                data = genfromtxt("output_folders/"+self.output_folder+"/movable_boundary"+str(i-self.n_static_solids)+"_t"+str(n)+".csv",comments = "#", delimiter=',')
+                data = genfromtxt(os.path.join(self.output_dir,"movable_boundary"+str(i-self.n_static_solids)+"_t"+str(n)+".csv"),comments = "#", delimiter=',')
             x_b = data[:,0]
             y_b = data[:,1]
             plt.plot(x_b,y_b,'.-k')
             plt.plot(np.array([x_b[-1],x_b[0]]),np.array([y_b[-1],y_b[0]]),'.-k')
         #plotting intercepts
-        data = genfromtxt("output_folders/"+self.output_folder+"/debug_intercepts_t"+str(n)+".csv",comments = "#", delimiter=',')
+        data = genfromtxt(os.path.join(self.output_dir,"debug_intercepts_t"+str(n)+".csv"),comments = "#", delimiter=',')
         if not data.size == 0:
             x_i = data[:,0]
             y_i = data[:,1]
             plt.plot(x_i,y_i,'y*')
             plt.axis('equal')
-        #plotting fresh points
-        #if n != 0:
-         #   data = genfromtxt("output_folders/"+self.output_folder+"/debug_fresh_points_t"+str(n)+".csv",comments = "#", delimiter=',')
-
-          #  if data.size == 1:
-           #     x_i = data[0]
-            #    y_i = data[1]
-            #elif data.size(0) > 1:
-            #    x_i = data[:,0]
-            #    y_i = data[:,1]
-            #if data.size(0) > 0:
-            #    plt.plot(x_i,y_i,'kx')
-            #    plt.axis('equal')
-    #def interpolate(self,x,y,datatype,n):
-     #   data = self.extract_data(datatype,n)
-      #  im = int(x/self.dx-0.5)
-       # jm = int(y/self.dy-0.5)
 
 
     def probe_1D(self,datatype,x,n=-1):
@@ -635,7 +620,7 @@ class Plotter:
                     t = np.append(t,self.timestep2time(n))
         return t,val
     def timestep2time(self,n):
-        f = open("output_folders/"+self.output_folder+"/fvm_output_t"+str(n)+".csv","r")
+        f = open(os.path.join(self.output_dir,"fvm_output_t"+str(n)+".csv"),"r")
         first_line = f.readline()
         return float(first_line[3:])
     def time2timestep(self,t_goal):
@@ -649,15 +634,15 @@ class Plotter:
             plt.title("t = "+f"{self.timestep2time(n):.2f}"+" [s]")
         elif unit == "ms":
             #plt.title("time = "+f"{self.timestep2time(n)*1e3:.2f}"+" [ms]")
-            plt.title(r"""$$ t = """+f"{self.timestep2time(n)*1e3:.2f}"+r""" \;\textrm{ms}$$""")
+            plt.title(r"$ t = "+f"{self.timestep2time(n)*1e3:.2f}"+r" ms$")
     def set_unit_labels_SI(self,datatype):
-        plt.xlabel(r"""$x\;[\textrm{m}]$""")
+        plt.xlabel(r"$x [t]$")
         if datatype == "rho":
-            plt.ylabel(r"""$\rho\;[\textrm{kg/m}^3]$""")
+            plt.ylabel(r"$\rho[kg/m^3]$""")
         elif datatype == "u":
-            plt.ylabel(r"""$u\;[\textrm{m/s}]$""")
+            plt.ylabel(r"$u[m/s]$")
         elif datatype == "p":
-            plt.ylabel(r"""$p\;[\textrm{Pa}]$""")
+            plt.ylabel(r"$p[Pa]$")
     def set_ticks(self, n_x,n_y):
         ax = plt.gca()
         ax.set_xticks(np.linspace(0,self.L_x,n_x))
