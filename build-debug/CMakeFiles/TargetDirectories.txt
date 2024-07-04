@@ -1,0 +1,3 @@
+/home/anders/projects/FSIproject/build-debug/CMakeFiles/FSIproject.dir
+/home/anders/projects/FSIproject/build-debug/CMakeFiles/edit_cache.dir
+/home/anders/projects/FSIproject/build-debug/CMakeFiles/rebuild_cache.dir

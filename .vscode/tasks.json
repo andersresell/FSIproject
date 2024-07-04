@@ -1,0 +1,26 @@
+{
+    "tasks": [
+        {
+            //"type": "cppbuild",
+            "type": "shell",
+            "label": "Build debug",
+            "command": "./build.sh",
+            "args": [
+                "-g"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "shell": {
+                    "args": [ //this options sources .bashrc I think so that CompressGPUHome env var is available
+                        "-ci"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build"
+        },
+    ],
+    "version": "2.0.0"
+}
