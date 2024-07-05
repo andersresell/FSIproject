@@ -17,6 +17,7 @@ simulate.cpp
 input_parser.cpp
 fluid/fvm_solver.cpp
 fluid/fvm_utilities.cpp
+fluid/fvm_bcs.cpp
 fsi/fsi_solver.cpp
 fsi/setup_cases.cpp
 solid/dynamic_rigid.cpp

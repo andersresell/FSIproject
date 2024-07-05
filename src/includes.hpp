@@ -4,6 +4,7 @@
 #include <cassert>
 #include <chrono>
 #include <cmath>
+#include <eigen3/Eigen/Dense>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -13,8 +14,6 @@
 #include <set>
 #include <sstream>
 #include <vector>
-
-#include <eigen3/Eigen/Dense>
 
 using std::cerr;
 using std::cout;
@@ -37,3 +36,5 @@ using std::vector;
 #define omp_get_num_threads() 1
 #define omp_set_num_threads(num_threads)
 #endif
+
+using Vector2 = Eigen::Vector2d;

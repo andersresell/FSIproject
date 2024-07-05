@@ -54,6 +54,48 @@ struct vec4 {
     }
 };
 
+inline double calc_P(const vec4 &U_in) {
+    return (Gamma - 1) * (U_in.u4 - 0.5 * (U_in.u2 * U_in.u2 + U_in.u3 * U_in.u3) / U_in.u1);
+}
+
+inline vec4 conserved2primitive(const vec4 &U_in) {
+    return {U_in.u1, U_in.u2 / U_in.u1, U_in.u3 / U_in.u1, calc_P(U_in)};
+}
+
+inline vec4 primitive2conserved(const vec4 &V_in) {
+    return {V_in.u1, V_in.u2 * V_in.u1, V_in.u3 * V_in.u1,
+            V_in.u4 / (Gamma - 1) + 0.5 * V_in.u1 * (V_in.u2 * V_in.u2 + V_in.u3 * V_in.u3)};
+}
+
+inline vec4 calc_F(const vec4 &U_in) {
+    double P = calc_P(U_in);
+    return {U_in.u2, U_in.u2 * U_in.u2 / U_in.u1 + P, U_in.u2 * U_in.u3 / U_in.u1, (U_in.u4 + P) * U_in.u2 / U_in.u1};
+}
+
+inline vec4 calc_G(const vec4 &U_in) {
+    double P = calc_P(U_in);
+    return {U_in.u3, U_in.u2 * U_in.u3 / U_in.u1, U_in.u3 * U_in.u3 / U_in.u1 + P, (U_in.u4 + P) * U_in.u3 / U_in.u1};
+}
+
+inline double calc_sound_speed(const vec4 &U_in) {
+    return sqrt(Gamma / U_in.u1 * calc_P(U_in));
+}
+
+inline vec4 minmod(const vec4 &a, const vec4 &b) {
+    return {sgn(a.u1) * std::max(0.0, std::min(std::abs(a.u1), sgn(a.u1) * b.u1)),
+            sgn(a.u2) * std::max(0.0, std::min(std::abs(a.u2), sgn(a.u2) * b.u2)),
+            sgn(a.u3) * std::max(0.0, std::min(std::abs(a.u3), sgn(a.u3) * b.u3)),
+            sgn(a.u4) * std::max(0.0, std::min(std::abs(a.u4), sgn(a.u4) * b.u4))};
+}
+
+inline double calc_sprad_x(const vec4 &U_in) {
+    return std::abs(U_in.u2 / U_in.u1) + calc_sound_speed(U_in);
+}
+
+inline double calc_sprad_y(const vec4 &U_in) {
+    return std::abs(U_in.u3 / U_in.u1) + calc_sound_speed(U_in);
+}
+
 enum class OdeScheme {
     ExplicitEuler,
     TVD_RK3
@@ -72,30 +114,14 @@ enum class BC_Type {
     InvicidWall,
     SupersonicInflow,
     NonreflectingOutflow,
-    TimeHistory
+    TimeHistory,
+    BlastLoad
 };
 
 struct TimeHistory {
     double t;
     vec4 U_inner_GP;
     vec4 U_outer_GP;
-};
-
-class ExternalBCs {
-    // ExternalBC &west, &east, &south, &north;
-    const int ni, nj;
-    BC_Type west, east, south, north;
-    vec4 U_inf;                            // Used in case of supersonic inflow
-    vector<TimeHistory> time_history_west; // Used for time history at western boundary
-  public:
-    // ExternalBCs(int ni, int nj, ExternalBC &west, ExternalBC &east, ExternalBC &south, ExternalBC &north);
-    ExternalBCs(int ni, int nj, BC_Type west, BC_Type east, BC_Type south, BC_Type north, double M_inf, double p_inf,
-                double rho_inf, string history_output_west_folder);
-    void set_BCs(vec4 *U_in, double t);
-    static vec4 set_vertical_invicid_wall(const vec4 &U_in);
-    static vec4 set_horizontal_invicid_wall(const vec4 &U_in);
-
-    void load_history_output_west(string history_output_west_folder);
 };
 
 } // namespace fluid

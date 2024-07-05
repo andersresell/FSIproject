@@ -83,7 +83,8 @@ class InputParser {
         {"inviscid_wall", fluid::BC_Type::InvicidWall},
         {"nonreflecting_outflow", fluid::BC_Type::NonreflectingOutflow},
         {"supersonic_inflow", fluid::BC_Type::SupersonicInflow},
-        {"time_history", fluid::BC_Type::TimeHistory}};
+        {"time_history", fluid::BC_Type::TimeHistory},
+        {"blast_load", fluid::BC_Type::BlastLoad}};
 
     static inline const map<string, fluid::FluxScheme> flux_scheme_from_string{{"hllc", fluid::FluxScheme::HLLC},
                                                                                {"rusanov", fluid::FluxScheme::Rusanov}};

@@ -7,6 +7,7 @@
 // The boundaries are handled by ghost points
 
 #include "../includes.hpp"
+#include "fvm_bcs.hpp"
 #include "fvm_utilities.hpp"
 
 namespace solid {
@@ -55,12 +56,6 @@ class FVM_Solver {
 
     double ode_step(double dt_old, double t_old);
 
-    static vec4 conserved2primitive(const vec4 &U_in);
-
-    static vec4 primitive2conserved(const vec4 &V_in);
-
-    static double calc_P(const vec4 &U_in);
-
     void initialize_solids();
 
   private:
@@ -74,8 +69,6 @@ class FVM_Solver {
 
     void MUSCL_extrapolate(vec4 *U_in);
 
-    void conserved2primitive(vec4 *U_in);
-
     void rusanov();
 
     void HLLC();
@@ -84,62 +77,8 @@ class FVM_Solver {
 
     static vec4 G_f_HLLC(const vec4 &U_D, const vec4 &U_U); // Computes the HLLC flux G_{i,j+1/2}
 
-    static vec4 calc_F(const vec4 &U_in);
-
-    static vec4 calc_G(const vec4 &U_in);
-
-    static double calc_sound_speed(const vec4 &U_in);
-
-    static vec4 minmod(const vec4 &a, const vec4 &b);
-
-    static double calc_sprad_x(const vec4 &U_in);
-
-    static double calc_sprad_y(const vec4 &U_in);
-
   public:
     ~FVM_Solver();
 };
-
-inline vec4 FVM_Solver::conserved2primitive(const vec4 &U_in) {
-    return {U_in.u1, U_in.u2 / U_in.u1, U_in.u3 / U_in.u1, calc_P(U_in)};
-}
-
-inline double FVM_Solver::calc_P(const vec4 &U_in) {
-    return (Gamma - 1) * (U_in.u4 - 0.5 * (U_in.u2 * U_in.u2 + U_in.u3 * U_in.u3) / U_in.u1);
-}
-
-inline vec4 FVM_Solver::primitive2conserved(const vec4 &V_in) {
-    return {V_in.u1, V_in.u2 * V_in.u1, V_in.u3 * V_in.u1,
-            V_in.u4 / (Gamma - 1) + 0.5 * V_in.u1 * (V_in.u2 * V_in.u2 + V_in.u3 * V_in.u3)};
-}
-
-inline vec4 FVM_Solver::calc_F(const vec4 &U_in) {
-    double P = calc_P(U_in);
-    return {U_in.u2, U_in.u2 * U_in.u2 / U_in.u1 + P, U_in.u2 * U_in.u3 / U_in.u1, (U_in.u4 + P) * U_in.u2 / U_in.u1};
-}
-
-inline vec4 FVM_Solver::calc_G(const vec4 &U_in) {
-    double P = calc_P(U_in);
-    return {U_in.u3, U_in.u2 * U_in.u3 / U_in.u1, U_in.u3 * U_in.u3 / U_in.u1 + P, (U_in.u4 + P) * U_in.u3 / U_in.u1};
-}
-
-inline double FVM_Solver::calc_sound_speed(const vec4 &U_in) {
-    return sqrt(Gamma / U_in.u1 * calc_P(U_in));
-}
-
-inline vec4 FVM_Solver::minmod(const vec4 &a, const vec4 &b) {
-    return {sgn(a.u1) * std::max(0.0, std::min(std::abs(a.u1), sgn(a.u1) * b.u1)),
-            sgn(a.u2) * std::max(0.0, std::min(std::abs(a.u2), sgn(a.u2) * b.u2)),
-            sgn(a.u3) * std::max(0.0, std::min(std::abs(a.u3), sgn(a.u3) * b.u3)),
-            sgn(a.u4) * std::max(0.0, std::min(std::abs(a.u4), sgn(a.u4) * b.u4))};
-}
-
-inline double FVM_Solver::calc_sprad_x(const vec4 &U_in) {
-    return std::abs(U_in.u2 / U_in.u1) + calc_sound_speed(U_in);
-}
-
-inline double FVM_Solver::calc_sprad_y(const vec4 &U_in) {
-    return std::abs(U_in.u3 / U_in.u1) + calc_sound_speed(U_in);
-}
 
 } // namespace fluid
